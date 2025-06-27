@@ -25,119 +25,186 @@ export default function SignIn() {
       const result = await signIn('credentials', {
         email,
         password,
-        role,
         redirect: false,
       })
 
       if (result?.error) {
-        setError('Invalid credentials')
-      } else {
-        // Get the updated session to check the user's role
-        const session = await getSession()
-        if (session?.user?.role === 'PARENT') {
+        setError('Invalid email or password')
+        return
+      }
+
+      // Get the session to determine role-based routing
+      const session = await getSession()
+      if (session?.user) {
+        if (session.user.role === 'PARENT') {
           router.push('/dashboard/parent')
         } else {
           router.push('/dashboard/child')
         }
       }
     } catch (error) {
-      setError('Something went wrong')
+      setError('Something went wrong. Please try again.')
     } finally {
       setIsLoading(false)
     }
   }
 
+  const demoAccounts = [
+    { email: 'parent@demo.com', password: 'password', role: 'PARENT' as const, name: 'Demo Parent' },
+    { email: 'child@demo.com', password: 'password', role: 'CHILD' as const, name: 'Noah (Demo Child)' }
+  ]
+
+  const fillDemoAccount = (account: typeof demoAccounts[0]) => {
+    setEmail(account.email)
+    setPassword(account.password)
+    setRole(account.role)
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-gray-900">Welcome to ChoreChart</CardTitle>
-          <CardDescription>Sign in to your family account</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Role Selection */}
-            <div className="grid grid-cols-2 gap-2">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md space-y-4">
+        {/* App Header */}
+        <div className="text-center mb-8">
+          <div className="text-4xl sm:text-5xl mb-2">🏡</div>
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">ChoreChart</h1>
+          <p className="text-gray-600 text-sm sm:text-base">Smart family chore management with AI</p>
+        </div>
+
+        {/* Demo Account Quick Access */}
+        <Card className="bg-blue-50 border-blue-200">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              🚀 Try Demo Accounts
+            </CardTitle>
+            <CardDescription className="text-sm">
+              Quick access to test the app
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {demoAccounts.map((account, index) => (
               <Button
-                type="button"
-                variant={role === 'PARENT' ? 'default' : 'outline'}
-                onClick={() => setRole('PARENT')}
-                className="flex items-center gap-2"
+                key={index}
+                variant="outline"
+                onClick={() => fillDemoAccount(account)}
+                className="w-full h-12 text-left justify-start bg-white hover:bg-blue-50"
               >
-                👨‍👩‍👧‍👦 Parent
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">{account.role === 'PARENT' ? '👨‍👩‍👧‍👦' : '🧒'}</span>
+                  <div className="text-left">
+                    <div className="font-medium text-sm">{account.name}</div>
+                    <div className="text-xs text-gray-500">{account.email}</div>
+                  </div>
+                </div>
               </Button>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* Sign In Form */}
+        <Card className="bg-white shadow-lg">
+          <CardHeader className="space-y-1 pb-4">
+            <CardTitle className="text-xl sm:text-2xl font-bold text-center">Welcome Back!</CardTitle>
+            <CardDescription className="text-center text-sm sm:text-base">
+              Sign in to your ChoreChart account
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-600 text-sm">{error}</p>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <label htmlFor="email" className="text-sm font-medium text-gray-700">
+                  Email Address
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  required
+                  className="h-12 text-base"
+                  autoComplete="email"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="password" className="text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                  className="h-12 text-base"
+                  autoComplete="current-password"
+                />
+              </div>
+
               <Button
-                type="button"
-                variant={role === 'CHILD' ? 'default' : 'outline'}
-                onClick={() => setRole('CHILD')}
-                className="flex items-center gap-2"
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-12 text-base font-semibold bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
               >
-                🧒 Child
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Signing in...
+                  </div>
+                ) : (
+                  'Sign In'
+                )}
               </Button>
+            </form>
+
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <p className="text-center text-sm text-gray-600">
+                Don't have an account?{' '}
+                <Link 
+                  href="/auth/signup" 
+                  className="font-medium text-blue-600 hover:text-blue-500 hover:underline"
+                >
+                  Sign up here
+                </Link>
+              </p>
             </div>
+          </CardContent>
+        </Card>
 
-            {/* Email Input */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="family@example.com"
-                required
-              />
+        {/* App Features Preview */}
+        <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-green-200">
+          <CardContent className="p-4">
+            <div className="text-center">
+              <h3 className="font-semibold text-gray-900 mb-2">✨ What's New in ChoreChart</h3>
+              <div className="grid grid-cols-2 gap-3 text-xs sm:text-sm">
+                <div className="flex items-center gap-2">
+                  <span>🤖</span>
+                  <span>AI Assistant "Chorbit"</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>📊</span>
+                  <span>Behavior Tracking</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>📱</span>
+                  <span>Mobile Optimized</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>💰</span>
+                  <span>Smart Allowance</span>
+                </div>
+              </div>
             </div>
-
-            {/* Password Input */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-              />
-            </div>
-
-            {error && (
-              <div className="text-red-600 text-sm text-center">{error}</div>
-            )}
-
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={isLoading}
-            >
-              {isLoading ? 'Signing in...' : 'Sign In'}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Don't have an account?{' '}
-              <Link href="/auth/signup" className="text-blue-600 hover:underline">
-                Sign up
-              </Link>
-            </p>
-          </div>
-
-          {/* Demo Accounts */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Demo Accounts:</h4>
-            <div className="text-xs text-gray-600 space-y-1">
-              <p><strong>Parent:</strong> parent@demo.com / password</p>
-              <p><strong>Child:</strong> child@demo.com / password</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 } 
