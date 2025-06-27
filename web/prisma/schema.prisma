@@ -1,0 +1,236 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String?  // Optional for OAuth users
+  role      UserRole
+  familyId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  family            Family           @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  choreAssignments  ChoreAssignment[]
+  choreSubmissions  ChoreSubmission[]
+  choreApprovals    ChoreApproval[]
+  messages          Message[]
+  rewards           Reward[]
+  weeklyReports     WeeklyReport[]
+
+  @@map("users")
+}
+
+model Family {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Settings
+  weeklyAllowance      Float   @default(0)
+  autoApproveChores    Boolean @default(false)
+  weekCloseDay         Int     @default(0) // 0 = Sunday
+  emailNotifications   Boolean @default(true)
+
+  // Relations
+  users            User[]
+  chores           Chore[]
+  choreAssignments ChoreAssignment[]
+  messages         Message[]
+  weeklyReports    WeeklyReport[]
+
+  @@map("families")
+}
+
+model Chore {
+  id          String    @id @default(cuid())
+  familyId    String
+  title       String
+  description String?
+  type        ChoreType
+  frequency   ChoreFrequency
+  isRequired  Boolean   @default(false)
+  reward      Float     @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Schedule settings
+  scheduledDays   Int[] // Days of week (0-6, Sunday=0)
+  scheduledTime   String? // HH:MM format
+  estimatedMinutes Int?
+
+  // Relations
+  family           Family            @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  assignments      ChoreAssignment[]
+
+  @@map("chores")
+}
+
+model ChoreAssignment {
+  id       String   @id @default(cuid())
+  familyId String
+  userId   String
+  choreId  String
+  weekStart DateTime // Start of the week this assignment is for
+  createdAt DateTime @default(now())
+
+  // Relations
+  family      Family            @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chore       Chore             @relation(fields: [choreId], references: [id], onDelete: Cascade)
+  submissions ChoreSubmission[]
+
+  @@unique([userId, choreId, weekStart])
+  @@map("chore_assignments")
+}
+
+model ChoreSubmission {
+  id               String            @id @default(cuid())
+  assignmentId     String
+  userId           String
+  submittedAt      DateTime          @default(now())
+  completedAt      DateTime
+  notes            String?
+  imageUrl         String?
+  status           SubmissionStatus  @default(PENDING)
+
+  // Relations
+  assignment ChoreAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  approval   ChoreApproval?
+
+  @@map("chore_submissions")
+}
+
+model ChoreApproval {
+  id           String   @id @default(cuid())
+  submissionId String   @unique
+  approvedBy   String
+  approvedAt   DateTime @default(now())
+  approved     Boolean
+  feedback     String?
+
+  // Relations
+  submission ChoreSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  approver   User             @relation(fields: [approvedBy], references: [id], onDelete: Cascade)
+
+  @@map("chore_approvals")
+}
+
+model Message {
+  id        String      @id @default(cuid())
+  familyId  String
+  fromId    String
+  toId      String?     // null for broadcast messages
+  content   String
+  type      MessageType @default(CHAT)
+  createdAt DateTime    @default(now())
+  readAt    DateTime?
+
+  // Relations
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  from   User   @relation(fields: [fromId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model Reward {
+  id          String     @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  amount      Float
+  type        RewardType @default(MONEY)
+  awardedAt   DateTime   @default(now())
+  awardedBy   String
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("rewards")
+}
+
+model WeeklyReport {
+  id           String   @id @default(cuid())
+  familyId     String
+  userId       String
+  weekStart    DateTime
+  weekEnd      DateTime
+  generatedAt  DateTime @default(now())
+
+  // Metrics
+  totalChores      Int
+  completedChores  Int
+  approvedChores   Int
+  deniedChores     Int
+  totalEarnings    Float
+  potentialEarnings Float
+  
+  // AI Insights
+  aiInsights       Json?
+  recommendations  String?
+
+  // Relations
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, weekStart])
+  @@map("weekly_reports")
+}
+
+// Enums
+enum UserRole {
+  PARENT
+  CHILD
+}
+
+enum ChoreType {
+  DAILY
+  WEEKLY
+  ONE_TIME
+  CUSTOM
+}
+
+enum ChoreFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  AS_NEEDED
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  DENIED
+  AUTO_APPROVED
+}
+
+enum MessageType {
+  CHAT
+  SYSTEM
+  REMINDER
+  REWARD_NOTIFICATION
+}
+
+enum RewardType {
+  MONEY
+  PRIVILEGE
+  ITEM
+  EXPERIENCE
+}
