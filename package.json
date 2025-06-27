@@ -1,0 +1,44 @@
+{
+  "name": "chorechart",
+  "version": "1.0.0",
+  "description": "AI-Powered Family Chore Management System",
+  "private": true,
+  "workspaces": [
+    "web",
+    "mobile"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=web",
+    "dev:web": "npm run dev --workspace=web",
+    "dev:mobile": "npm run start --workspace=mobile",
+    "build": "npm run build --workspace=web",
+    "build:web": "npm run build --workspace=web",
+    "build:mobile": "npm run build --workspace=mobile",
+    "lint": "npm run lint --workspace=web",
+    "db:migrate": "npm run db:migrate --workspace=web",
+    "db:generate": "npm run db:generate --workspace=web",
+    "db:studio": "npm run db:studio --workspace=web"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/ChoreChart.git"
+  },
+  "keywords": [
+    "chores",
+    "family",
+    "kids",
+    "parents",
+    "ai",
+    "nextjs",
+    "react-native",
+    "expo",
+    "prisma",
+    "typescript"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+} 
