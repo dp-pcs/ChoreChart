@@ -1,12 +1,18 @@
+"use client"
+
+import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ChorbitChat } from '@/components/ui/chorbit-chat'
+import { DailyCheckIn } from '@/components/ui/daily-check-in'
+import type { DailyCheckIn as DailyCheckInType } from '@/lib/behavior-tracking'
+import React from 'react'
 
 // This will be replaced with real data from the database
 const mockChildData = {
   user: {
     id: 'child-1',
-    name: 'Alex',
+    name: 'Noah',
     role: 'CHILD' as const,
     weeklyEarnings: 15.50,
     completionRate: 78
@@ -26,7 +32,49 @@ const mockChildData = {
 }
 
 export default function ChildDashboard() {
+  const [showCheckIn, setShowCheckIn] = useState(false)
+  const [todaysCheckIn, setTodaysCheckIn] = useState<Partial<DailyCheckInType> | null>(null)
+  const [submittedChores, setSubmittedChores] = useState<Set<string>>(new Set())
+  const [approvedChores, setApprovedChores] = useState<Set<string>>(new Set()) // Mock parent approvals
+
   const { user, todaysChores, weeklyProgress } = mockChildData
+
+  const handleChoreSubmit = (choreId: string) => {
+    setSubmittedChores(prev => {
+      const newSubmitted = new Set(prev)
+      if (newSubmitted.has(choreId)) {
+        newSubmitted.delete(choreId)
+      } else {
+        newSubmitted.add(choreId)
+      }
+      return newSubmitted
+    })
+  }
+
+  // Simulate parent approval after a delay (for demo purposes)
+  const simulateParentApproval = (choreId: string) => {
+    setTimeout(() => {
+      setApprovedChores(prev => new Set([...prev, choreId]))
+    }, 3000) // 3 second delay to simulate parent review
+  }
+
+  // When a chore is submitted, start the approval simulation
+  React.useEffect(() => {
+    submittedChores.forEach(choreId => {
+      if (!approvedChores.has(choreId)) {
+        simulateParentApproval(choreId)
+      }
+    })
+  }, [submittedChores, approvedChores])
+
+  // Calculate earnings: only approved chores count toward actual earnings
+  const submittedEarnings = todaysChores
+    .filter(chore => submittedChores.has(chore.id))
+    .reduce((sum, chore) => sum + chore.reward, 0)
+  
+  const approvedEarnings = todaysChores
+    .filter(chore => approvedChores.has(chore.id))
+    .reduce((sum, chore) => sum + chore.reward, 0)
 
   const handleScheduleGenerated = (schedule: any) => {
     console.log('Schedule generated:', schedule)
@@ -59,6 +107,54 @@ export default function ChildDashboard() {
     } catch (error) {
       console.error('Export failed:', error)
     }
+  }
+
+  const handleCheckInSubmit = async (checkIn: Partial<DailyCheckInType>) => {
+    try {
+      const response = await fetch('/api/check-in', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(checkIn)
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        setTodaysCheckIn(result)
+        setShowCheckIn(false)
+        console.log('✅ Check-in saved:', result)
+      }
+    } catch (error) {
+      console.error('❌ Check-in failed:', error)
+    }
+  }
+
+  // Check if today's check-in is complete
+  const isCheckInComplete = todaysCheckIn && 
+    new Date(todaysCheckIn.date!).toDateString() === new Date().toDateString()
+
+  if (showCheckIn) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
+        <div className="container mx-auto py-4">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">Daily Check-In</h1>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowCheckIn(false)}
+            >
+              ← Back to Dashboard
+            </Button>
+          </div>
+          
+          <DailyCheckIn
+            userId={user.id}
+            userName={user.name}
+            onSubmit={handleCheckInSubmit}
+            existingCheckIn={todaysCheckIn || undefined}
+          />
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -146,36 +242,90 @@ export default function ChildDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {todaysChores.map((chore) => (
-                    <div 
-                      key={chore.id}
-                      className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-colors"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="w-6 h-6 border-2 border-gray-300 rounded-full hover:border-blue-500 cursor-pointer" />
-                        <div>
-                          <p className="font-medium text-gray-900">{chore.title}</p>
-                          <p className="text-sm text-gray-500">
-                            {chore.estimatedMinutes} minutes • {chore.isRequired ? 'Required' : 'Optional'}
-                          </p>
+                  {todaysChores.map((chore) => {
+                    const isSubmitted = submittedChores.has(chore.id)
+                    const isApproved = approvedChores.has(chore.id)
+                    return (
+                      <div 
+                        key={chore.id}
+                        className={`flex items-center justify-between p-3 bg-white rounded-lg border transition-all duration-200 ${
+                          isApproved 
+                            ? 'border-green-300 bg-green-50' 
+                            : isSubmitted
+                            ? 'border-yellow-300 bg-yellow-50'
+                            : 'border-gray-200 hover:border-blue-300'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div 
+                            className={`w-6 h-6 border-2 rounded-full cursor-pointer transition-all duration-200 flex items-center justify-center ${
+                              isApproved
+                                ? 'border-green-500 bg-green-500'
+                                : isSubmitted
+                                ? 'border-yellow-500 bg-yellow-500'
+                                : 'border-gray-300 hover:border-blue-500'
+                            }`}
+                            onClick={() => handleChoreSubmit(chore.id)}
+                                                      >
+                              {isApproved && (
+                                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                              {isSubmitted && !isApproved && (
+                                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                            </div>
+                          <div>
+                            <p className={`font-medium ${isApproved ? 'text-green-700 line-through' : isSubmitted ? 'text-yellow-700 line-through' : 'text-gray-900'}`}>
+                              {chore.title}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {chore.estimatedMinutes} minutes • {chore.isRequired ? 'Required' : 'Optional'}
+                            </p>
+                          </div>
                         </div>
+                        <div className="text-right">
+                          <p className={`font-bold ${isApproved ? 'text-green-600' : isSubmitted ? 'text-yellow-600' : 'text-gray-600'}`}>
+                            ${chore.reward}
+                          </p>
+                                                      {isApproved && (
+                              <p className="text-xs text-green-600">✓ Approved!</p>
+                            )}
+                            {isSubmitted && !isApproved && (
+                              <p className="text-xs text-yellow-600">⏳ Pending...</p>
+                            )}
+                          </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-green-600">${chore.reward}</p>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
                 
                 <div className="mt-4 pt-4 border-t">
                   <div className="flex justify-between items-center">
-                    <p className="text-sm text-gray-600">
-                      Total possible today: <span className="font-bold text-green-600">
-                        ${todaysChores.reduce((sum, chore) => sum + chore.reward, 0)}
-                      </span>
-                    </p>
+                    <div className="text-sm text-gray-600">
+                      <p>
+                        Approved: <span className="font-bold text-green-600">
+                          ${approvedEarnings}
+                        </span>
+                      </p>
+                      {submittedEarnings > approvedEarnings && (
+                        <p>
+                          Pending: <span className="font-bold text-yellow-600">
+                            ${submittedEarnings - approvedEarnings}
+                          </span>
+                        </p>
+                      )}
+                      <p>
+                        Total possible: <span className="font-bold text-gray-500">
+                          ${todaysChores.reduce((sum, chore) => sum + chore.reward, 0)}
+                        </span>
+                      </p>
+                    </div>
                     <Button className="bg-blue-500 hover:bg-blue-600">
-                      Start Working! 🚀
+                      {submittedChores.size === 0 ? 'Start Working! 🚀' : 'Keep Going! 💪'}
                     </Button>
                   </div>
                 </div>
@@ -199,18 +349,43 @@ export default function ChildDashboard() {
         </div>
 
         {/* Motivational Section */}
-        <Card className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
+        <Card className={`text-white ${
+          approvedChores.size === todaysChores.length 
+            ? 'bg-gradient-to-r from-green-400 to-emerald-500' 
+            : submittedChores.size > 0
+            ? 'bg-gradient-to-r from-blue-400 to-purple-500'
+            : 'bg-gradient-to-r from-yellow-400 to-orange-500'
+        }`}>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-xl font-bold mb-2">You're doing great! 🌟</h3>
-                <p className="text-yellow-100">
-                  Keep up the good work! Every chore you complete helps your family and builds great habits.
-                </p>
+                                  {approvedChores.size === todaysChores.length ? (
+                    <>
+                      <h3 className="text-xl font-bold mb-2">Amazing work! All chores approved! 🎉</h3>
+                      <p className="text-green-100">
+                        You've earned ${approvedEarnings} today! Your parents will be so proud of you!
+                      </p>
+                    </>
+                  ) : submittedChores.size > 0 ? (
+                    <>
+                      <h3 className="text-xl font-bold mb-2">Great progress! Keep it up! 💪</h3>
+                      <p className="text-blue-100">
+                        You've submitted {submittedChores.size} out of {todaysChores.length} chores. 
+                        {approvedChores.size > 0 && ` ${approvedChores.size} approved so far!`}
+                      </p>
+                    </>
+                  ) : (
+                  <>
+                    <h3 className="text-xl font-bold mb-2">You're doing great! 🌟</h3>
+                    <p className="text-yellow-100">
+                      Keep up the good work! Every chore you complete helps your family and builds great habits.
+                    </p>
+                  </>
+                )}
               </div>
-              <div className="text-6xl">
-                🏆
-              </div>
+                              <div className="text-6xl">
+                  {approvedChores.size === todaysChores.length ? '🎉' : submittedChores.size > 0 ? '💪' : '🏆'}
+                </div>
             </div>
           </CardContent>
         </Card>

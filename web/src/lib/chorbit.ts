@@ -1,9 +1,17 @@
 // Chorbit - AI Assistant for ChoreChart
-import OpenAI from 'openai'
+let openai: any = null
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-})
+// Initialize OpenAI only on server side
+if (typeof window === 'undefined' && process.env.OPENAI_API_KEY) {
+  try {
+    const OpenAI = require('openai')
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  } catch (error) {
+    console.log('OpenAI not available, using demo mode for Chorbit:', error)
+  }
+}
 
 export interface ChorbitMessage {
   id: string
@@ -101,8 +109,13 @@ export class ChorbitAI {
     }
     
     try {
+      // Check if OpenAI is available
+      if (!openai) {
+        throw new Error('OpenAI not configured')
+      }
+
       const response = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || 'gpt-4',
+        model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
         messages: [
           { role: 'system', content: contextualPrompt },
           ...this.conversationHistory.slice(-10).map(msg => ({
@@ -128,10 +141,21 @@ export class ChorbitAI {
     } catch (error) {
       console.error('Chorbit AI Error:', error)
       
+      // Provide helpful fallback responses based on common queries
+      let fallbackContent = "Oops! I'm having a little tech hiccup. Can you try asking me that again? I'm here to help! 🤖"
+      
+      if (message.toLowerCase().includes('schedule') || message.toLowerCase().includes('plan')) {
+        fallbackContent = "I'd love to help you plan your schedule! First, let's look at your chores and figure out when you have time. What chores do you need to do today? 📝"
+      } else if (message.toLowerCase().includes('help') || message.toLowerCase().includes('stuck')) {
+        fallbackContent = "I'm here to help! Try breaking your task into smaller steps - that usually makes things feel less overwhelming. What specific part feels tricky? 💪"
+      } else if (message.toLowerCase().includes('motivation') || message.toLowerCase().includes('tired')) {
+        fallbackContent = "You've got this! 🌟 Remember, every small step counts. Maybe take a quick break, grab some water, and then tackle just one small task. Progress is progress!"
+      }
+      
       const errorResponse: ChorbitMessage = {
         id: `error-${Date.now()}`,
         role: 'assistant',
-        content: "Oops! I'm having a little tech hiccup. Can you try asking me that again? I'm here to help! 🤖",
+        content: fallbackContent,
         timestamp: new Date(),
         userId
       }
@@ -166,8 +190,13 @@ Please respond with a JSON object containing:
 Make it encouraging and realistic for a kid to follow!`
 
     try {
+      // Check if OpenAI is available
+      if (!openai) {
+        throw new Error('OpenAI not configured')
+      }
+
       const response = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || 'gpt-4',
+        model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
         messages: [
           { role: 'system', content: CHORBIT_SYSTEM_PROMPT },
           { role: 'user', content: prompt }

@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import type { ChorbitMessage, ChorbitSchedule } from '@/lib/chorbit'
 
@@ -64,6 +63,7 @@ export function ChorbitChat({
       userId
     }
 
+    const currentInput = input.trim()
     setMessages(prev => [...prev, userMessage])
     setInput('')
     setIsLoading(true)
@@ -73,8 +73,9 @@ export function ChorbitChat({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: input.trim(),
+          message: currentInput,
           userId,
+          conversationHistory: messages, // Include full conversation history
           userContext: {
             userRole,
             userName,
@@ -85,14 +86,23 @@ export function ChorbitChat({
         })
       })
 
-      if (!response.ok) throw new Error('Failed to chat with Chorbit')
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
 
       const chorbitResponse = await response.json()
-      setMessages(prev => [...prev, chorbitResponse])
+      
+      // Ensure timestamp is a proper Date object and validate response
+      if (chorbitResponse && chorbitResponse.content) {
+        chorbitResponse.timestamp = new Date(chorbitResponse.timestamp || Date.now())
+        setMessages(prev => [...prev, chorbitResponse])
 
-      // Check if this was a schedule request
-      if (input.toLowerCase().includes('schedule') || input.toLowerCase().includes('plan')) {
-        await generateSchedule(input.trim())
+        // Check if this was a schedule request
+        if (currentInput.toLowerCase().includes('schedule') || currentInput.toLowerCase().includes('plan')) {
+          await generateSchedule(currentInput)
+        }
+      } else {
+        throw new Error('Invalid response from Chorbit')
       }
 
     } catch (error) {
@@ -100,7 +110,7 @@ export function ChorbitChat({
       const errorMessage: ChorbitMessage = {
         id: `error-${Date.now()}`,
         role: 'assistant',
-        content: "Oops! I'm having some technical difficulties. Can you try that again? 🤖",
+        content: "I'm having some technical difficulties right now, but I'm still here to help! Could you try asking me that again? 🤖",
         timestamp: new Date(),
         userId
       }
@@ -160,7 +170,7 @@ export function ChorbitChat({
 
   return (
     <Card className="h-[600px] flex flex-col">
-      <CardHeader className="bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-t-lg">
+      <CardHeader className="bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-t-lg flex-shrink-0">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
             <span className="text-2xl">🤖</span>
@@ -177,8 +187,12 @@ export function ChorbitChat({
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 p-0">
-        <ScrollArea className="h-full p-4" ref={scrollAreaRef}>
+      <CardContent className="flex-1 p-0 overflow-hidden">
+        <div 
+          className="h-full max-h-[350px] overflow-y-auto p-4" 
+          ref={scrollAreaRef}
+          style={{ scrollBehavior: 'smooth' }}
+        >
           <div className="space-y-4">
             {messages.map((message) => (
               <div
@@ -194,7 +208,7 @@ export function ChorbitChat({
                 >
                   <p className="text-sm">{message.content}</p>
                   <p className="text-xs opacity-70 mt-1">
-                    {message.timestamp.toLocaleTimeString()}
+                    {new Date(message.timestamp).toLocaleTimeString()}
                   </p>
                 </div>
               </div>
@@ -208,11 +222,11 @@ export function ChorbitChat({
               </div>
             )}
           </div>
-        </ScrollArea>
+        </div>
       </CardContent>
 
       {generatedSchedule && (
-        <div className="px-4 py-2 bg-green-50 border-t">
+        <div className="px-4 py-2 bg-green-50 border-t flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-green-800">
@@ -233,7 +247,7 @@ export function ChorbitChat({
         </div>
       )}
 
-      <CardFooter className="p-4 border-t">
+      <CardFooter className="p-4 border-t flex-shrink-0">
         <div className="w-full space-y-3">
           {/* Quick Prompts */}
           <div className="flex flex-wrap gap-2">
