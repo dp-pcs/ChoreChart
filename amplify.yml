@@ -1,0 +1,34 @@
+version: 1
+applications:
+  - appRoot: web
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - npm install
+        build:
+          commands:
+            - npm run build
+      artifacts:
+        baseDirectory: .next
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - node_modules/**/*
+          - .next/cache/**/*
+    backend:
+      phases:
+        preBuild:
+          commands:
+            - cd web
+            - npm ci
+        build:
+          commands:
+            - cd web
+            - npx prisma generate
+            - npx prisma migrate deploy
+      artifacts:
+        baseDirectory: web
+        files:
+          - '**/*' 
