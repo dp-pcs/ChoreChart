@@ -2,6 +2,7 @@ import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import { prisma } from "./prisma"
+import { UserRole } from "./types"
 import bcrypt from "bcryptjs"
 
 export const authOptions: NextAuthOptions = {
@@ -67,7 +68,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (token) {
         session.user.id = token.sub!
-        session.user.role = token.role as string
+        session.user.role = token.role as UserRole
         session.user.familyId = token.familyId as string
         session.user.family = token.family as any
       }
@@ -75,7 +76,6 @@ export const authOptions: NextAuthOptions = {
     }
   },
   pages: {
-    signIn: "/auth/signin",
-    signUp: "/auth/signup"
+    signIn: "/auth/signin"
   }
 } 
