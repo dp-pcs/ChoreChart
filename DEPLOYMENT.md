@@ -5,13 +5,27 @@
 ### Prerequisites
 - AWS Account with Amplify access
 - GitHub repository (✅ already set up)
-- Custom domain: `apps.latentgenius.ai`
+- Existing domain: `latentgenius.ai` with main app already on Amplify
 
-### Step 1: Create Amplify App
+## ⚠️ Deployment Path Options
+
+AWS Amplify doesn't support subdirectory deployments for separate apps. Choose one of these approaches:
+
+### Option 1: Subdomain (Recommended - Easiest)
+Deploy to: `chorechart.latentgenius.ai` or `apps.latentgenius.ai`
+
+### Option 2: CloudFront Distribution 
+Deploy to: `latentgenius.ai/chorechart` (requires CloudFront setup)
+
+---
+
+## 🎯 Option 1: Subdomain Deployment
+
+### Step 1: Create New Amplify App
 
 1. **Go to AWS Amplify Console**
    - Navigate to https://console.aws.amazon.com/amplify/
-   - Click "Create new app"
+   - Click "Create new app" (separate from your main site)
 
 2. **Connect Repository**
    - Select "Deploy from Git repository"
@@ -33,8 +47,8 @@ Set these environment variables in Amplify Console:
 # OpenAI Configuration
 OPENAI_API_KEY=your_openai_api_key_here
 
-# NextAuth.js Configuration  
-NEXTAUTH_URL=https://apps.latentgenius.ai/chorechart
+# NextAuth.js Configuration (UPDATE THIS URL)
+NEXTAUTH_URL=https://chorechart.latentgenius.ai
 NEXTAUTH_SECRET=generate_a_secure_random_string_here
 
 # Database Configuration
@@ -44,7 +58,72 @@ DATABASE_URL=postgresql://username:password@hostname:port/database_name
 NODE_ENV=production
 ```
 
-### Step 3: Database Setup
+### Step 3: Custom Domain Configuration
+
+1. **In Amplify Console**
+   - Go to "Domain management" 
+   - Click "Add domain"
+   - Enter: `latentgenius.ai`
+   - Add subdomain: `chorechart`
+
+2. **DNS Configuration**
+   AWS will provide CNAME records to add to your DNS:
+   ```
+   Type: CNAME
+   Name: chorechart
+   Value: [provided by AWS Amplify]
+   ```
+
+**Result**: App will be available at `https://chorechart.latentgenius.ai`
+
+---
+
+## 🎯 Option 2: CloudFront Distribution (Advanced)
+
+If you specifically need `latentgenius.ai/chorechart`:
+
+### Step 1: Deploy ChoreChart to New Amplify App
+Follow Option 1 steps 1-2, but skip custom domain setup.
+
+### Step 2: Configure CloudFront Distribution
+
+1. **Create CloudFront Distribution** (or modify existing)
+2. **Add Origin** for ChoreChart Amplify app
+   - Origin Domain: `[your-chorechart-app].amplifyapp.com`
+   - Origin Path: leave empty
+
+3. **Add Behavior** 
+   - Path Pattern: `/chorechart/*`
+   - Origin: ChoreChart Amplify app
+   - Viewer Protocol Policy: Redirect HTTP to HTTPS
+   - Cache Policy: CachingOptimized
+
+4. **Update NEXTAUTH_URL**
+   ```bash
+   NEXTAUTH_URL=https://latentgenius.ai/chorechart
+   ```
+
+### Step 3: Handle Path Prefix in Next.js
+
+For the `/chorechart` path, update `web/next.config.ts`:
+
+```typescript
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  basePath: '/chorechart',
+  assetPrefix: '/chorechart',
+  trailingSlash: true,
+};
+
+export default nextConfig;
+```
+
+**Result**: App will be available at `https://latentgenius.ai/chorechart`
+
+---
+
+## 🗄️ Database Setup (Both Options)
 
 **Option A: AWS RDS PostgreSQL (Recommended)**
 ```bash
@@ -60,23 +139,7 @@ DATABASE_URL=postgresql://chordb_user:password@chorechart-db.xyz.us-east-1.rds.a
 DATABASE_URL=postgresql://postgres:password@db.xyz.supabase.co:5432/postgres
 ```
 
-### Step 4: Custom Domain Configuration
-
-1. **In Amplify Console**
-   - Go to "Domain management"
-   - Click "Add domain"
-   - Enter: `apps.latentgenius.ai`
-   - Add subdomain: `chorechart`
-
-2. **DNS Configuration**
-   Add these records to your DNS:
-   ```
-   Type: CNAME
-   Name: chorechart.apps.latentgenius.ai
-   Value: [AWS Amplify domain from console]
-   ```
-
-### Step 5: Build Configuration
+## 🔧 Build Configuration
 
 The `amplify.yml` file is already configured:
 - Builds from `/web` directory
@@ -84,7 +147,7 @@ The `amplify.yml` file is already configured:
 - Caches `node_modules` and `.next/cache`
 - Outputs to `.next` directory
 
-### Step 6: Post-Deployment Setup
+## 🚀 Post-Deployment Setup
 
 1. **Database Migration**
    ```bash
@@ -97,14 +160,14 @@ The `amplify.yml` file is already configured:
    - Parent: `parent@demo.com` / `password`
    - Child: `child@demo.com` / `password`
 
-### Step 7: Security Checklist
+## 🔒 Security Checklist
 
 - ✅ NEXTAUTH_SECRET is secure random string
 - ✅ OPENAI_API_KEY is valid and has sufficient quota
 - ✅ Database connection is secure (SSL enabled)
 - ✅ Environment variables are not exposed in logs
 
-### Step 8: Monitoring & Performance
+## 📊 Monitoring & Performance
 
 **Set up CloudWatch monitoring:**
 - Build success/failure rates
@@ -116,7 +179,7 @@ The `amplify.yml` file is already configured:
 - Image optimization via Next.js
 - PWA caching for mobile users
 
-### Troubleshooting
+## 🔧 Troubleshooting
 
 **Common Issues:**
 
@@ -135,7 +198,12 @@ The `amplify.yml` file is already configured:
    - Check NEXTAUTH_SECRET is set
    - Confirm callback URLs in OAuth providers
 
-### Quick Commands
+4. **CloudFront Issues (Option 2)**
+   - Check behavior path patterns
+   - Verify origin configuration
+   - Clear CloudFront cache after updates
+
+## 🧪 Quick Commands
 
 ```bash
 # Test build locally
@@ -150,9 +218,15 @@ npm run build 2>&1 | grep -i "env\|variable"
 npx prisma db pull
 ```
 
-### Success Criteria
+## ✅ Success Criteria
 
-✅ App loads at `https://apps.latentgenius.ai/chorechart`
+### Option 1: Subdomain
+✅ App loads at `https://chorechart.latentgenius.ai`
+
+### Option 2: CloudFront  
+✅ App loads at `https://latentgenius.ai/chorechart`
+
+**Both options should have:**
 ✅ Demo accounts work
 ✅ Chorbit AI responds (or shows fallback)
 ✅ Mobile PWA installation works
@@ -163,8 +237,9 @@ npx prisma db pull
 
 ## 🎯 Expected Result
 
-ChoreChart will be live at:
-**https://apps.latentgenius.ai/chorechart**
+ChoreChart will be live at either:
+- **Option 1**: `https://chorechart.latentgenius.ai`
+- **Option 2**: `https://latentgenius.ai/chorechart`
 
 With full functionality:
 - 📱 Mobile-optimized PWA
