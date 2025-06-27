@@ -4,8 +4,10 @@ let openai: any = null
 // Initialize OpenAI only on server side
 if (typeof window === 'undefined' && process.env.OPENAI_API_KEY) {
   try {
-    const OpenAI = require('openai')
-    openai = new OpenAI({
+    // Use dynamic import for better module resolution
+    openai = require('openai')
+    if (openai.default) openai = openai.default
+    openai = new openai({
       apiKey: process.env.OPENAI_API_KEY,
     })
   } catch (error) {
