@@ -1,24 +1,24 @@
 version: 1
-frontend:
-  phases:
-    preBuild:
-      commands:
-        - echo "Installing dependencies for the web app..."
-        - cd web && npm ci
-        - echo "Generating Prisma client..."
-        - cd web && npx prisma generate
-    build:
-      commands:
-        - echo "Building the Next.js application..."
-        - cd web && npm run build
-    postBuild:
-      commands:
-        - echo "Build completed successfully!"
-  artifacts:
-    baseDirectory: web/.next
-    files:
-      - '**/*'
-  cache:
-    paths:
-      - web/node_modules/**/*
-      - web/.next/cache/**/* 
+applications:
+  - frontend:
+      phases:
+        preBuild:
+          commands:
+            - echo "Current directory:" && pwd && ls -la
+            - echo "Installing dependencies for the web app..."
+            - npm ci
+            - echo "Generating Prisma client..."
+            - npx prisma generate
+        build:
+          commands:
+            - echo "Building the Next.js application..."
+            - npm run build
+      artifacts:
+        baseDirectory: .next
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - node_modules/**/*
+          - .next/cache/**/*
+    appRoot: web 
