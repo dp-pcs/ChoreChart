@@ -21,4 +21,6 @@ applications:
       cache:
         paths:
           - node_modules/**/*
-          - .next/cache/**/* 
+          - .next/cache/**/*
+    platform: Next.js
+    framework: Next.js 
