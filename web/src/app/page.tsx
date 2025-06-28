@@ -1,4 +1,5 @@
 'use client'
+// Force rebuild - updated Amplify config
 
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'

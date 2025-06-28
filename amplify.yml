@@ -5,14 +5,13 @@ applications:
       phases:
         preBuild:
           commands:
-            - echo "Current directory:" && pwd && ls -la
-            - echo "Installing dependencies for the web app..."
+            - echo "Installing dependencies..."
             - npm ci
             - echo "Generating Prisma client..."
             - npx prisma generate
         build:
           commands:
-            - echo "Building the Next.js application..."
+            - echo "Building Next.js application..."
             - npm run build
       artifacts:
         baseDirectory: .next
