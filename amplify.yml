@@ -1,6 +1,7 @@
 version: 1
 applications:
   - appRoot: web
+    platform: WEB_COMPUTE
     frontend:
       phases:
         preBuild:
@@ -18,4 +19,3 @@ applications:
         paths:
           - node_modules/**/*
           - .next/cache/**/*
-    platform: WEB_COMPUTE
