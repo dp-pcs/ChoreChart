@@ -1,0 +1,17 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/api/auth/[...nextauth]/route": "/api/auth/[...nextauth]",
+  "/api/auth/register/route": "/api/auth/register",
+  "/api/check-in/route": "/api/check-in",
+  "/api/chorbit/chat/route": "/api/chorbit/chat",
+  "/api/chorbit/export/route": "/api/chorbit/export",
+  "/api/chorbit/schedule/route": "/api/chorbit/schedule",
+  "/favicon.ico/route": "/favicon.ico",
+  "/auth/signin/page": "/auth/signin",
+  "/auth/signup/page": "/auth/signup",
+  "/check-in-demo/page": "/check-in-demo",
+  "/chorbit-demo/page": "/chorbit-demo",
+  "/dashboard/child/page": "/dashboard/child",
+  "/dashboard/parent/page": "/dashboard/parent",
+  "/page": "/"
+}
