@@ -5,13 +5,10 @@ applications:
       phases:
         preBuild:
           commands:
-            - echo "Installing dependencies..."
             - npm ci
-            - echo "Generating Prisma client..."
             - npx prisma generate
         build:
           commands:
-            - echo "Building Next.js application..."
             - npm run build
       artifacts:
         baseDirectory: .next
@@ -21,5 +18,3 @@ applications:
         paths:
           - node_modules/**/*
           - .next/cache/**/*
-    platform: Next.js
-    framework: Next.js 
