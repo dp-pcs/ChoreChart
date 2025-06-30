@@ -1,24 +1,32 @@
 version: 1
 applications:
-  - appRoot: web
-    platform: WEB_COMPUTE
-    frontend:
+  - frontend:
       phases:
         preBuild:
           commands:
-            - echo "Installing dependencies for Next.js app..."
+            - echo "Current directory:" && pwd && ls -la
+            - echo "Changing directory to appRoot (web)..."
+            - cd web
+            - echo "Current directory inside web app:" && pwd && ls -la
+            - echo "Installing dependencies for the web app..."
             - npm ci
             - echo "Generating Prisma client..."
             - npx prisma generate
         build:
           commands:
-            - echo "Building Next.js application..."
+            # You are already in the 'web' directory from preBuild
+            - echo "Building the Next.js application..."
             - npm run build
       artifacts:
+        # The baseDirectory is RELATIVE to the appRoot
+        # So, if appRoot is 'web', and your Next.js builds to 'web/.next',
+        # then baseDirectory should still be '.next'
         baseDirectory: .next
         files:
           - '**/*'
       cache:
         paths:
-          - node_modules/**/*
-          - .next/cache/**/* 
+          - web/node_modules/**/*
+          - web/.next/cache/**/*
+    appRoot: web
+    platform: WEB_COMPUTE 
