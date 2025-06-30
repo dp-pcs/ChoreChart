@@ -1,17 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  trailingSlash: true,
+  reactStrictMode: true,
   eslint: {
     ignoreDuringBuilds: true,
   },
   typescript: {
     ignoreBuildErrors: false,
   },
-  images: {
-    unoptimized: true,
-  },
-  /* config options here */
+  // Remove trailingSlash and unoptimized images for proper SSR
 };
 
 export default nextConfig;
