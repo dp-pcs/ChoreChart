@@ -1,24 +1,24 @@
 version: 1
 applications:
-  - platform: WEB_COMPUTE
+  - appRoot: web
+    platform: WEB_COMPUTE
     frontend:
       phases:
         preBuild:
           commands:
-            - echo "Root detection files present for framework detection"
-            - pwd && ls -la
-            - echo "Installing dependencies and generating Prisma client in web directory"
-            - cd web && npm ci && npx prisma generate
+            - echo "Installing dependencies for Next.js app..."
+            - npm ci
+            - echo "Generating Prisma client..."
+            - npx prisma generate
         build:
           commands:
-            - echo "Building Next.js app from web directory"
-            - pwd && ls -la
+            - echo "Building Next.js application..."
             - npm run build
       artifacts:
-        baseDirectory: web/.next
+        baseDirectory: .next
         files:
           - '**/*'
       cache:
         paths:
-          - web/node_modules/**/*
-          - web/.next/cache/**/* 
+          - node_modules/**/*
+          - .next/cache/**/* 
