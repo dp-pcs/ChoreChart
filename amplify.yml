@@ -1,0 +1,23 @@
+version: 1
+applications:
+  - platform: WEB_COMPUTE
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - echo "Root detection files present, building from web directory"
+            - cd web
+            - npm ci
+            - npx prisma generate
+        build:
+          commands:
+            - cd web  
+            - npm run build
+      artifacts:
+        baseDirectory: web/.next
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - web/node_modules/**/*
+          - web/.next/cache/**/* 

@@ -1,44 +1,47 @@
 {
-  "name": "chorechart",
-  "version": "1.0.0",
-  "description": "AI-Powered Family Chore Management System",
+  "name": "web",
+  "version": "0.1.0",
   "private": true,
-  "workspaces": [
-    "web",
-    "mobile"
-  ],
   "scripts": {
-    "dev": "npm run dev --workspace=web",
-    "dev:web": "npm run dev --workspace=web",
-    "dev:mobile": "npm run start --workspace=mobile",
-    "build": "npm run build --workspace=web",
-    "build:web": "npm run build --workspace=web",
-    "build:mobile": "npm run build --workspace=mobile",
-    "lint": "npm run lint --workspace=web",
-    "db:migrate": "npm run db:migrate --workspace=web",
-    "db:generate": "npm run db:generate --workspace=web",
-    "db:studio": "npm run db:studio --workspace=web"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:migrate": "prisma migrate deploy",
+    "db:generate": "prisma generate",
+    "db:studio": "prisma studio",
+    "deploy:setup": "npx tsx scripts/deploy-setup.ts"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/yourusername/ChoreChart.git"
+  "dependencies": {
+    "@next-auth/prisma-adapter": "^1.0.7",
+    "@prisma/client": "^6.10.1",
+    "@radix-ui/react-slot": "^1.2.3",
+    "@tailwindcss/postcss": "^4.1.11",
+    "@types/bcryptjs": "^2.4.6",
+    "bcryptjs": "^3.0.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "lucide-react": "^0.525.0",
+    "next": "15.3.4",
+    "next-auth": "^4.24.11",
+    "openai": "^5.8.2",
+    "prisma": "^6.10.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.3.1"
   },
-  "keywords": [
-    "chores",
-    "family",
-    "kids",
-    "parents",
-    "ai",
-    "nextjs",
-    "react-native",
-    "expo",
-    "prisma",
-    "typescript"
-  ],
-  "author": "Your Name",
-  "license": "MIT",
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9",
+    "eslint-config-next": "15.3.4",
+    "postcss": "^8.5.0",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.16.2",
+    "typescript": "^5"
   }
-} 
+}
