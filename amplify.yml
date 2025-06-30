@@ -12,8 +12,7 @@ applications:
         build:
           commands:
             - echo "Building Next.js app from web directory"
-            - pwd && ls -la
-            - cd web && npm run build
+            - pwd && ls -la && cd web && npm run build
       artifacts:
         baseDirectory: web/.next
         files:
