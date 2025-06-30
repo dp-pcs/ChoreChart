@@ -5,13 +5,15 @@ applications:
       phases:
         preBuild:
           commands:
-            - echo "Root detection files present, building from web directory"
+            - echo "Root detection files present for framework detection"
+            - echo "Installing dependencies in web directory where source code is"
             - cd web
             - npm ci
             - npx prisma generate
         build:
           commands:
-            - cd web  
+            - echo "Building Next.js app from web directory"
+            - cd web
             - npm run build
       artifacts:
         baseDirectory: web/.next
