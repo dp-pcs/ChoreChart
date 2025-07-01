@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { signOut } from 'next-auth/react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ChorbitChat } from '@/components/ui/chorbit-chat'
@@ -154,9 +155,19 @@ export default function ChildDashboard() {
       {/* Mobile-Optimized Header */}
       <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
         <div className="px-4 py-6 sm:px-6">
-          <div className="flex flex-col space-y-2">
-            <h1 className="text-2xl sm:text-3xl font-bold">Hey {user.name}! 👋</h1>
-            <p className="text-blue-100 text-sm sm:text-base">Ready to crush today's goals?</p>
+          <div className="flex justify-between items-start">
+            <div className="flex flex-col space-y-2">
+              <h1 className="text-2xl sm:text-3xl font-bold">Hey {user.name}! 👋</h1>
+              <p className="text-blue-100 text-sm sm:text-base">Ready to crush today's goals?</p>
+            </div>
+            <Button 
+              onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+              variant="outline"
+              size="sm"
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
+            >
+              Sign Out
+            </Button>
           </div>
         </div>
       </div>
