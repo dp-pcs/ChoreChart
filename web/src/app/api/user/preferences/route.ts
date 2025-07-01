@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Return preferences or default empty preferences
-    const preferences: UserPreferences = user.preferences as UserPreferences || {
+    const preferences: UserPreferences = (user.preferences as unknown as UserPreferences) || {
       interests: [],
       motivationalStyle: 'encouraging',
       preferredGreeting: 'energetic',
@@ -118,7 +118,7 @@ export async function PATCH(request: NextRequest) {
       select: { preferences: true }
     })
 
-    const currentPrefs = (user?.preferences as UserPreferences) || {
+    const currentPrefs = (user?.preferences as unknown as UserPreferences) || {
       interests: [],
       motivationalStyle: 'encouraging',
       preferredGreeting: 'energetic',
