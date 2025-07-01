@@ -344,7 +344,7 @@ export class GamificationSystem {
       requirements: ua.achievement.requirements,
       rewardType: ua.achievement.rewardType as any,
       rewardAmount: ua.achievement.rewardAmount,
-      rewardDescription: ua.achievement.rewardDescription,
+      rewardDescription: ua.achievement.rewardDescription || undefined,
       progress: ua.progress,
       isCompleted: ua.isCompleted,
       unlockedAt: ua.unlockedAt
