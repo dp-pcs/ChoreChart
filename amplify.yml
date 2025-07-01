@@ -24,4 +24,10 @@ applications:
         paths:
           - node_modules/**/* # These paths are now relative to the 'web' directory already
           - .next/cache/**/*
+      # Configure environment variables for Lambda functions (API routes)
+      environmentVariables:
+        - DATABASE_URL
+        - DIRECT_URL  
+        - NEXTAUTH_URL
+        - NEXTAUTH_SECRET
     appRoot: web
