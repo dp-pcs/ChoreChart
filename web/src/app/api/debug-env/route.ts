@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 
+// Updated 2025-07-01 - testing environment variables
 export async function GET() {
   try {
     const envVars = {
