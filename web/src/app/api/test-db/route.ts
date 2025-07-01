@@ -9,10 +9,17 @@ export async function GET() {
     // Try a simple query
     const result = await prisma.$queryRaw`SELECT 1 as test`
     
+    // Get child user info for testing
+    const childUser = await prisma.user.findUnique({
+      where: { email: 'child@demo.com' },
+      select: { id: true, name: true, email: true }
+    })
+    
     return NextResponse.json({
       status: 'success',
       message: 'Database connection successful',
       test_query: result,
+      childUser: childUser,
       timestamp: new Date().toISOString()
     })
   } catch (error) {

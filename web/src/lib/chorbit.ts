@@ -31,16 +31,28 @@ export interface ChorbitSchedule {
     duration: number
     priority: 'high' | 'medium' | 'low'
     scheduledTime?: string
-    tips?: string
+    tips: string[]
   }[]
   totalTime: number
   aiRecommendations: string[]
 }
 
-// Chorbit's personality and capabilities
-const CHORBIT_SYSTEM_PROMPT = `You are Chorbit, a friendly and encouraging AI assistant designed specifically for kids and families managing chores and responsibilities.
+// User preferences interface
+export interface UserPreferences {
+  interests: string[] // ['basketball', 'soccer', 'gaming']
+  motivationalStyle: 'encouraging' | 'competitive' | 'gentle' | 'funny'
+  preferredGreeting: 'energetic' | 'calm' | 'sports' | 'fun'
+  learningTopics: string[] // Things they're learning about
+  sportsTeams: { sport: string; team: string; league: string }[]
+  personalityTraits: string[] // ['organized', 'creative', 'athletic']
+  conversationStyle: 'brief' | 'detailed' | 'interactive'
+  learnedFacts: { [key: string]: any } // AI-discovered preferences
+}
 
-PERSONALITY:
+// Chorbit's enhanced personality and capabilities
+const CHORBIT_BASE_PROMPT = `You are Chorbit, a friendly and encouraging AI assistant designed specifically for kids and families managing chores and responsibilities.
+
+CORE PERSONALITY:
 - Enthusiastic and positive, but not overly childish
 - Encouraging and supportive, especially when kids feel overwhelmed
 - Respectful of family rules and parental authority
@@ -55,6 +67,7 @@ CAPABILITIES:
 - Provide motivational support and celebrate progress
 - Teach time management and responsibility skills
 - Answer questions about chores, cleaning, and organization
+- PERSONALIZATION: Use user interests and preferences to make conversations more engaging
 
 SAFETY GUIDELINES:
 - Always suggest kids discuss major schedule changes with parents
@@ -69,6 +82,7 @@ RESPONSE STYLE:
 - Offer specific, actionable advice
 - When appropriate, break tasks into numbered steps
 - Celebrate small wins and progress
+- PERSONALIZE based on user interests when possible
 
 Remember: You're here to help kids succeed with their responsibilities while building good habits and confidence!`
 
@@ -84,6 +98,7 @@ export class ChorbitAI {
       currentChores: any[]
       weeklyEarnings: number
       completionRate: number
+      preferences?: UserPreferences
     }
   ): Promise<ChorbitMessage> {
     
@@ -97,8 +112,8 @@ export class ChorbitAI {
     }
     this.conversationHistory.push(userMessage)
     
-    // Prepare context for Chorbit
-    let contextualPrompt = CHORBIT_SYSTEM_PROMPT
+    // Build personalized context
+    let contextualPrompt = CHORBIT_BASE_PROMPT
     
     if (userContext) {
       contextualPrompt += `\n\nCURRENT USER CONTEXT:
@@ -108,6 +123,37 @@ export class ChorbitAI {
 - Weekly earnings: $${userContext.weeklyEarnings}
 - Completion rate: ${userContext.completionRate}%
 - Recent chores: ${userContext.currentChores.slice(0, 3).map(c => c.title).join(', ')}`
+
+      // Add personalization context
+      if (userContext.preferences) {
+        const prefs = userContext.preferences
+        contextualPrompt += `\n\nPERSONALIZATION CONTEXT:
+- Interests: ${prefs.interests?.join(', ') || 'Getting to know them'}
+- Motivational Style: ${prefs.motivationalStyle || 'encouraging'}
+- Sports Teams: ${prefs.sportsTeams?.map(t => `${t.team} (${t.sport})`).join(', ') || 'None set'}
+- Personality: ${prefs.personalityTraits?.join(', ') || 'Learning about them'}
+
+PERSONALIZATION INSTRUCTIONS:
+- Use their interests to make examples and motivation more engaging
+- If they like sports, use sports metaphors and terminology
+- If they have favorite teams, occasionally reference recent games or scores
+- Match their preferred motivational style
+- Remember facts they've shared about themselves`
+      }
+    }
+
+    // Check if we should fetch sports data
+    const shouldFetchSports = userContext?.preferences?.interests?.includes('basketball') ||
+                             userContext?.preferences?.interests?.includes('sports') ||
+                             (userContext?.preferences?.sportsTeams?.length || 0) > 0
+
+    let sportsData = ''
+    if (shouldFetchSports && this.isGreetingOrMorning(message)) {
+      sportsData = await this.fetchSportsData(userContext?.preferences)
+    }
+
+    if (sportsData) {
+      contextualPrompt += `\n\nCURRENT SPORTS INFO: ${sportsData}`
     }
     
     try {
@@ -125,7 +171,7 @@ export class ChorbitAI {
             content: msg.content
           })),
         ],
-        max_tokens: 300,
+        max_tokens: 350,
         temperature: 0.7,
       })
       
@@ -138,21 +184,19 @@ export class ChorbitAI {
       }
       
       this.conversationHistory.push(chorbitResponse)
+      
+      // Learn from conversation
+      if (userContext?.preferences) {
+        await this.learnFromConversation(message, chorbitResponse.content, userId)
+      }
+      
       return chorbitResponse
       
     } catch (error) {
       console.error('Chorbit AI Error:', error)
       
-      // Provide helpful fallback responses based on common queries
-      let fallbackContent = "Oops! I'm having a little tech hiccup. Can you try asking me that again? I'm here to help! 🤖"
-      
-      if (message.toLowerCase().includes('schedule') || message.toLowerCase().includes('plan')) {
-        fallbackContent = "I'd love to help you plan your schedule! First, let's look at your chores and figure out when you have time. What chores do you need to do today? 📝"
-      } else if (message.toLowerCase().includes('help') || message.toLowerCase().includes('stuck')) {
-        fallbackContent = "I'm here to help! Try breaking your task into smaller steps - that usually makes things feel less overwhelming. What specific part feels tricky? 💪"
-      } else if (message.toLowerCase().includes('motivation') || message.toLowerCase().includes('tired')) {
-        fallbackContent = "You've got this! 🌟 Remember, every small step counts. Maybe take a quick break, grab some water, and then tackle just one small task. Progress is progress!"
-      }
+      // Provide personalized fallback responses
+      let fallbackContent = this.getPersonalizedFallback(message, userContext?.preferences)
       
       const errorResponse: ChorbitMessage = {
         id: `error-${Date.now()}`,
@@ -165,7 +209,65 @@ export class ChorbitAI {
       return errorResponse
     }
   }
-  
+
+  private isGreetingOrMorning(message: string): boolean {
+    const greetingWords = ['good morning', 'hello', 'hey', 'hi', 'start', 'begin', 'morning']
+    return greetingWords.some(word => message.toLowerCase().includes(word))
+  }
+
+  private async fetchSportsData(preferences?: UserPreferences): Promise<string> {
+    try {
+      // Example: Fetch NBA scores (you'd use a real sports API)
+      if (preferences?.interests?.includes('basketball')) {
+        // Mock data - replace with real API call
+        return "🏀 Quick NBA update: Lakers won 112-108 last night! LeBron had 28 points. Your team doing great this season!"
+      }
+      
+      if (preferences?.sportsTeams && preferences.sportsTeams.length > 0) {
+        const team = preferences.sportsTeams[0]
+        return `🏀 ${team.team} update: Check out last night's game! They're having a solid season.`
+      }
+      
+      return ''
+    } catch (error) {
+      console.error('Sports data fetch failed:', error)
+      return ''
+    }
+  }
+
+  private getPersonalizedFallback(message: string, preferences?: UserPreferences): string {
+    const interests = preferences?.interests || []
+    
+    if (message.toLowerCase().includes('schedule') || message.toLowerCase().includes('plan')) {
+      if (interests.includes('basketball')) {
+        return "I'd love to help you plan your schedule! Think of it like setting up plays in basketball - let's strategize your chores and find time for shooting hoops too! 🏀"
+      }
+      return "I'd love to help you plan your schedule! First, let's look at your chores and figure out when you have time. What chores do you need to do today? 📝"
+    }
+    
+    if (message.toLowerCase().includes('motivation') || message.toLowerCase().includes('tired')) {
+      if (interests.includes('basketball')) {
+        return "You've got this, champion! 🏀 Even NBA players have tough practice days, but they keep pushing through. Every chore you complete is like making a shot - you're building skills! 💪"
+      }
+      return "You've got this! 🌟 Remember, every small step counts. Maybe take a quick break, grab some water, and then tackle just one small task. Progress is progress!"
+    }
+    
+    return "Oops! I'm having a little tech hiccup. Can you try asking me that again? I'm here to help! 🤖"
+  }
+
+  private async learnFromConversation(userMessage: string, assistantResponse: string, userId: string): Promise<void> {
+    // Extract interests from conversation
+    const sportsKeywords = ['basketball', 'soccer', 'football', 'baseball', 'hockey', 'tennis']
+    const mentionedSports = sportsKeywords.filter(sport => 
+      userMessage.toLowerCase().includes(sport) || assistantResponse.toLowerCase().includes(sport)
+    )
+    
+    if (mentionedSports.length > 0) {
+      // You could save learned preferences here
+      console.log(`Learned that user ${userId} mentioned: ${mentionedSports.join(', ')}`)
+    }
+  }
+
   async generateSchedule(
     userInput: string,
     availableTime: number,
@@ -174,67 +276,76 @@ export class ChorbitAI {
       preferredStartTime?: string
       energyLevels?: 'morning' | 'afternoon' | 'evening'
       difficulty?: 'easy' | 'mixed' | 'challenging'
+      interests?: string[]
     }
   ): Promise<ChorbitSchedule> {
     
+    let motivationalTheme = "productivity"
+    if (userPreferences?.interests?.includes('basketball')) {
+      motivationalTheme = "basketball training"
+    } else if (userPreferences?.interests?.includes('gaming')) {
+      motivationalTheme = "game achievement"
+    }
+
     const prompt = `Help create a personalized chore schedule based on this request: "${userInput}"
 
 Available time: ${availableTime} minutes
 Current chores: ${currentChores.map(c => `${c.title} (${c.estimatedMinutes || 15} min, reward: $${c.reward})`).join(', ')}
 ${userPreferences ? `Preferences: ${JSON.stringify(userPreferences)}` : ''}
+Motivational theme: ${motivationalTheme}
 
 Please respond with a JSON object containing:
-- title: A motivating title for this schedule
+- title: A motivating title for this schedule (use ${motivationalTheme} metaphors if applicable)
 - tasks: Array of scheduled tasks with name, duration, priority, scheduledTime, and helpful tips
 - totalTime: Total estimated time
-- aiRecommendations: Array of 2-3 helpful tips
+- aiRecommendations: Array of 2-3 helpful tips (personalized to their interests)
 
 Make it encouraging and realistic for a kid to follow!`
-
+    
     try {
-      // Check if OpenAI is available
-      if (!openai) {
-        throw new Error('OpenAI not configured')
-      }
-
+      if (!openai) throw new Error('OpenAI not configured')
+      
       const response = await openai.chat.completions.create({
         model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
         messages: [
-          { role: 'system', content: CHORBIT_SYSTEM_PROMPT },
+          { role: 'system', content: 'You are a helpful AI that creates structured chore schedules in JSON format.' },
           { role: 'user', content: prompt }
         ],
         max_tokens: 500,
-        temperature: 0.8,
+        temperature: 0.7,
       })
       
       const content = response.choices[0]?.message?.content || ''
       
-      // Try to parse as JSON, fallback to structured response
       try {
         return JSON.parse(content)
       } catch {
-        // Fallback schedule if JSON parsing fails
+        // Fallback schedule
         return {
           id: `schedule-${Date.now()}`,
-          title: "Your Chorbit-Generated Schedule",
+          title: userPreferences?.interests?.includes('basketball') 
+            ? "Your Championship Chore Game Plan! 🏀"
+            : "Your Awesome Daily Schedule! ✨",
           tasks: currentChores.slice(0, 3).map((chore, i) => ({
             name: chore.title,
             duration: chore.estimatedMinutes || 15,
-            priority: i === 0 ? 'high' : 'medium',
-            tips: `Take your time and do your best! Remember, $${chore.reward} awaits! 🌟`
+            priority: chore.isRequired ? 'high' : 'medium',
+            scheduledTime: `${9 + i}:00 AM`,
+            tips: [`Take your time with ${chore.title}`, "You've got this!"]
           })),
-          totalTime: currentChores.slice(0, 3).reduce((total, chore) => total + (chore.estimatedMinutes || 15), 0),
+          totalTime: currentChores.slice(0, 3).reduce((sum, c) => sum + (c.estimatedMinutes || 15), 0),
           aiRecommendations: [
-            "Start with the hardest task when you have the most energy!",
-            "Take a 5-minute break between chores to stay fresh.",
-            "Put on your favorite music to make it more fun! 🎵"
+            userPreferences?.interests?.includes('basketball') 
+              ? "Just like practicing free throws, consistency is key! 🏀"
+              : "Take breaks between tasks to stay fresh!",
+            "Celebrate each completed chore - you're building great habits!"
           ]
         }
       }
       
     } catch (error) {
       console.error('Schedule generation error:', error)
-      throw new Error('Chorbit had trouble creating your schedule. Try again!')
+      throw error
     }
   }
   
@@ -260,7 +371,7 @@ Make it encouraging and realistic for a kid to follow!`
         `DTSTART:${taskStart.toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
         `DTEND:${taskEnd.toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
         `SUMMARY:${task.name}`,
-        `DESCRIPTION:Generated by Chorbit AI\\n${task.tips || 'You\'ve got this!'}`,
+        `DESCRIPTION:Generated by Chorbit AI\\n${task.tips.join('\\n') || 'You\'ve got this!'}`,
         'STATUS:CONFIRMED',
         'END:VEVENT'
       )

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import type { ChorbitMessage, ChorbitSchedule } from '@/lib/chorbit'
+import type { ChorbitMessage, ChorbitSchedule, UserPreferences } from '@/lib/chorbit'
 
 interface ChorbitChatProps {
   userId: string
@@ -28,17 +28,11 @@ export function ChorbitChat({
   onScheduleGenerated,
   onExportRequest
 }: ChorbitChatProps) {
-  const [messages, setMessages] = useState<ChorbitMessage[]>([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      content: `Hey ${userName}! 👋 I'm Chorbit, your AI chore assistant! I can help you plan your day, prioritize tasks, and make chores more manageable. What would you like to work on?`,
-      timestamp: new Date(),
-      userId
-    }
-  ])
+  const [messages, setMessages] = useState<ChorbitMessage[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null)
+  const [isInitialized, setIsInitialized] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const [generatedSchedule, setGeneratedSchedule] = useState<ChorbitSchedule | null>(null)
 
@@ -51,6 +45,63 @@ export function ChorbitChat({
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  // Fetch user preferences on component mount
+  useEffect(() => {
+    const fetchPreferences = async () => {
+      try {
+        const response = await fetch(`/api/user/preferences?userId=${userId}`)
+        if (response.ok) {
+          const data = await response.json()
+          setUserPreferences(data.preferences)
+        }
+      } catch (error) {
+        console.error('Failed to fetch user preferences:', error)
+        // Set default preferences
+        setUserPreferences({
+          interests: [],
+          motivationalStyle: 'encouraging',
+          preferredGreeting: 'energetic',
+          learningTopics: [],
+          sportsTeams: [],
+          personalityTraits: [],
+          conversationStyle: 'interactive',
+          learnedFacts: {}
+        })
+      } finally {
+        setIsInitialized(true)
+      }
+    }
+
+    fetchPreferences()
+  }, [userId])
+
+  // Initialize welcome message based on preferences
+  useEffect(() => {
+    if (isInitialized && userPreferences) {
+      const getPersonalizedWelcome = () => {
+        const interests = userPreferences.interests || []
+        
+        if (interests.includes('basketball')) {
+          return `Hey ${userName}! 🏀 I'm Chorbit, your AI chore assistant! Ready to dominate today's game plan? Let's strategize your chores and maybe chat about basketball too!`
+        }
+        
+        if (interests.includes('gaming')) {
+          return `Hey ${userName}! 🎮 I'm Chorbit, your AI chore assistant! Ready to tackle today's quest? Let's level up your productivity!`
+        }
+        
+        return `Hey ${userName}! 👋 I'm Chorbit, your AI chore assistant! I can help you plan your day, prioritize tasks, and make chores more manageable. What would you like to work on?`
+      }
+
+      setMessages([{
+        id: 'welcome',
+        role: 'assistant',
+        content: getPersonalizedWelcome(),
+        timestamp: new Date(),
+        userId
+      }])
+    }
+  }, [isInitialized, userPreferences, userName, userId])
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return
@@ -81,7 +132,8 @@ export function ChorbitChat({
             userName,
             currentChores,
             weeklyEarnings,
-            completionRate
+            completionRate,
+            preferences: userPreferences // Include user preferences
           }
         })
       })
@@ -131,7 +183,8 @@ export function ChorbitChat({
           currentChores,
           userPreferences: {
             energyLevels: 'morning',
-            difficulty: 'mixed'
+            difficulty: 'mixed',
+            interests: userPreferences?.interests || []
           }
         })
       })
@@ -160,25 +213,57 @@ export function ChorbitChat({
     }
   }
 
-  const quickPrompts = [
-    "Help me plan my morning",
-    "What should I do first?",
-    "I'm feeling overwhelmed",
-    "Make chores more fun",
-    "How do I stay motivated?"
-  ]
+  // Personalized quick prompts based on user interests
+  const getQuickPrompts = () => {
+    const interests = userPreferences?.interests || []
+    
+    if (interests.includes('basketball')) {
+      return [
+        "Help me game plan my day",
+        "What's my starting lineup of chores?",
+        "I need motivation, coach!",
+        "Let's create a winning strategy",
+        "How do I stay in the zone?"
+      ]
+    }
+    
+    if (interests.includes('gaming')) {
+      return [
+        "Help me plan my daily quest",
+        "What should I level up first?",
+        "I need a power-up boost!",
+        "Create my achievement route",
+        "How do I unlock today's rewards?"
+      ]
+    }
+    
+    return [
+      "Help me plan my morning",
+      "What should I do first?",
+      "I'm feeling overwhelmed",
+      "Make chores more fun",
+      "How do I stay motivated?"
+    ]
+  }
+
+  const quickPrompts = getQuickPrompts()
 
   return (
     <Card className="h-[600px] flex flex-col">
       <CardHeader className="bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-t-lg flex-shrink-0">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-            <span className="text-2xl">🤖</span>
+            <span className="text-2xl">
+              {userPreferences?.interests?.includes('basketball') ? '🏀' : 
+               userPreferences?.interests?.includes('gaming') ? '🎮' : '🤖'}
+            </span>
           </div>
           <div>
             <CardTitle className="text-xl">Chorbit AI</CardTitle>
             <CardDescription className="text-purple-100">
-              Your friendly chore assistant
+              {userPreferences?.interests?.includes('basketball') ? 'Your basketball-loving chore coach' :
+               userPreferences?.interests?.includes('gaming') ? 'Your gaming-style quest master' :
+               'Your friendly chore assistant'}
             </CardDescription>
           </div>
           <Badge variant="secondary" className="ml-auto">
@@ -217,7 +302,11 @@ export function ChorbitChat({
             {isLoading && (
               <div className="flex justify-start">
                 <div className="bg-gray-100 p-3 rounded-lg">
-                  <p className="text-sm text-gray-600">Chorbit is thinking... 🤔</p>
+                  <p className="text-sm text-gray-600">
+                    {userPreferences?.interests?.includes('basketball') ? 'Coach Chorbit is drawing up a play... 🏀' :
+                     userPreferences?.interests?.includes('gaming') ? 'Chorbit is loading the next level... 🎮' :
+                     'Chorbit is thinking... 🤔'}
+                  </p>
                 </div>
               </div>
             )}
@@ -270,7 +359,11 @@ export function ChorbitChat({
               value={input}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Ask Chorbit anything about chores, schedules, or time management..."
+              placeholder={
+                userPreferences?.interests?.includes('basketball') ? "Ask your coach anything about chores, strategy, or basketball..." :
+                userPreferences?.interests?.includes('gaming') ? "Ask about your daily quests, achievements, or gaming..." :
+                "Ask Chorbit anything about chores, schedules, or time management..."
+              }
               disabled={isLoading}
               className="flex-1"
             />
