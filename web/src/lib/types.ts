@@ -202,4 +202,62 @@ export interface ReportFilters {
     end: Date
   }
   includeAI?: boolean
+}
+
+// Enhanced learning system for Chorbit
+export interface LearnedFact {
+  value: any
+  confidence: number // 0.0 to 1.0
+  learnedAt: string // ISO timestamp
+  lastValidated?: string // ISO timestamp
+  source: 'conversation' | 'explicit' | 'observation' | 'parent_setup'
+  context?: string // What conversation/situation led to this
+  timesReferenced: number // How often Chorbit has used this fact
+  validationsDue?: boolean // Flag for periodic validation
+}
+
+export interface Interest {
+  name: string
+  confidence: number // 0.0 to 1.0
+  learnedAt: string
+  lastValidated?: string
+  category: 'sports' | 'hobby' | 'food' | 'entertainment' | 'school' | 'other'
+  details?: { [key: string]: LearnedFact } // e.g., favorite team, favorite player
+  needsValidation?: boolean
+}
+
+export interface EnhancedUserPreferences {
+  // Core interests with validation tracking
+  interests: Interest[]
+  
+  // Behavioral preferences
+  motivationalStyle: 'encouraging' | 'competitive' | 'gentle' | 'funny'
+  preferredGreeting: 'energetic' | 'calm' | 'sports' | 'fun'
+  conversationStyle: 'brief' | 'detailed' | 'interactive'
+  
+  // Learning topics and goals
+  learningTopics: string[]
+  personalityTraits: string[]
+  
+  // Dynamic learned facts
+  learnedFacts: { [key: string]: LearnedFact }
+  
+  // Sports teams with detailed tracking
+  sportsTeams: {
+    sport: string
+    team: string
+    league: string
+    confidence: number
+    learnedAt: string
+    lastValidated?: string
+  }[]
+  
+  // Validation tracking
+  lastValidationDate?: string
+  nextValidationDue?: string
+  validationFrequency: number // days between validations (default: 60)
+  
+  // News/updates preferences
+  wantsNewsUpdates: boolean
+  newsCategories: string[]
 } 

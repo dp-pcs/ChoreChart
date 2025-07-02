@@ -142,18 +142,22 @@ PERSONALIZATION INSTRUCTIONS:
       }
     }
 
-    // Check if we should fetch sports data
-    const shouldFetchSports = userContext?.preferences?.interests?.includes('basketball') ||
-                             userContext?.preferences?.interests?.includes('sports') ||
-                             (userContext?.preferences?.sportsTeams?.length || 0) > 0
-
-    let sportsData = ''
-    if (shouldFetchSports && this.isGreetingOrMorning(message)) {
-      sportsData = await this.fetchSportsData(userContext?.preferences)
+    // Check if we should provide personalized updates
+    const shouldFetchUpdates = this.shouldProvideUpdates(message, userContext?.preferences)
+    let personalizedUpdates = ''
+    
+    if (shouldFetchUpdates) {
+      personalizedUpdates = await this.fetchPersonalizedUpdates(userContext?.preferences)
     }
 
-    if (sportsData) {
-      contextualPrompt += `\n\nCURRENT SPORTS INFO: ${sportsData}`
+    if (personalizedUpdates) {
+      contextualPrompt += `\n\nPERSONALIZED UPDATES: ${personalizedUpdates}`
+    }
+
+    // Check if we should ask validation questions
+    const validationQuestion = await this.getValidationQuestion(userId, userContext?.preferences)
+    if (validationQuestion) {
+      contextualPrompt += `\n\nVALIDATION PROMPT: ${validationQuestion}`
     }
     
     try {
@@ -213,6 +217,77 @@ PERSONALIZATION INSTRUCTIONS:
   private isGreetingOrMorning(message: string): boolean {
     const greetingWords = ['good morning', 'hello', 'hey', 'hi', 'start', 'begin', 'morning']
     return greetingWords.some(word => message.toLowerCase().includes(word))
+  }
+
+  private shouldProvideUpdates(message: string, preferences?: any): boolean {
+    // Provide updates on greetings or when asked about interests
+    const isGreeting = this.isGreetingOrMorning(message)
+    const mentionsInterests = message.toLowerCase().includes('news') || 
+                             message.toLowerCase().includes('update') ||
+                             message.toLowerCase().includes('happening')
+    
+    return isGreeting || mentionsInterests
+  }
+
+  private async fetchPersonalizedUpdates(preferences?: any): Promise<string> {
+    try {
+      const updates: string[] = []
+      
+      // Check user's interests and fetch relevant updates
+      const interests = preferences?.interests || []
+      
+      for (const interest of interests) {
+        if (interest.name === 'basketball' && interest.confidence > 0.6) {
+          // Mock NBA update - replace with real API
+          updates.push("🏀 NBA Update: Lakers are on a 3-game winning streak! They're looking strong this season.")
+        }
+        
+        if (interest.name === 'soccer' && interest.confidence > 0.6) {
+          updates.push("⚽ Soccer Update: Premier League season is heating up with some amazing matches!")
+        }
+        
+        if (interest.category === 'sports' && interest.details?.favoriteTeam) {
+          updates.push(`🏆 Your team ${interest.details.favoriteTeam} had a great performance recently!`)
+        }
+      }
+      
+      // Add weather or general updates occasionally
+      if (Math.random() > 0.7) {
+        updates.push("🌤️ Beautiful day outside - perfect for some outdoor activities after chores!")
+      }
+      
+      return updates.join(' ')
+      
+    } catch (error) {
+      console.error('Update fetch failed:', error)
+      return ''
+    }
+  }
+
+  private async getValidationQuestion(userId: string, preferences?: any): Promise<string> {
+    try {
+      // Check if validation is due
+      const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/chorbit/learn?userId=${userId}`)
+      if (!response.ok) return ''
+      
+      const data = await response.json()
+      
+      if (data.validationDue || data.interestsNeedingValidation?.length > 0) {
+        const interestsToValidate = data.interestsNeedingValidation
+        
+        if (interestsToValidate.length > 0) {
+          const interest = interestsToValidate[0]
+          return `By the way, I remember you mentioned liking ${interest.name} - are you still into that these days? 🤔`
+        }
+        
+        return "Hey, it's been a while since we caught up on your interests! What are you really excited about lately? 😊"
+      }
+      
+      return ''
+    } catch (error) {
+      console.error('Validation check failed:', error)
+      return ''
+    }
   }
 
   private async fetchSportsData(preferences?: UserPreferences): Promise<string> {

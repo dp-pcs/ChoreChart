@@ -42,6 +42,26 @@ export async function POST(request: NextRequest) {
     // Get response from Chorbit
     const response = await chorbit.chat(message, userId, userContext)
 
+    // Auto-learn from this conversation (run in background)
+    try {
+      const conversationText = `User: ${message}\nChorbit: ${response.content}`
+      
+      // Don't await - let this run in background
+      fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/chorbit/learn`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          conversation: conversationText,
+          source: 'conversation'
+        })
+      }).catch(err => console.log('Background learning failed:', err))
+      
+    } catch (error) {
+      // Don't let learning errors break the chat
+      console.log('Learning process failed:', error)
+    }
+
     return NextResponse.json(response)
     
   } catch (error) {
