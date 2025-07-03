@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { AddChoreDialog } from '@/components/ui/add-chore-dialog'
 
 export default function ParentDashboard() {
   const { data: session, status } = useSession()
@@ -33,6 +34,7 @@ export default function ParentDashboard() {
   
   const [processingApprovals, setProcessingApprovals] = useState<Set<string>>(new Set())
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [isAddChoreDialogOpen, setIsAddChoreDialogOpen] = useState(false)
 
   useEffect(() => {
     if (status === 'loading') return // Still loading
@@ -147,9 +149,20 @@ export default function ParentDashboard() {
   }
 
   const handleQuickAction = (action: string) => {
+    if (action === 'Add New Chore') {
+      setIsAddChoreDialogOpen(true)
+    } else {
+      setMessage({
+        type: 'success',
+        text: `🚧 "${action}" feature coming soon! This will open a dialog to ${action.toLowerCase()}.`
+      })
+    }
+  }
+
+  const handleAddChoreSuccess = (successMessage: string) => {
     setMessage({
       type: 'success',
-      text: `🚧 "${action}" feature coming soon! This will open a dialog to ${action.toLowerCase()}.`
+      text: successMessage
     })
   }
 
@@ -358,6 +371,13 @@ export default function ParentDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Add Chore Dialog */}
+      <AddChoreDialog
+        isOpen={isAddChoreDialogOpen}
+        onClose={() => setIsAddChoreDialogOpen(false)}
+        onSuccess={handleAddChoreSuccess}
+      />
     </div>
   )
 } 
