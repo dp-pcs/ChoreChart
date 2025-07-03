@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       include: {
         assignments: {
           include: {
-            child: {
+            user: {
               select: { name: true, id: true }
             }
           }
@@ -70,18 +70,20 @@ export async function POST(request: NextRequest) {
         estimatedMinutes: parseInt(estimatedMinutes),
         isRequired: Boolean(isRequired),
         familyId: mockFamilyId,
-        createdBy: mockUserId,
+        type: 'ONE_TIME',
+        frequency: 'AS_NEEDED',
         assignments: {
           create: assignedChildIds?.map((childId: string) => ({
-            childId,
-            assignedAt: new Date()
+            userId: childId,
+            familyId: mockFamilyId,
+            weekStart: new Date()
           })) || []
         }
       },
       include: {
         assignments: {
           include: {
-            child: {
+            user: {
               select: { name: true, id: true }
             }
           }
