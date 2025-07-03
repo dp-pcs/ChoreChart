@@ -58,7 +58,7 @@ async function seedDemoUsers() {
           frequency: 'DAILY',
           isRequired: true,
           reward: 2.00,
-          scheduledDays: [1, 2, 3, 4, 5], // Monday-Friday
+          scheduledDays: JSON.stringify([1, 2, 3, 4, 5]), // Monday-Friday
           estimatedMinutes: 5,
         }
       }),
@@ -71,7 +71,7 @@ async function seedDemoUsers() {
           frequency: 'WEEKLY',
           isRequired: false,
           reward: 5.00,
-          scheduledDays: [6], // Saturday
+          scheduledDays: JSON.stringify([6]), // Saturday
           estimatedMinutes: 30,
         }
       }),
@@ -84,7 +84,7 @@ async function seedDemoUsers() {
           frequency: 'WEEKLY',
           isRequired: true,
           reward: 3.00,
-          scheduledDays: [2], // Tuesday
+          scheduledDays: JSON.stringify([2]), // Tuesday
           estimatedMinutes: 10,
         }
       }),
@@ -97,7 +97,7 @@ async function seedDemoUsers() {
           frequency: 'DAILY',
           isRequired: true,
           reward: 1.50,
-          scheduledDays: [0, 1, 2, 3, 4, 5, 6], // Every day
+          scheduledDays: JSON.stringify([0, 1, 2, 3, 4, 5, 6]), // Every day
           estimatedMinutes: 5,
         }
       })
