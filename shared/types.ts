@@ -143,6 +143,8 @@ export interface ParentDashboardData {
     totalChores: number
     pendingApprovals: number
     weeklySpending: number
+    totalWeeklyBudget: number
+    totalParents: number
   }
   childrenProgress: Array<{
     child: User
@@ -151,6 +153,7 @@ export interface ParentDashboardData {
   }>
   pendingApprovals: ChoreSubmission[]
   weeklyReports: WeeklyReport[]
+  paymentSources: PaymentSource[]
 }
 
 // Form types
@@ -201,4 +204,45 @@ export interface LoginCredentials {
 export interface SignupCredentials extends LoginCredentials {
   name: string
   familyName: string
+}
+
+// Payment Source types
+export interface PaymentSource {
+  id: string
+  familyId: string
+  name: string
+  description?: string
+  amount: number
+  frequency: 'WEEKLY' | 'MONTHLY' | 'ONE_TIME'
+  type: 'ALLOWANCE' | 'BONUS_FUND' | 'GIFT_MONEY' | 'CHORE_FUND' | 'OTHER'
+  isActive: boolean
+  managedBy: string
+  createdAt: string
+  updatedAt: string
+  manager?: User
+}
+
+export interface CreatePaymentSourceForm {
+  name: string
+  description?: string
+  amount: number
+  frequency: PaymentSource['frequency']
+  type: PaymentSource['type']
+  managedBy: string
+}
+
+export interface UpdatePaymentSourceForm {
+  name?: string
+  description?: string
+  amount?: number
+  frequency?: PaymentSource['frequency']
+  type?: PaymentSource['type']
+  isActive?: boolean
+}
+
+// Extended Family interface to include payment sources
+export interface ExtendedFamily extends Family {
+  paymentSources?: PaymentSource[]
+  totalWeeklyBudget?: number
+  totalMonthlyBudget?: number
 } 

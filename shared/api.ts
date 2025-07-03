@@ -14,6 +14,9 @@ import {
   CreateChoreForm,
   SubmitChoreForm,
   CreateRewardForm,
+  PaymentSource,
+  CreatePaymentSourceForm,
+  UpdatePaymentSourceForm,
   LoginCredentials,
   SignupCredentials,
   AuthUser
@@ -201,6 +204,25 @@ export const rewardsApi = {
 
   async createReward(reward: CreateRewardForm, token: string): Promise<ApiResponse<Reward>> {
     return api.post('/rewards', reward, token)
+  }
+}
+
+// Payment Sources API
+export const paymentSourcesApi = {
+  async getPaymentSources(token: string): Promise<ApiResponse<PaymentSource[]>> {
+    return api.get('/payment-sources', token)
+  },
+
+  async createPaymentSource(paymentSource: CreatePaymentSourceForm, token: string): Promise<ApiResponse<PaymentSource>> {
+    return api.post('/payment-sources', paymentSource, token)
+  },
+
+  async updatePaymentSource(id: string, updates: UpdatePaymentSourceForm, token: string): Promise<ApiResponse<PaymentSource>> {
+    return api.put(`/payment-sources/${id}`, updates, token)
+  },
+
+  async deletePaymentSource(id: string, token: string): Promise<ApiResponse<void>> {
+    return api.delete(`/payment-sources/${id}`, token)
   }
 }
 

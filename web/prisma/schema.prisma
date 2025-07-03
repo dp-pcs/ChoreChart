@@ -50,6 +50,7 @@ model User {
   rewards           Reward[]
   weeklyReports     WeeklyReport[]
   achievements      UserAchievement[]
+  managedPaymentSources PaymentSource[]
 
   @@map("users")
 }
@@ -79,6 +80,7 @@ model Family {
   messages         Message[]
   weeklyReports    WeeklyReport[]
   achievements     Achievement[]
+  paymentSources   PaymentSource[]
 
   @@map("families")
 }
@@ -263,6 +265,26 @@ model UserAchievement {
   @@map("user_achievements")
 }
 
+model PaymentSource {
+  id          String            @id @default(cuid())
+  familyId    String
+  name        String            // "Mom's Allowance Fund", "Dad's Chore Budget", etc.
+  description String?
+  amount      Float             @default(0)
+  frequency   PaymentFrequency  @default(WEEKLY)
+  type        PaymentSourceType @default(ALLOWANCE)
+  isActive    Boolean           @default(true)
+  managedBy   String            // User ID of the parent who manages this source
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // Relations
+  family  Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  manager User   @relation(fields: [managedBy], references: [id], onDelete: Cascade)
+
+  @@map("payment_sources")
+}
+
 // Enums
 enum UserRole {
   PARENT
@@ -331,4 +353,18 @@ enum AchievementDifficulty {
   MEDIUM
   HARD
   LEGENDARY
+}
+
+enum PaymentFrequency {
+  WEEKLY
+  MONTHLY
+  ONE_TIME
+}
+
+enum PaymentSourceType {
+  ALLOWANCE
+  BONUS_FUND
+  GIFT_MONEY
+  CHORE_FUND
+  OTHER
 }

@@ -35,6 +35,31 @@ export default function ParentDashboard() {
   const [processingApprovals, setProcessingApprovals] = useState<Set<string>>(new Set())
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [isAddChoreDialogOpen, setIsAddChoreDialogOpen] = useState(false)
+  const [isAddPaymentSourceDialogOpen, setIsAddPaymentSourceDialogOpen] = useState(false)
+  const [paymentSources, setPaymentSources] = useState([
+    {
+      id: '1',
+      name: "Mom's Weekly Allowance",
+      description: 'Primary funding for weekly chores',
+      amount: 30.00,
+      frequency: 'WEEKLY' as const,
+      type: 'ALLOWANCE' as const,
+      isActive: true,
+      managedBy: session?.user?.id || '',
+      manager: { name: session?.user?.name || 'Mom' }
+    },
+    {
+      id: '2',
+      name: "Dad's Bonus Fund",
+      description: 'Extra rewards for exceptional work',
+      amount: 15.00,
+      frequency: 'WEEKLY' as const,
+      type: 'BONUS_FUND' as const,
+      isActive: true,
+      managedBy: 'dad-id',
+      manager: { name: 'Dad' }
+    }
+  ])
 
   useEffect(() => {
     if (status === 'loading') return // Still loading
@@ -73,11 +98,19 @@ export default function ParentDashboard() {
     return null
   }
 
+  const totalWeeklyBudget = paymentSources
+    .filter(ps => ps.isActive && ps.frequency === 'WEEKLY')
+    .reduce((total, ps) => total + ps.amount, 0)
+
+  const totalParents = 2 // In real app, get from family data
+
   const mockData = {
     family: {
       name: session.user.family?.name || 'Your Family',
       totalChildren: 2,
       weeklyAllowance: 45.00,
+      totalWeeklyBudget,
+      totalParents
     },
     weeklyStats: {
       totalChoresCompleted: 18,
@@ -151,6 +184,8 @@ export default function ParentDashboard() {
   const handleQuickAction = (action: string) => {
     if (action === 'Add New Chore') {
       setIsAddChoreDialogOpen(true)
+    } else if (action === 'Add Payment Source') {
+      setIsAddPaymentSourceDialogOpen(true)
     } else {
       setMessage({
         type: 'success',
@@ -212,7 +247,9 @@ export default function ParentDashboard() {
                   <strong>{mockData.family.name}</strong>
                 </p>
                 <p className="text-sm">👨‍👩‍👧‍👦 {mockData.family.totalChildren} children</p>
-                <p className="text-sm">💰 ${mockData.family.weeklyAllowance}/week budget</p>
+                <p className="text-sm">� {mockData.family.totalParents} parents</p>
+                <p className="text-sm">� ${mockData.family.totalWeeklyBudget}/week total budget</p>
+                <p className="text-sm text-gray-500">📊 {paymentSources.filter(ps => ps.isActive).length} active payment sources</p>
               </div>
             </CardContent>
           </Card>
@@ -248,17 +285,17 @@ export default function ParentDashboard() {
                   size="sm" 
                   className="w-full" 
                   variant="outline"
-                  onClick={() => handleQuickAction('Add Child Account')}
+                  onClick={() => handleQuickAction('Add Payment Source')}
                 >
-                  Add Child Account
+                  Add Payment Source
                 </Button>
                 <Button 
                   size="sm" 
                   className="w-full" 
                   variant="outline"
-                  onClick={() => handleQuickAction('View Reports')}
+                  onClick={() => handleQuickAction('Add Child Account')}
                 >
-                  View Reports
+                  Add Child Account
                 </Button>
               </div>
             </CardContent>
@@ -342,6 +379,88 @@ export default function ParentDashboard() {
           </CardContent>
         </Card>
 
+        {/* Payment Sources */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              Payment Sources 
+              <Badge variant="outline">
+                {paymentSources.filter(ps => ps.isActive).length} active
+              </Badge>
+            </CardTitle>
+            <CardDescription>
+              Manage funding sources for your family's chore rewards
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {paymentSources.map((source) => (
+                <div 
+                  key={source.id}
+                  className={`flex items-center justify-between p-4 rounded-lg border ${
+                    source.isActive 
+                      ? 'bg-green-50 border-green-200' 
+                      : 'bg-gray-50 border-gray-200'
+                  }`}
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{source.name}</p>
+                      <Badge variant={source.isActive ? "default" : "secondary"} className="text-xs">
+                        {source.type.replace('_', ' ').toLowerCase()}
+                      </Badge>
+                      {!source.isActive && (
+                        <Badge variant="outline" className="text-xs">
+                          Inactive
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {source.description || 'No description'}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      ${source.amount}/{source.frequency.toLowerCase()} • Managed by {source.manager?.name}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setMessage({
+                        type: 'success',
+                        text: `🚧 Edit "${source.name}" feature coming soon!`
+                      })}
+                      className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setMessage({
+                        type: 'success',
+                        text: source.isActive 
+                          ? `🚧 Deactivate "${source.name}" feature coming soon!`
+                          : `🚧 Activate "${source.name}" feature coming soon!`
+                      })}
+                      className={source.isActive ? "text-orange-600 border-orange-200 hover:bg-orange-50" : "text-green-600 border-green-200 hover:bg-green-50"}
+                    >
+                      {source.isActive ? 'Deactivate' : 'Activate'}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              
+              {paymentSources.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <p>💳 No payment sources yet.</p>
+                  <p className="text-sm mt-1">Add your first payment source to get started!</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Recent Activity */}
         <Card>
           <CardHeader>
@@ -378,6 +497,43 @@ export default function ParentDashboard() {
         onClose={() => setIsAddChoreDialogOpen(false)}
         onSuccess={handleAddChoreSuccess}
       />
+      
+      {/* Add Payment Source Dialog - Placeholder */}
+      {isAddPaymentSourceDialogOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Add Payment Source</CardTitle>
+              <CardDescription>
+                This feature is coming soon! For now, you can manage payment sources through the main dashboard.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsAddPaymentSourceDialogOpen(false)}
+                  className="flex-1"
+                >
+                  Close
+                </Button>
+                <Button
+                  onClick={() => {
+                    setMessage({
+                      type: 'success',
+                      text: '🚧 Payment source creation coming soon! For now, you can see sample payment sources below.'
+                    })
+                    setIsAddPaymentSourceDialogOpen(false)
+                  }}
+                  className="flex-1"
+                >
+                  Got it
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 } 
