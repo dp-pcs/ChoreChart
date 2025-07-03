@@ -8,6 +8,22 @@ export interface User {
   familyId: string
   createdAt: string
   updatedAt: string
+  familyMemberships?: FamilyMembership[]
+}
+
+export interface FamilyMembership {
+  id: string
+  userId: string
+  familyId: string
+  role: 'PARENT' | 'CHILD'
+  isActive: boolean
+  isPrimary: boolean
+  canInvite: boolean
+  canManage: boolean
+  permissions?: any
+  createdAt: string
+  updatedAt: string
+  family?: Family
 }
 
 export interface Family {
@@ -17,8 +33,12 @@ export interface Family {
   autoApproveChores: boolean
   weekCloseDay: number
   emailNotifications: boolean
+  allowMultipleParents: boolean
+  shareReports: boolean
+  crossFamilyApproval: boolean
   createdAt: string
   updatedAt: string
+  familyMemberships?: FamilyMembership[]
 }
 
 export interface Chore {
@@ -135,6 +155,8 @@ export interface ChildDashboardData {
     total: number
     earnings: number
   }[]
+  activeFamilyId?: string
+  availableFamilies?: FamilyMembership[]
 }
 
 export interface ParentDashboardData {
@@ -151,6 +173,9 @@ export interface ParentDashboardData {
   }>
   pendingApprovals: ChoreSubmission[]
   weeklyReports: WeeklyReport[]
+  activeFamilyId?: string
+  availableFamilies?: FamilyMembership[]
+  crossFamilyApprovals?: ChoreSubmission[]
 }
 
 // Form types
@@ -190,6 +215,8 @@ export interface AuthUser {
   role: 'PARENT' | 'CHILD'
   familyId: string
   family: Family
+  familyMemberships?: FamilyMembership[]
+  activeFamilyId?: string
 }
 
 export interface LoginCredentials {
@@ -201,4 +228,37 @@ export interface LoginCredentials {
 export interface SignupCredentials extends LoginCredentials {
   name: string
   familyName: string
+}
+
+// NEW: Family management forms
+export interface InviteToFamilyForm {
+  email: string
+  role: 'PARENT' | 'CHILD'
+  familyId: string
+  canInvite?: boolean
+  canManage?: boolean
+}
+
+export interface JoinFamilyForm {
+  inviteCode: string
+  role: 'PARENT' | 'CHILD'
+}
+
+export interface FamilySwitchForm {
+  familyId: string
+}
+
+// NEW: Multi-family utility types
+export interface FamilyContext {
+  currentFamily: Family
+  currentMembership: FamilyMembership
+  allFamilies: FamilyMembership[]
+  canSwitchFamily: boolean
+  switchFamily: (familyId: string) => Promise<void>
+}
+
+export interface MultiFamilyUser extends User {
+  activeFamilyId: string
+  activeMembership: FamilyMembership
+  allMemberships: FamilyMembership[]
 } 
