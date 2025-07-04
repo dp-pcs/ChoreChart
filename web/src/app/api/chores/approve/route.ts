@@ -28,11 +28,15 @@ export async function POST(request: NextRequest) {
     const submission = await prisma.choreSubmission.findUnique({
       where: { id: submissionId },
       include: {
-        chore: {
-          select: {
-            title: true,
-            reward: true,
-            familyId: true
+        assignment: {
+          include: {
+            chore: {
+              select: {
+                title: true,
+                reward: true,
+                familyId: true
+              }
+            }
           }
         },
         user: {
@@ -52,7 +56,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify the submission belongs to the parent's family
-    if (submission.chore.familyId !== session.user.familyId) {
+    if (submission.assignment.chore.familyId !== session.user.familyId) {
       return NextResponse.json(
         { error: 'Access denied' },
         { status: 403 }
@@ -82,8 +86,8 @@ export async function POST(request: NextRequest) {
       await prisma.reward.create({
         data: {
           userId: submission.user.id,
-          title: `Completed: ${submission.chore.title}`,
-          amount: submission.chore.reward,
+          title: `Completed: ${submission.assignment.chore.title}`,
+          amount: submission.assignment.chore.reward,
           type: 'MONEY',
           awardedBy: session.user.id
         }
@@ -93,8 +97,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: approved 
-        ? `Approved ${submission.chore.title} for ${submission.user.name}`
-        : `Denied ${submission.chore.title} for ${submission.user.name}`
+        ? `Approved ${submission.assignment.chore.title} for ${submission.user.name}`
+        : `Denied ${submission.assignment.chore.title} for ${submission.user.name}`
     })
 
   } catch (error) {
