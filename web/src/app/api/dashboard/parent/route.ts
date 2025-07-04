@@ -45,7 +45,9 @@ export async function GET(request: NextRequest) {
     // Get pending chore submissions for approval
     const pendingSubmissions = await prisma.choreSubmission.findMany({
       where: {
-        familyId: familyId,
+        assignment: {
+          familyId: familyId
+        },
         status: 'PENDING'
       },
       include: {
@@ -55,11 +57,15 @@ export async function GET(request: NextRequest) {
             name: true
           }
         },
-        chore: {
-          select: {
-            id: true,
-            title: true,
-            reward: true
+        assignment: {
+          include: {
+            chore: {
+              select: {
+                id: true,
+                title: true,
+                reward: true
+              }
+            }
           }
         }
       },
@@ -77,16 +83,22 @@ export async function GET(request: NextRequest) {
 
     const weeklySubmissions = await prisma.choreSubmission.findMany({
       where: {
-        familyId: familyId,
+        assignment: {
+          familyId: familyId
+        },
         submittedAt: {
           gte: weekStart,
           lte: weekEnd
         }
       },
       include: {
-        chore: {
-          select: {
-            reward: true
+        assignment: {
+          include: {
+            chore: {
+              select: {
+                reward: true
+              }
+            }
           }
         }
       }
@@ -95,7 +107,7 @@ export async function GET(request: NextRequest) {
     // Calculate stats
     const children = family.familyMemberships.filter((m: any) => m.role === 'CHILD')
     const completedChores = weeklySubmissions.filter((s: any) => s.status === 'APPROVED')
-    const totalEarnings = completedChores.reduce((sum: number, s: any) => sum + s.chore.reward, 0)
+    const totalEarnings = completedChores.reduce((sum: number, s: any) => sum + s.assignment.chore.reward, 0)
     const participationRate = children.length > 0 
       ? Math.round((completedChores.length / Math.max(children.length * 7, 1)) * 100) 
       : 0
@@ -103,7 +115,9 @@ export async function GET(request: NextRequest) {
     // Get recent activity
     const recentActivity = await prisma.choreSubmission.findMany({
       where: {
-        familyId: familyId
+        assignment: {
+          familyId: familyId
+        }
       },
       include: {
         user: {
@@ -111,10 +125,14 @@ export async function GET(request: NextRequest) {
             name: true
           }
         },
-        chore: {
-          select: {
-            title: true,
-            reward: true
+        assignment: {
+          include: {
+            chore: {
+              select: {
+                title: true,
+                reward: true
+              }
+            }
           }
         }
       },
@@ -143,9 +161,9 @@ export async function GET(request: NextRequest) {
       pendingApprovals: pendingSubmissions.map((submission: any) => ({
         id: submission.id,
         childName: submission.user.name,
-        choreName: submission.chore.title,
+        choreName: submission.assignment.chore.title,
         submittedAt: submission.submittedAt,
-        reward: submission.chore.reward,
+        reward: submission.assignment.chore.reward,
         status: submission.status,
         notes: submission.notes
       })),
@@ -158,9 +176,9 @@ export async function GET(request: NextRequest) {
       recentActivity: recentActivity.map((activity: any) => ({
         id: activity.id,
         childName: activity.user.name,
-        choreName: activity.chore.title,
+        choreName: activity.assignment.chore.title,
         action: activity.status === 'APPROVED' ? 'completed' : 'submitted',
-        reward: activity.chore.reward,
+        reward: activity.assignment.chore.reward,
         timestamp: activity.submittedAt
       })),
       permissions: {
