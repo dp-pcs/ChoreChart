@@ -26,6 +26,10 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Password reset fields
+  resetToken    String?   // Token for password reset
+  resetTokenExpiry DateTime? // Expiry time for reset token
+
   // Personalization & AI learning
   preferences Json? // Stores interests, motivational style, learned preferences
 
