@@ -15,22 +15,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
-    const familyId = session.user.familyId
-    
-    // Fetch family data with children
-    const family = await prisma.family.findUnique({
-      where: { id: familyId },
+    // Get user's primary family membership
+    const primaryFamilyMembership = await prisma.familyMembership.findFirst({
+      where: {
+        userId: session.user.id,
+        isActive: true,
+        isPrimary: true
+      },
       include: {
-        familyMemberships: {
-          where: { isActive: true },
+        family: {
           include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                role: true,
-                createdAt: true
+            familyMemberships: {
+              where: { isActive: true },
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    role: true,
+                    createdAt: true
+                  }
+                }
               }
             }
           }
@@ -38,9 +44,43 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    if (!family) {
-      return NextResponse.json({ error: 'Family not found' }, { status: 404 })
+    // If no primary family membership, try to get any active family membership
+    let familyMembership = primaryFamilyMembership
+    if (!familyMembership) {
+      familyMembership = await prisma.familyMembership.findFirst({
+        where: {
+          userId: session.user.id,
+          isActive: true
+        },
+        include: {
+          family: {
+            include: {
+              familyMemberships: {
+                where: { isActive: true },
+                include: {
+                  user: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                      role: true,
+                      createdAt: true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      })
     }
+
+    if (!familyMembership) {
+      return NextResponse.json({ error: 'No active family membership found' }, { status: 404 })
+    }
+
+    const family = familyMembership.family
+    const familyId = family.id
 
     // Get pending chore submissions for approval
     const pendingSubmissions = await prisma.choreSubmission.findMany({
@@ -182,8 +222,8 @@ export async function GET(request: NextRequest) {
         timestamp: activity.submittedAt
       })),
       permissions: {
-        canInvite: family.allowMultipleParents,
-        canManage: true // Primary parent can always manage
+        canInvite: familyMembership.canInvite,
+        canManage: familyMembership.canManage
       }
     }
 
