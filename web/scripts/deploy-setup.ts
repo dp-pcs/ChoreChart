@@ -74,7 +74,7 @@ async function main() {
           frequency: 'DAILY',
           isRequired: true,
           reward: 1.00,
-          scheduledDays: [1, 2, 3, 4, 5], // Monday-Friday
+          scheduledDays: JSON.stringify([1, 2, 3, 4, 5]), // Monday-Friday
           scheduledTime: '08:00',
           estimatedMinutes: 5,
         },
@@ -86,7 +86,7 @@ async function main() {
           frequency: 'WEEKLY',
           isRequired: false,
           reward: 3.00,
-          scheduledDays: [1], // Monday
+          scheduledDays: JSON.stringify([1]), // Monday
           scheduledTime: '19:00',
           estimatedMinutes: 10,
         },
@@ -98,7 +98,7 @@ async function main() {
           frequency: 'WEEKLY',
           isRequired: false,
           reward: 5.00,
-          scheduledDays: [6], // Saturday
+          scheduledDays: JSON.stringify([6]), // Saturday
           estimatedMinutes: 30,
         }
       ]
