@@ -60,7 +60,7 @@ async function sendPasswordResetEmail(email: string, resetToken: string) {
   // Configure your email service here
   // For development, you can use a service like Gmail, SendGrid, or Mailgun
   
-  const transporter = nodemailer.createTransporter({
+  const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: parseInt(process.env.SMTP_PORT || '587'),
     secure: false, // true for 465, false for other ports
