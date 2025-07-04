@@ -1,6 +1,6 @@
 -- CreateTable
 CREATE TABLE "users" (
-    "id" TEXT PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "password" TEXT,
@@ -8,6 +8,8 @@ CREATE TABLE "users" (
     "familyId" TEXT NOT NULL,
     "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP NOT NULL,
+    "resetToken" TEXT,
+    "resetTokenExpiry" TIMESTAMP,
     "preferences" JSONB,
     "currentLoginStreak" INTEGER NOT NULL DEFAULT 0,
     "longestLoginStreak" INTEGER NOT NULL DEFAULT 0,
@@ -20,12 +22,13 @@ CREATE TABLE "users" (
     "experiencePoints" INTEGER NOT NULL DEFAULT 0,
     "streakFreezes" INTEGER NOT NULL DEFAULT 0,
     "lastStreakFreezeUsed" TIMESTAMP,
-    CONSTRAINT "users_familyId_fkey" FOREIGN KEY ("familyId") REFERENCES "families" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "users_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "family_memberships" (
-    "id" TEXT PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "familyId" TEXT NOT NULL,
     "role" TEXT NOT NULL,
@@ -36,18 +39,18 @@ CREATE TABLE "family_memberships" (
     "canInvite" BOOLEAN NOT NULL DEFAULT false,
     "canManage" BOOLEAN NOT NULL DEFAULT false,
     "permissions" JSONB,
-    CONSTRAINT "family_memberships_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "family_memberships_familyId_fkey" FOREIGN KEY ("familyId") REFERENCES "families" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "family_memberships_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "families" (
-    "id" TEXT PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP NOT NULL,
     "weeklyAllowance" DOUBLE PRECISION NOT NULL DEFAULT 0,
-    "autoApproveChores" BOOLEAN NOT NULL DEFAULT true,
+    "autoApproveChores" BOOLEAN NOT NULL DEFAULT false,
     "weekCloseDay" INTEGER NOT NULL DEFAULT 0,
     "emailNotifications" BOOLEAN NOT NULL DEFAULT true,
     "allowMultipleParents" BOOLEAN NOT NULL DEFAULT true,
@@ -56,12 +59,14 @@ CREATE TABLE "families" (
     "enableStreaks" BOOLEAN NOT NULL DEFAULT true,
     "enableLeaderboard" BOOLEAN NOT NULL DEFAULT true,
     "enableAchievements" BOOLEAN NOT NULL DEFAULT true,
-    "streakFreezeLimit" INTEGER NOT NULL DEFAULT 3
+    "streakFreezeLimit" INTEGER NOT NULL DEFAULT 3,
+
+    CONSTRAINT "families_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "chores" (
-    "id" TEXT PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "familyId" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT,
@@ -74,25 +79,25 @@ CREATE TABLE "chores" (
     "scheduledDays" TEXT,
     "scheduledTime" TEXT,
     "estimatedMinutes" INTEGER,
-    CONSTRAINT "chores_familyId_fkey" FOREIGN KEY ("familyId") REFERENCES "families" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "chores_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "chore_assignments" (
-    "id" TEXT PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "familyId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "choreId" TEXT NOT NULL,
     "weekStart" TIMESTAMP NOT NULL,
     "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "chore_assignments_familyId_fkey" FOREIGN KEY ("familyId") REFERENCES "families" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "chore_assignments_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "chore_assignments_choreId_fkey" FOREIGN KEY ("choreId") REFERENCES "chores" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "chore_assignments_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "chore_submissions" (
-    "id" TEXT PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "assignmentId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "submittedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -100,25 +105,25 @@ CREATE TABLE "chore_submissions" (
     "notes" TEXT,
     "imageUrl" TEXT,
     "status" TEXT NOT NULL DEFAULT 'PENDING',
-    CONSTRAINT "chore_submissions_assignmentId_fkey" FOREIGN KEY ("assignmentId") REFERENCES "chore_assignments" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "chore_submissions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "chore_submissions_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "chore_approvals" (
-    "id" TEXT PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "submissionId" TEXT NOT NULL,
     "approvedBy" TEXT NOT NULL,
     "approvedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "approved" BOOLEAN NOT NULL,
     "feedback" TEXT,
-    CONSTRAINT "chore_approvals_submissionId_fkey" FOREIGN KEY ("submissionId") REFERENCES "chore_submissions" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "chore_approvals_approvedBy_fkey" FOREIGN KEY ("approvedBy") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "chore_approvals_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "messages" (
-    "id" TEXT PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "familyId" TEXT NOT NULL,
     "fromId" TEXT NOT NULL,
     "toId" TEXT,
@@ -126,13 +131,13 @@ CREATE TABLE "messages" (
     "type" TEXT NOT NULL DEFAULT 'CHAT',
     "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "readAt" TIMESTAMP,
-    CONSTRAINT "messages_familyId_fkey" FOREIGN KEY ("familyId") REFERENCES "families" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "messages_fromId_fkey" FOREIGN KEY ("fromId") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "messages_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "rewards" (
-    "id" TEXT PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT,
@@ -140,12 +145,13 @@ CREATE TABLE "rewards" (
     "type" TEXT NOT NULL DEFAULT 'MONEY',
     "awardedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "awardedBy" TEXT NOT NULL,
-    CONSTRAINT "rewards_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "rewards_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "weekly_reports" (
-    "id" TEXT PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "familyId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "weekStart" TIMESTAMP NOT NULL,
@@ -159,13 +165,13 @@ CREATE TABLE "weekly_reports" (
     "potentialEarnings" DOUBLE PRECISION NOT NULL,
     "aiInsights" JSONB,
     "recommendations" TEXT,
-    CONSTRAINT "weekly_reports_familyId_fkey" FOREIGN KEY ("familyId") REFERENCES "families" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "weekly_reports_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "weekly_reports_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "achievements" (
-    "id" TEXT PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "familyId" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT NOT NULL,
@@ -180,20 +186,78 @@ CREATE TABLE "achievements" (
     "rewardType" TEXT NOT NULL DEFAULT 'MONEY',
     "rewardAmount" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "rewardDescription" TEXT,
-    CONSTRAINT "achievements_familyId_fkey" FOREIGN KEY ("familyId") REFERENCES "families" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "achievements_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "user_achievements" (
-    "id" TEXT PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "achievementId" TEXT NOT NULL,
     "unlockedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "progress" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "isCompleted" BOOLEAN NOT NULL DEFAULT false,
-    CONSTRAINT "user_achievements_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "user_achievements_achievementId_fkey" FOREIGN KEY ("achievementId") REFERENCES "achievements" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "user_achievements_pkey" PRIMARY KEY ("id")
 );
+
+-- AddForeignKey
+ALTER TABLE "users" ADD CONSTRAINT "users_familyId_fkey" FOREIGN KEY ("familyId") REFERENCES "families"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "family_memberships" ADD CONSTRAINT "family_memberships_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "family_memberships" ADD CONSTRAINT "family_memberships_familyId_fkey" FOREIGN KEY ("familyId") REFERENCES "families"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "chores" ADD CONSTRAINT "chores_familyId_fkey" FOREIGN KEY ("familyId") REFERENCES "families"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "chore_assignments" ADD CONSTRAINT "chore_assignments_familyId_fkey" FOREIGN KEY ("familyId") REFERENCES "families"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "chore_assignments" ADD CONSTRAINT "chore_assignments_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "chore_assignments" ADD CONSTRAINT "chore_assignments_choreId_fkey" FOREIGN KEY ("choreId") REFERENCES "chores"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "chore_submissions" ADD CONSTRAINT "chore_submissions_assignmentId_fkey" FOREIGN KEY ("assignmentId") REFERENCES "chore_assignments"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "chore_submissions" ADD CONSTRAINT "chore_submissions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "chore_approvals" ADD CONSTRAINT "chore_approvals_submissionId_fkey" FOREIGN KEY ("submissionId") REFERENCES "chore_submissions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "chore_approvals" ADD CONSTRAINT "chore_approvals_approvedBy_fkey" FOREIGN KEY ("approvedBy") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "messages" ADD CONSTRAINT "messages_familyId_fkey" FOREIGN KEY ("familyId") REFERENCES "families"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "messages" ADD CONSTRAINT "messages_fromId_fkey" FOREIGN KEY ("fromId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "rewards" ADD CONSTRAINT "rewards_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "weekly_reports" ADD CONSTRAINT "weekly_reports_familyId_fkey" FOREIGN KEY ("familyId") REFERENCES "families"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "weekly_reports" ADD CONSTRAINT "weekly_reports_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "achievements" ADD CONSTRAINT "achievements_familyId_fkey" FOREIGN KEY ("familyId") REFERENCES "families"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_achievements" ADD CONSTRAINT "user_achievements_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_achievements" ADD CONSTRAINT "user_achievements_achievementId_fkey" FOREIGN KEY ("achievementId") REFERENCES "achievements"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");

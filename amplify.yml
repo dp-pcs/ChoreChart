@@ -10,7 +10,8 @@ applications:
             - echo "Generating Prisma client..."
             - npx prisma generate
             - echo "Running database migrations..."
-            - npx prisma migrate deploy
+            - chmod +x scripts/handle-migration.sh
+            - ./scripts/handle-migration.sh
             - echo "Seeding demo data..."
             - npx tsx scripts/seed-demo-users.ts || echo "Demo data already exists or seeding failed - continuing..."
             - echo "Running family membership migration..."
