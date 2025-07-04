@@ -1,36 +1,36 @@
 -- CreateTable
 CREATE TABLE "users" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT PRIMARY KEY,
     "email" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "password" TEXT,
     "role" TEXT NOT NULL,
     "familyId" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL,
     "preferences" JSONB,
     "currentLoginStreak" INTEGER NOT NULL DEFAULT 0,
     "longestLoginStreak" INTEGER NOT NULL DEFAULT 0,
-    "lastLoginDate" DATETIME,
+    "lastLoginDate" TIMESTAMP,
     "currentCheckInStreak" INTEGER NOT NULL DEFAULT 0,
     "longestCheckInStreak" INTEGER NOT NULL DEFAULT 0,
-    "lastCheckInDate" DATETIME,
+    "lastCheckInDate" TIMESTAMP,
     "totalPoints" INTEGER NOT NULL DEFAULT 0,
     "level" INTEGER NOT NULL DEFAULT 1,
     "experiencePoints" INTEGER NOT NULL DEFAULT 0,
     "streakFreezes" INTEGER NOT NULL DEFAULT 0,
-    "lastStreakFreezeUsed" DATETIME,
+    "lastStreakFreezeUsed" TIMESTAMP,
     CONSTRAINT "users_familyId_fkey" FOREIGN KEY ("familyId") REFERENCES "families" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
 CREATE TABLE "family_memberships" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT PRIMARY KEY,
     "userId" TEXT NOT NULL,
     "familyId" TEXT NOT NULL,
     "role" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "isPrimary" BOOLEAN NOT NULL DEFAULT false,
     "canInvite" BOOLEAN NOT NULL DEFAULT false,
@@ -42,12 +42,12 @@ CREATE TABLE "family_memberships" (
 
 -- CreateTable
 CREATE TABLE "families" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT PRIMARY KEY,
     "name" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
-    "weeklyAllowance" REAL NOT NULL DEFAULT 0,
-    "autoApproveChores" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL,
+    "weeklyAllowance" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "autoApproveChores" BOOLEAN NOT NULL DEFAULT true,
     "weekCloseDay" INTEGER NOT NULL DEFAULT 0,
     "emailNotifications" BOOLEAN NOT NULL DEFAULT true,
     "allowMultipleParents" BOOLEAN NOT NULL DEFAULT true,
@@ -61,16 +61,16 @@ CREATE TABLE "families" (
 
 -- CreateTable
 CREATE TABLE "chores" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT PRIMARY KEY,
     "familyId" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT,
     "type" TEXT NOT NULL,
     "frequency" TEXT NOT NULL,
     "isRequired" BOOLEAN NOT NULL DEFAULT false,
-    "reward" REAL NOT NULL DEFAULT 0,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "reward" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL,
     "scheduledDays" TEXT,
     "scheduledTime" TEXT,
     "estimatedMinutes" INTEGER,
@@ -79,12 +79,12 @@ CREATE TABLE "chores" (
 
 -- CreateTable
 CREATE TABLE "chore_assignments" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT PRIMARY KEY,
     "familyId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "choreId" TEXT NOT NULL,
-    "weekStart" DATETIME NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "weekStart" TIMESTAMP NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "chore_assignments_familyId_fkey" FOREIGN KEY ("familyId") REFERENCES "families" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "chore_assignments_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "chore_assignments_choreId_fkey" FOREIGN KEY ("choreId") REFERENCES "chores" ("id") ON DELETE CASCADE ON UPDATE CASCADE
@@ -92,11 +92,11 @@ CREATE TABLE "chore_assignments" (
 
 -- CreateTable
 CREATE TABLE "chore_submissions" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT PRIMARY KEY,
     "assignmentId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    "submittedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "completedAt" DATETIME NOT NULL,
+    "submittedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "completedAt" TIMESTAMP NOT NULL,
     "notes" TEXT,
     "imageUrl" TEXT,
     "status" TEXT NOT NULL DEFAULT 'PENDING',
@@ -106,10 +106,10 @@ CREATE TABLE "chore_submissions" (
 
 -- CreateTable
 CREATE TABLE "chore_approvals" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT PRIMARY KEY,
     "submissionId" TEXT NOT NULL,
     "approvedBy" TEXT NOT NULL,
-    "approvedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "approvedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "approved" BOOLEAN NOT NULL,
     "feedback" TEXT,
     CONSTRAINT "chore_approvals_submissionId_fkey" FOREIGN KEY ("submissionId") REFERENCES "chore_submissions" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
@@ -118,45 +118,45 @@ CREATE TABLE "chore_approvals" (
 
 -- CreateTable
 CREATE TABLE "messages" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT PRIMARY KEY,
     "familyId" TEXT NOT NULL,
     "fromId" TEXT NOT NULL,
     "toId" TEXT,
     "content" TEXT NOT NULL,
     "type" TEXT NOT NULL DEFAULT 'CHAT',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "readAt" DATETIME,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "readAt" TIMESTAMP,
     CONSTRAINT "messages_familyId_fkey" FOREIGN KEY ("familyId") REFERENCES "families" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "messages_fromId_fkey" FOREIGN KEY ("fromId") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
 CREATE TABLE "rewards" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT PRIMARY KEY,
     "userId" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT,
-    "amount" REAL NOT NULL,
+    "amount" DOUBLE PRECISION NOT NULL,
     "type" TEXT NOT NULL DEFAULT 'MONEY',
-    "awardedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "awardedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "awardedBy" TEXT NOT NULL,
     CONSTRAINT "rewards_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
 CREATE TABLE "weekly_reports" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT PRIMARY KEY,
     "familyId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    "weekStart" DATETIME NOT NULL,
-    "weekEnd" DATETIME NOT NULL,
-    "generatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "weekStart" TIMESTAMP NOT NULL,
+    "weekEnd" TIMESTAMP NOT NULL,
+    "generatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "totalChores" INTEGER NOT NULL,
     "completedChores" INTEGER NOT NULL,
     "approvedChores" INTEGER NOT NULL,
     "deniedChores" INTEGER NOT NULL,
-    "totalEarnings" REAL NOT NULL,
-    "potentialEarnings" REAL NOT NULL,
+    "totalEarnings" DOUBLE PRECISION NOT NULL,
+    "potentialEarnings" DOUBLE PRECISION NOT NULL,
     "aiInsights" JSONB,
     "recommendations" TEXT,
     CONSTRAINT "weekly_reports_familyId_fkey" FOREIGN KEY ("familyId") REFERENCES "families" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
@@ -165,7 +165,7 @@ CREATE TABLE "weekly_reports" (
 
 -- CreateTable
 CREATE TABLE "achievements" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT PRIMARY KEY,
     "familyId" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT NOT NULL,
@@ -175,21 +175,21 @@ CREATE TABLE "achievements" (
     "difficulty" TEXT NOT NULL,
     "points" INTEGER NOT NULL DEFAULT 0,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "requirements" JSONB NOT NULL,
     "rewardType" TEXT NOT NULL DEFAULT 'MONEY',
-    "rewardAmount" REAL NOT NULL DEFAULT 0,
+    "rewardAmount" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "rewardDescription" TEXT,
     CONSTRAINT "achievements_familyId_fkey" FOREIGN KEY ("familyId") REFERENCES "families" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
 CREATE TABLE "user_achievements" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT PRIMARY KEY,
     "userId" TEXT NOT NULL,
     "achievementId" TEXT NOT NULL,
-    "unlockedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "progress" REAL NOT NULL DEFAULT 0,
+    "unlockedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "progress" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "isCompleted" BOOLEAN NOT NULL DEFAULT false,
     CONSTRAINT "user_achievements_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "user_achievements_achievementId_fkey" FOREIGN KEY ("achievementId") REFERENCES "achievements" ("id") ON DELETE CASCADE ON UPDATE CASCADE
