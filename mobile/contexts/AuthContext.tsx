@@ -23,7 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+  const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.59:3000';
 
   const checkAuth = async () => {
     try {
@@ -33,7 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/auth/session`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/mobile-session`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -59,7 +59,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/signin`, {
+      console.log('🔐 Starting login for:', email);
+      const response = await fetch(`${API_BASE_URL}/api/auth/mobile-signin`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -67,20 +68,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ email, password }),
       });
 
+      console.log('📡 Response status:', response.status);
+      
       if (!response.ok) {
         throw new Error('Login failed');
       }
 
       const data = await response.json();
+      console.log('📊 Login response data:', data);
       
       if (data.token && data.user) {
+        console.log('💾 Storing token and setting user...');
         await AsyncStorage.setItem('auth_token', data.token);
         setUser(data.user);
+        console.log('✅ Login successful! User set:', data.user.name);
       } else {
         throw new Error('Invalid response format');
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('❌ Login error:', error);
       throw error;
     }
   };

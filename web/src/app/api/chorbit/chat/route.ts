@@ -46,8 +46,12 @@ export async function POST(request: NextRequest) {
     try {
       const conversationText = `User: ${message}\nChorbit: ${response.content}`
       
+      // Get the current host and protocol from the request
+      const url = new URL(request.url)
+      const baseUrl = `${url.protocol}//${url.host}`
+      
       // Don't await - let this run in background
-      fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/chorbit/learn`, {
+      fetch(`${baseUrl}/api/chorbit/learn`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

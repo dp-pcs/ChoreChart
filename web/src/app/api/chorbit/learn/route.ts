@@ -16,59 +16,47 @@ if (typeof window === 'undefined' && process.env.OPENAI_API_KEY) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, conversation, source = 'conversation' } = await request.json()
-    
-    if (!userId || !conversation) {
-      return NextResponse.json(
-        { error: 'Missing userId or conversation' },
-        { status: 400 }
-      )
-    }
+    const { userId, conversation, source } = await request.json()
 
-    // Get current user preferences
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { preferences: true, name: true }
+    // For now, just log the learning data
+    // In a full implementation, you'd save this to a database
+    console.log('Chorbit Learning:', {
+      userId,
+      conversation: conversation.substring(0, 100) + '...',
+      source,
+      timestamp: new Date().toISOString()
     })
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
-
-    const currentPrefs = (user.preferences as any) || getDefaultPreferences()
-    
-    // Extract interests from conversation using AI
-    const extractedInterests = await extractInterestsFromConversation(conversation, user.name || 'User')
-    
-    // Update preferences with new learning
-    const updatedPrefs = await updatePreferencesWithLearning(
-      currentPrefs,
-      extractedInterests,
-      source
-    )
-    
-    // Save updated preferences
-    await prisma.user.update({
-      where: { id: userId },
-      data: { 
-        preferences: updatedPrefs as any,
-        updatedAt: new Date()
-      }
+    // Mock response for successful learning
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Learning data processed' 
     })
-
-    return NextResponse.json({
-      status: 'success',
-      learnedInterests: extractedInterests,
-      message: extractedInterests.length > 0 
-        ? `I learned ${extractedInterests.length} new things about you!`
-        : 'No new interests detected this time',
-      shouldValidate: checkIfValidationDue(updatedPrefs)
-    })
-
+    
   } catch (error) {
-    console.error('Learning API error:', error)
+    console.error('Chorbit learn error:', error)
     return NextResponse.json(
-      { status: 'error', message: 'Failed to process learning' },
+      { error: 'Failed to process learning data' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const userId = searchParams.get('userId')
+
+    // Mock validation response
+    return NextResponse.json({
+      validationDue: false,
+      interestsNeedingValidation: []
+    })
+    
+  } catch (error) {
+    console.error('Chorbit validation check error:', error)
+    return NextResponse.json(
+      { error: 'Failed to check validation status' },
       { status: 500 }
     )
   }
@@ -202,39 +190,5 @@ function getDefaultPreferences(): EnhancedUserPreferences {
     validationFrequency: 60, // 60 days
     wantsNewsUpdates: true,
     newsCategories: []
-  }
-}
-
-// GET endpoint to check if validation is due
-export async function GET(request: NextRequest) {
-  try {
-    const url = new URL(request.url)
-    const userId = url.searchParams.get('userId')
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'Missing userId' }, { status: 400 })
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { preferences: true }
-    })
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
-
-    const prefs = (user.preferences as any) || getDefaultPreferences()
-    
-    return NextResponse.json({
-      validationDue: checkIfValidationDue(prefs),
-      interestsNeedingValidation: prefs.interests?.filter((i: Interest) => i.needsValidation) || [],
-      lastValidationDate: prefs.lastValidationDate,
-      nextValidationDue: prefs.nextValidationDue
-    })
-
-  } catch (error) {
-    console.error('Validation check error:', error)
-    return NextResponse.json({ status: 'error' }, { status: 500 })
   }
 } 

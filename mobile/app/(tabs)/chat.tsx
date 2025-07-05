@@ -7,6 +7,11 @@ import {
   StyleSheet,
   SafeAreaView,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -16,6 +21,9 @@ export default function ChatScreen() {
 
   const sendMessage = () => {
     if (!input.trim()) return;
+    
+    // Dismiss keyboard first
+    Keyboard.dismiss();
     
     Alert.alert('Chorbit Says', `Thanks for your message: "${input}"\n\nI'm connecting to the smart learning system to give you personalized responses based on your interests! 🤖🏀`);
     setInput('');
@@ -30,35 +38,52 @@ export default function ChatScreen() {
         <Text style={styles.headerSubtitle}>Your AI chore assistant</Text>
       </View>
 
-      <View style={styles.content}>
-        <View style={styles.welcomeCard}>
-          <Text style={styles.welcomeTitle}>Hey {user.name}! 👋</Text>
-          <Text style={styles.welcomeText}>
-            I'm Chorbit, your AI chore assistant! I can help you plan your day, 
-            stay motivated, and make chores more fun. 
-          </Text>
-          <Text style={styles.welcomeNote}>
-            💡 I automatically learn about your interests as we chat!
-          </Text>
-        </View>
+      <KeyboardAvoidingView 
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={100}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.content}>
+            <ScrollView 
+              style={styles.scrollContent}
+              contentContainerStyle={styles.scrollContainer}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={styles.welcomeCard}>
+                <Text style={styles.welcomeTitle}>Hey {user.name}! 👋</Text>
+                <Text style={styles.welcomeText}>
+                  I'm Chorbit, your AI chore assistant! I can help you plan your day, 
+                  stay motivated, and make chores more fun. 
+                </Text>
+                <Text style={styles.welcomeNote}>
+                  💡 I automatically learn about your interests as we chat!
+                </Text>
+              </View>
+            </ScrollView>
 
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.textInput}
-            value={input}
-            onChangeText={setInput}
-            placeholder="Ask me anything about chores, planning, or life..."
-            multiline
-          />
-          <TouchableOpacity
-            style={styles.sendButton}
-            onPress={sendMessage}
-            disabled={!input.trim()}
-          >
-            <Text style={styles.sendButtonText}>Send</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.textInput}
+                value={input}
+                onChangeText={setInput}
+                placeholder="Ask me anything about chores, planning, or life..."
+                multiline
+                returnKeyType="send"
+                onSubmitEditing={sendMessage}
+                blurOnSubmit={false}
+              />
+              <TouchableOpacity
+                style={[styles.sendButton, !input.trim() && styles.sendButtonDisabled]}
+                onPress={sendMessage}
+                disabled={!input.trim()}
+              >
+                <Text style={styles.sendButtonText}>Send</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -85,10 +110,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6b7280',
   },
+  keyboardView: {
+    flex: 1,
+  },
   content: {
     flex: 1,
-    padding: 20,
     justifyContent: 'space-between',
+  },
+  scrollContent: {
+    flex: 1,
+  },
+  scrollContainer: {
+    padding: 20,
+    flexGrow: 1,
   },
   welcomeCard: {
     backgroundColor: 'white',
@@ -121,6 +155,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 16,
     padding: 16,
+    margin: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -134,6 +169,7 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 16,
     minHeight: 60,
+    maxHeight: 120,
     backgroundColor: '#f9fafb',
     marginBottom: 12,
   },
@@ -142,6 +178,9 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
+  },
+  sendButtonDisabled: {
+    backgroundColor: '#9ca3af',
   },
   sendButtonText: {
     color: 'white',

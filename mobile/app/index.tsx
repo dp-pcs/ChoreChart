@@ -6,6 +6,8 @@ import { useAuth } from '../contexts/AuthContext';
 export default function Index() {
   const { user, isLoading } = useAuth();
 
+  console.log('🏠 Index - isLoading:', isLoading, 'user:', user?.name || 'none');
+
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8fafc' }}>
@@ -19,8 +21,10 @@ export default function Index() {
 
   // Redirect based on authentication status
   if (user) {
+    console.log('🚀 Redirecting to tabs for user:', user.name);
     return <Redirect href="/(tabs)" />;
   } else {
+    console.log('🔐 Redirecting to auth (no user)');
     return <Redirect href="/(auth)" />;
   }
 } 

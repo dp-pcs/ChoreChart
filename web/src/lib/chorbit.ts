@@ -5,11 +5,11 @@ let openai: any = null
 if (typeof window === 'undefined' && process.env.OPENAI_API_KEY) {
   try {
     // Use dynamic import for better module resolution
-    openai = require('openai')
-    if (openai.default) openai = openai.default
-    openai = new openai({
+    const OpenAI = require('openai')
+    openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     })
+    console.log('OpenAI initialized successfully for Chorbit')
   } catch (error) {
     console.log('OpenAI not available, using demo mode for Chorbit:', error)
   }
@@ -312,22 +312,46 @@ PERSONALIZATION INSTRUCTIONS:
 
   private getPersonalizedFallback(message: string, preferences?: UserPreferences): string {
     const interests = preferences?.interests || []
+    const msg = message.toLowerCase()
     
-    if (message.toLowerCase().includes('schedule') || message.toLowerCase().includes('plan')) {
-      if (interests.includes('basketball')) {
-        return "I'd love to help you plan your schedule! Think of it like setting up plays in basketball - let's strategize your chores and find time for shooting hoops too! 🏀"
-      }
-      return "I'd love to help you plan your schedule! First, let's look at your chores and figure out when you have time. What chores do you need to do today? 📝"
+    // Greeting responses
+    if (msg.includes('hello') || msg.includes('hi') || msg.includes('hey') || msg.includes('good morning')) {
+      return "Hey there! 👋 I'm Chorbit, your AI chore assistant! I'm here to help you tackle your tasks, stay organized, and maybe even make chores fun. What's on your to-do list today?"
     }
     
-    if (message.toLowerCase().includes('motivation') || message.toLowerCase().includes('tired')) {
+    // Schedule/planning help
+    if (msg.includes('schedule') || msg.includes('plan') || msg.includes('organize')) {
       if (interests.includes('basketball')) {
-        return "You've got this, champion! 🏀 Even NBA players have tough practice days, but they keep pushing through. Every chore you complete is like making a shot - you're building skills! 💪"
+        return "Let's game-plan your day! 🏀 Just like creating plays on the court, we can strategize your chores to maximize your time. Tell me what tasks you need to tackle, and I'll help you create a winning schedule!"
       }
-      return "You've got this! 🌟 Remember, every small step counts. Maybe take a quick break, grab some water, and then tackle just one small task. Progress is progress!"
+      return "I love helping with planning! 📅 Let's break down your day and make it manageable. What chores or tasks do you need to get done? I can help you prioritize and create a schedule that works!"
     }
     
-    return "Oops! I'm having a little tech hiccup. Can you try asking me that again? I'm here to help! 🤖"
+    // Motivation and encouragement
+    if (msg.includes('motivation') || msg.includes('tired') || msg.includes('overwhelmed') || msg.includes('hard')) {
+      if (interests.includes('basketball')) {
+        return "You've got this, superstar! 🏀⭐ Even the best players have tough days, but champions push through. Remember: every chore you complete is like scoring points - you're building your skills and getting stronger! Take it one task at a time!"
+      }
+      return "I believe in you! 💪✨ When things feel overwhelming, remember that every big accomplishment starts with small steps. Pick just ONE easy task to start with - momentum builds motivation! You're doing great!"
+    }
+    
+    // Chore-specific help
+    if (msg.includes('chore') || msg.includes('clean') || msg.includes('tidy') || msg.includes('task')) {
+      return "Chores can actually be pretty satisfying when you approach them right! 🧹✨ What specific chore are you working on? I can give you tips to make it faster, easier, or even more fun!"
+    }
+    
+    // Time management
+    if (msg.includes('time') || msg.includes('quick') || msg.includes('fast') || msg.includes('efficient')) {
+      return "Time management is like a superpower! ⚡ Here's a pro tip: set a timer for each task - it makes everything feel like a game and helps you stay focused. What task do you want to time today?"
+    }
+    
+    // General encouragement and redirect
+    if (msg.includes('thanks') || msg.includes('thank you')) {
+      return "You're so welcome! 😊 I'm always here to help you stay organized and motivated. Is there anything else I can help you with today? Maybe planning your next tasks or finding motivation?"
+    }
+    
+    // Default helpful response
+    return "I'm here to help you with chores, planning, and staying motivated! 🤖✨ You can ask me about:\n\n• Creating schedules and plans\n• Tips for specific chores\n• Motivation and encouragement\n• Time management strategies\n\nWhat would you like help with today?"
   }
 
   private async learnFromConversation(userMessage: string, assistantResponse: string, userId: string): Promise<void> {

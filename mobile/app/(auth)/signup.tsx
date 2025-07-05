@@ -11,46 +11,32 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { Link, router } from 'expo-router';
-import { useAuth } from '../../contexts/AuthContext';
+import { Link } from 'expo-router';
 
-export default function LoginScreen() {
+export default function SignUpScreen() {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
 
-  const handleLogin = async () => {
-    if (!email || !password) {
+  const handleSignUp = async () => {
+    if (!name || !email || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
       return;
     }
 
     setIsLoading(true);
     try {
-      await login(email, password);
-      console.log('🎯 Login successful, navigating to tabs...');
-      router.replace('/(tabs)');
+      // TODO: Implement actual signup logic
+      Alert.alert('Success', 'Account created! Please sign in.');
     } catch (error) {
-      Alert.alert('Login Failed', 'Please check your credentials and try again');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDemoLogin = async (role: 'parent' | 'child') => {
-    const credentials = {
-      parent: { email: 'parent@demo.com', password: 'password' },
-      child: { email: 'child@demo.com', password: 'password' }
-    };
-
-    setIsLoading(true);
-    try {
-      await login(credentials[role].email, credentials[role].password);
-      console.log('🎯 Demo login successful, navigating to tabs...');
-      router.replace('/(tabs)');
-    } catch (error) {
-      Alert.alert('Demo Login Failed', 'Please try again');
+      Alert.alert('Sign Up Failed', 'Please try again');
     } finally {
       setIsLoading(false);
     }
@@ -65,10 +51,21 @@ export default function LoginScreen() {
         <View style={styles.header}>
           <Text style={styles.emoji}>🏡</Text>
           <Text style={styles.title}>ChoreChart</Text>
-          <Text style={styles.subtitle}>Welcome back!</Text>
+          <Text style={styles.subtitle}>Create your account</Text>
         </View>
 
         <View style={styles.form}>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Name</Text>
+            <TextInput
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+              placeholder="Enter your name"
+              autoCapitalize="words"
+            />
+          </View>
+
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Email</Text>
             <TextInput
@@ -94,46 +91,37 @@ export default function LoginScreen() {
             />
           </View>
 
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Confirm Password</Text>
+            <TextInput
+              style={styles.input}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              placeholder="Confirm your password"
+              secureTextEntry
+              autoCapitalize="none"
+            />
+          </View>
+
           <TouchableOpacity 
-            style={styles.loginButton}
-            onPress={handleLogin}
+            style={styles.signupButton}
+            onPress={handleSignUp}
             disabled={isLoading}
           >
             {isLoading ? (
               <ActivityIndicator color="white" />
             ) : (
-              <Text style={styles.loginButtonText}>Sign In</Text>
+              <Text style={styles.signupButtonText}>Create Account</Text>
             )}
           </TouchableOpacity>
 
-          <View style={styles.signupContainer}>
-            <Text style={styles.signupText}>Don't have an account? </Text>
-            <Link href="/(auth)/signup" asChild>
+          <View style={styles.loginContainer}>
+            <Text style={styles.loginText}>Already have an account? </Text>
+            <Link href="/(auth)" asChild>
               <TouchableOpacity>
-                <Text style={styles.signupLink}>Sign Up</Text>
+                <Text style={styles.loginLink}>Sign In</Text>
               </TouchableOpacity>
             </Link>
-          </View>
-        </View>
-
-        <View style={styles.demoSection}>
-          <Text style={styles.demoTitle}>Try Demo Accounts</Text>
-          <View style={styles.demoButtons}>
-            <TouchableOpacity 
-              style={styles.demoButton}
-              onPress={() => handleDemoLogin('parent')}
-              disabled={isLoading}
-            >
-              <Text style={styles.demoButtonText}>👨‍👩‍👧‍👦 Parent Demo</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.demoButton}
-              onPress={() => handleDemoLogin('child')}
-              disabled={isLoading}
-            >
-              <Text style={styles.demoButtonText}>🧒 Kid Demo (Noah)</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -170,7 +158,7 @@ const styles = StyleSheet.create({
     color: '#64748b',
   },
   form: {
-    marginBottom: 40,
+    flex: 1,
   },
   inputContainer: {
     marginBottom: 20,
@@ -189,58 +177,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: 'white',
   },
-  loginButton: {
+  signupButton: {
     backgroundColor: '#3b82f6',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
     marginTop: 10,
   },
-  loginButtonText: {
+  signupButtonText: {
     color: 'white',
     fontSize: 18,
     fontWeight: '600',
   },
-  signupContainer: {
+  loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 20,
   },
-  signupText: {
+  loginText: {
     color: '#64748b',
     fontSize: 16,
   },
-  signupLink: {
+  loginLink: {
     color: '#3b82f6',
     fontSize: 16,
     fontWeight: '600',
-  },
-  demoSection: {
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    paddingTop: 30,
-  },
-  demoTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#374151',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  demoButtons: {
-    gap: 12,
-  },
-  demoButton: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  demoButtonText: {
-    color: '#374151',
-    fontSize: 16,
-    fontWeight: '500',
   },
 }); 

@@ -8,6 +8,7 @@
  */
 
 import { PrismaClient } from '../src/generated/prisma'
+import type { ChoreType, ChoreFrequency } from '../src/generated/prisma'
 import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
@@ -64,44 +65,48 @@ async function main() {
     })
 
     // Create some sample chores
-    const chores = await prisma.chore.createMany({
-      data: [
-        {
-          familyId: family.id,
-          title: 'Make Your Bed',
-          description: 'Make your bed every morning before school',
-          type: 'DAILY',
-          frequency: 'DAILY',
-          isRequired: true,
-          reward: 1.00,
-          scheduledDays: [1, 2, 3, 4, 5], // Monday-Friday
-          scheduledTime: '08:00',
-          estimatedMinutes: 5,
-        },
-        {
-          familyId: family.id,
-          title: 'Take Out Trash',
-          description: 'Take the trash bins to the curb',
-          type: 'WEEKLY',
-          frequency: 'WEEKLY',
-          isRequired: false,
-          reward: 3.00,
-          scheduledDays: [1], // Monday
-          scheduledTime: '19:00',
-          estimatedMinutes: 10,
-        },
-        {
-          familyId: family.id,
-          title: 'Clean Your Room',
-          description: 'Organize and clean your bedroom',
-          type: 'WEEKLY',
-          frequency: 'WEEKLY',
-          isRequired: false,
-          reward: 5.00,
-          scheduledDays: [6], // Saturday
-          estimatedMinutes: 30,
-        }
-      ]
+    await prisma.chore.create({
+      data: {
+        familyId: family.id,
+        title: 'Make Your Bed',
+        description: 'Make your bed every morning before school',
+        type: 'DAILY' as ChoreType,
+        frequency: 'DAILY' as ChoreFrequency,
+        isRequired: true,
+        reward: 1.00,
+        scheduledDays: [1, 2, 3, 4, 5] as number[], // Monday-Friday
+        scheduledTime: '08:00',
+        estimatedMinutes: 5,
+      }
+    })
+
+    await prisma.chore.create({
+      data: {
+        familyId: family.id,
+        title: 'Take Out Trash',
+        description: 'Take the trash bins to the curb',
+        type: 'WEEKLY' as ChoreType,
+        frequency: 'WEEKLY' as ChoreFrequency,
+        isRequired: false,
+        reward: 3.00,
+        scheduledDays: [1] as number[], // Monday
+        scheduledTime: '19:00',
+        estimatedMinutes: 10,
+      }
+    })
+
+    await prisma.chore.create({
+      data: {
+        familyId: family.id,
+        title: 'Clean Your Room',
+        description: 'Organize and clean your bedroom',
+        type: 'WEEKLY' as ChoreType,
+        frequency: 'WEEKLY' as ChoreFrequency,
+        isRequired: false,
+        reward: 5.00,
+        scheduledDays: [6] as number[], // Saturday
+        estimatedMinutes: 30,
+      }
     })
 
     console.log('✅ Demo setup complete!')
