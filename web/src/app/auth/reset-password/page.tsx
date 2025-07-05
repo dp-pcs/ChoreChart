@@ -7,6 +7,9 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
 
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic'
+
 export default function ResetPassword() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -119,32 +122,32 @@ export default function ResetPassword() {
                 <label htmlFor="password" className="text-sm font-medium text-gray-700">
                   New Password
                 </label>
-                                 <Input
-                   id="password"
-                   type="password"
-                   value={password}
-                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-                   placeholder="Enter new password"
-                   required
-                   className="h-12 text-base"
-                   autoComplete="new-password"
-                 />
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter new password"
+                  required
+                  className="h-12 text-base"
+                  autoComplete="new-password"
+                />
               </div>
 
               <div className="space-y-2">
                 <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
                   Confirm New Password
                 </label>
-                                 <Input
-                   id="confirmPassword"
-                   type="password"
-                   value={confirmPassword}
-                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
-                   placeholder="Confirm new password"
-                   required
-                   className="h-12 text-base"
-                   autoComplete="new-password"
-                 />
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm new password"
+                  required
+                  className="h-12 text-base"
+                  autoComplete="new-password"
+                />
               </div>
 
               <Button
@@ -190,6 +193,6 @@ export default function ResetPassword() {
           </CardContent>
         </Card>
       </div>
-    </div>
-  )
+          </div>
+    )
 }
