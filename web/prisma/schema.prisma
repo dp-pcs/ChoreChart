@@ -11,8 +11,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -24,6 +25,10 @@ model User {
   familyId  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Password reset fields
+  resetToken    String?   // Token for password reset
+  resetTokenExpiry DateTime? // Expiry time for reset token
 
   // Personalization & AI learning
   preferences Json? // Stores interests, motivational style, learned preferences
@@ -42,16 +47,41 @@ model User {
   lastStreakFreezeUsed  DateTime?
 
   // Relations
-  family            Family           @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  choreAssignments  ChoreAssignment[]
-  choreSubmissions  ChoreSubmission[]
-  choreApprovals    ChoreApproval[]
-  messages          Message[]
-  rewards           Reward[]
-  weeklyReports     WeeklyReport[]
-  achievements      UserAchievement[]
+  family                Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  familyMemberships     FamilyMembership[] // NEW: Multiple family support
+  choreAssignments      ChoreAssignment[]
+  choreSubmissions      ChoreSubmission[]
+  choreApprovals        ChoreApproval[]
+  messages              Message[]
+  rewards               Reward[]
+  weeklyReports         WeeklyReport[]
+  achievements          UserAchievement[]
 
   @@map("users")
+}
+
+// NEW: Support for multiple family memberships
+model FamilyMembership {
+  id       String   @id @default(cuid())
+  userId   String
+  familyId String
+  role     UserRole // Role in this specific family
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Membership settings
+  isActive    Boolean @default(true)
+  isPrimary   Boolean @default(false) // Primary family for notifications, billing
+  canInvite   Boolean @default(false) // Can invite new members to this family
+  canManage   Boolean @default(false) // Can edit family settings
+  permissions Json?   // Flexible permissions object
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, familyId])
+  @@map("family_memberships")
 }
 
 model Family {
@@ -66,6 +96,11 @@ model Family {
   weekCloseDay         Int     @default(0) // 0 = Sunday
   emailNotifications   Boolean @default(true)
 
+  // NEW: Co-parenting settings
+  allowMultipleParents Boolean @default(true)  // Allow children to be in multiple families
+  shareReports         Boolean @default(false) // Share reports with other families
+  crossFamilyApproval  Boolean @default(false) // Allow parents from other families to approve
+
   // Gamification Settings
   enableStreaks        Boolean @default(true)
   enableLeaderboard    Boolean @default(true)
@@ -74,6 +109,7 @@ model Family {
 
   // Relations
   users            User[]
+  familyMemberships FamilyMembership[] // NEW: Multiple family support
   chores           Chore[]
   choreAssignments ChoreAssignment[]
   messages         Message[]
@@ -96,7 +132,7 @@ model Chore {
   updatedAt   DateTime  @updatedAt
 
   // Schedule settings
-  scheduledDays   Int[] // Days of week (0-6, Sunday=0)
+  scheduledDays   String? // JSON array of days of week (0-6, Sunday=0)
   scheduledTime   String? // HH:MM format
   estimatedMinutes Int?
 

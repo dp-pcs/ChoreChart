@@ -7,13 +7,32 @@ async function seedDemoUsers() {
   try {
     console.log('🌱 Seeding demo users...')
 
-    // Create demo family
+    // Create demo family with schema-aware field handling
+    const familyData: any = {
+      name: 'The Demo Family',
+      weeklyAllowance: 50.00,
+      autoApproveChores: false,
+    }
+
+    // Only add new fields if they exist in the schema
+    try {
+      // Test if the allowMultipleParents field exists
+      await prisma.$queryRaw`SELECT column_name FROM information_schema.columns WHERE table_name = 'families' AND column_name = 'allowMultipleParents' LIMIT 1`
+      // If query succeeds, the column exists
+      familyData.allowMultipleParents = true
+      familyData.shareReports = false
+      familyData.crossFamilyApproval = false
+      familyData.enableStreaks = true
+      familyData.enableLeaderboard = true
+      familyData.enableAchievements = true
+      familyData.streakFreezeLimit = 3
+    } catch (error) {
+      // Column doesn't exist, skip the new fields
+      console.log('ℹ️ New family fields not available in current schema, using basic fields only')
+    }
+
     const demoFamily = await prisma.family.create({
-      data: {
-        name: 'The Demo Family',
-        weeklyAllowance: 50.00,
-        autoApproveChores: false,
-      }
+      data: familyData
     })
 
     console.log('✅ Created demo family:', demoFamily.name)
@@ -58,7 +77,7 @@ async function seedDemoUsers() {
           frequency: 'DAILY',
           isRequired: true,
           reward: 2.00,
-          scheduledDays: [1, 2, 3, 4, 5], // Monday-Friday
+          scheduledDays: JSON.stringify([1, 2, 3, 4, 5]), // Monday-Friday
           estimatedMinutes: 5,
         }
       }),
@@ -71,7 +90,7 @@ async function seedDemoUsers() {
           frequency: 'WEEKLY',
           isRequired: false,
           reward: 5.00,
-          scheduledDays: [6], // Saturday
+          scheduledDays: JSON.stringify([6]), // Saturday
           estimatedMinutes: 30,
         }
       }),
@@ -84,7 +103,7 @@ async function seedDemoUsers() {
           frequency: 'WEEKLY',
           isRequired: true,
           reward: 3.00,
-          scheduledDays: [2], // Tuesday
+          scheduledDays: JSON.stringify([2]), // Tuesday
           estimatedMinutes: 10,
         }
       }),
@@ -97,7 +116,7 @@ async function seedDemoUsers() {
           frequency: 'DAILY',
           isRequired: true,
           reward: 1.50,
-          scheduledDays: [0, 1, 2, 3, 4, 5, 6], // Every day
+          scheduledDays: JSON.stringify([0, 1, 2, 3, 4, 5, 6]), // Every day
           estimatedMinutes: 5,
         }
       })

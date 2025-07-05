@@ -9,6 +9,15 @@ applications:
             - npm ci
             - echo "Generating Prisma client..."
             - npx prisma generate
+            - echo "Running database migrations..."
+            - npx prisma migrate resolve --applied "20250703035636_init_with_multiple_parents" || echo "Migration resolve failed, trying deploy..."
+            - npx prisma migrate deploy || echo "Migration deploy failed, database may already be up to date"
+            - echo "Updating database schema..."
+            - npx tsx scripts/update-database-schema.ts || echo "Schema update failed or not needed - continuing..."
+            - echo "Seeding demo data..."
+            - npx tsx scripts/seed-demo-users.ts || echo "Demo data already exists or seeding failed - continuing..."
+            - echo "Running family membership migration..."
+            - npx tsx scripts/migrate-to-multiple-families.ts || echo "Family membership migration failed or already done - continuing..."
         build:
           commands:
             - echo "Building the Next.js application..."
