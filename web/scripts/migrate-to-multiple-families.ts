@@ -13,6 +13,21 @@ async function migrateExistingUsers() {
   console.log('🚀 Starting migration to multiple families support...')
 
   try {
+    // Check if FamilyMembership table exists
+    let familyMembershipExists = false
+    try {
+      await prisma.$queryRaw`SELECT 1 FROM family_memberships LIMIT 1`
+      familyMembershipExists = true
+    } catch (error) {
+      console.log('ℹ️ FamilyMembership table does not exist yet - migration not needed')
+      return
+    }
+
+    if (!familyMembershipExists) {
+      console.log('ℹ️ FamilyMembership table not available, skipping migration')
+      return
+    }
+
     // Get all existing users
     const users = await prisma.user.findMany({
       select: {
@@ -72,16 +87,24 @@ async function migrateExistingUsers() {
       migratedCount++
     }
 
-    // Update family settings to allow multiple parents by default
-    const familyUpdateResult = await prisma.family.updateMany({
-      data: {
-        allowMultipleParents: true,
-        shareReports: false, // Conservative default
-        crossFamilyApproval: false // Conservative default
-      }
-    })
+    // Update family settings to allow multiple parents by default (if columns exist)
+    let familyUpdateResult = { count: 0 }
+    try {
+      // Check if the new family columns exist
+      await prisma.$queryRaw`SELECT column_name FROM information_schema.columns WHERE table_name = 'families' AND column_name = 'allowMultipleParents' LIMIT 1`
+      
+      familyUpdateResult = await prisma.family.updateMany({
+        data: {
+          allowMultipleParents: true,
+          shareReports: false, // Conservative default
+          crossFamilyApproval: false // Conservative default
+        }
+      })
 
-    console.log(`📋 Updated ${familyUpdateResult.count} families with new settings`)
+      console.log(`📋 Updated ${familyUpdateResult.count} families with new settings`)
+    } catch (error) {
+      console.log('ℹ️ New family columns not available, skipping family settings update')
+    }
 
     console.log('\n🎉 Migration completed successfully!')
     console.log(`✅ Migrated: ${migratedCount} users`)

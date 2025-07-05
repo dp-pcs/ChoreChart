@@ -7,13 +7,32 @@ async function seedDemoUsers() {
   try {
     console.log('🌱 Seeding demo users...')
 
-    // Create demo family
+    // Create demo family with schema-aware field handling
+    const familyData: any = {
+      name: 'The Demo Family',
+      weeklyAllowance: 50.00,
+      autoApproveChores: false,
+    }
+
+    // Only add new fields if they exist in the schema
+    try {
+      // Test if the allowMultipleParents field exists
+      await prisma.$queryRaw`SELECT column_name FROM information_schema.columns WHERE table_name = 'families' AND column_name = 'allowMultipleParents' LIMIT 1`
+      // If query succeeds, the column exists
+      familyData.allowMultipleParents = true
+      familyData.shareReports = false
+      familyData.crossFamilyApproval = false
+      familyData.enableStreaks = true
+      familyData.enableLeaderboard = true
+      familyData.enableAchievements = true
+      familyData.streakFreezeLimit = 3
+    } catch (error) {
+      // Column doesn't exist, skip the new fields
+      console.log('ℹ️ New family fields not available in current schema, using basic fields only')
+    }
+
     const demoFamily = await prisma.family.create({
-      data: {
-        name: 'The Demo Family',
-        weeklyAllowance: 50.00,
-        autoApproveChores: false,
-      }
+      data: familyData
     })
 
     console.log('✅ Created demo family:', demoFamily.name)
