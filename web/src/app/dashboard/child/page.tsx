@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { signOut } from 'next-auth/react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ChorbitChat } from '@/components/ui/chorbit-chat'
+import { ChorbieChat } from '@/components/ui/chorbit-chat'
 import { DailyCheckIn } from '@/components/ui/daily-check-in'
 import type { DailyCheckIn as DailyCheckInType } from '@/lib/behavior-tracking'
 import React from 'react'
@@ -85,7 +85,7 @@ export default function ChildDashboard() {
 
   const handleExportRequest = async (schedule: any) => {
     try {
-      const response = await fetch('/api/chorbit/export', {
+      const response = await fetch('/api/chorbie/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -100,7 +100,7 @@ export default function ChildDashboard() {
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `chorbit-schedule-${schedule.id}.ics`
+        a.download = `chorbie-schedule-${schedule.id}.ics`
         document.body.appendChild(a)
         a.click()
         window.URL.revokeObjectURL(url)
@@ -388,7 +388,7 @@ export default function ChildDashboard() {
         <Card className="bg-white shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-              💬 Chat with Chorbit
+              💬 Chat with Chorbie
               <Badge variant="secondary" className="text-xs">AI Assistant</Badge>
             </CardTitle>
             <CardDescription className="text-sm">
@@ -397,7 +397,7 @@ export default function ChildDashboard() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="h-64 sm:h-80">
-                             <ChorbitChat 
+                             <ChorbieChat 
                  userId={user.id}
                  userRole={user.role}
                  userName={user.name}

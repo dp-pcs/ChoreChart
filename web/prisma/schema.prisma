@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider      = "prisma-client-js"
   output        = "../src/generated/prisma"
@@ -17,144 +11,117 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  password  String?  // Optional for OAuth users
-  role      UserRole
-  familyId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Password reset fields
-  resetToken    String?   // Token for password reset
-  resetTokenExpiry DateTime? // Expiry time for reset token
-
-  // Personalization & AI learning
-  preferences Json? // Stores interests, motivational style, learned preferences
-
-  // Gamification & Streaks
-  currentLoginStreak    Int      @default(0)
-  longestLoginStreak    Int      @default(0)
-  lastLoginDate         DateTime?
-  currentCheckInStreak  Int      @default(0)
-  longestCheckInStreak  Int      @default(0)
-  lastCheckInDate       DateTime?
-  totalPoints           Int      @default(0)
-  level                 Int      @default(1)
-  experiencePoints      Int      @default(0)
-  streakFreezes         Int      @default(0) // Like Duolingo streak freeze
-  lastStreakFreezeUsed  DateTime?
-
-  // Relations
-  family                Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  familyMemberships     FamilyMembership[] // NEW: Multiple family support
-  choreAssignments      ChoreAssignment[]
-  choreSubmissions      ChoreSubmission[]
-  choreApprovals        ChoreApproval[]
-  messages              Message[]
-  rewards               Reward[]
-  weeklyReports         WeeklyReport[]
-  achievements          UserAchievement[]
+  id                   String             @id @default(cuid())
+  email                String             @unique
+  name                 String
+  password             String?
+  role                 UserRole
+  familyId             String
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  preferences          Json?
+  currentLoginStreak   Int                @default(0)
+  longestLoginStreak   Int                @default(0)
+  lastLoginDate        DateTime?
+  currentCheckInStreak Int                @default(0)
+  longestCheckInStreak Int                @default(0)
+  lastCheckInDate      DateTime?
+  totalPoints          Int                @default(0)
+  level                Int                @default(1)
+  experiencePoints     Int                @default(0)
+  streakFreezes        Int                @default(0)
+  lastStreakFreezeUsed DateTime?
+  resetToken           String?
+  resetTokenExpiry     DateTime?          @db.Timestamp(6)
+  choreApprovals       ChoreApproval[]
+  choreAssignments     ChoreAssignment[]
+  choreSubmissions     ChoreSubmission[]
+  familyMemberships    FamilyMembership[]
+  messages             Message[]
+  rewards              Reward[]
+  achievements         UserAchievement[]
+  family               Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  weeklyReports        WeeklyReport[]
 
   @@map("users")
 }
 
-// NEW: Support for multiple family memberships
 model FamilyMembership {
-  id       String   @id @default(cuid())
-  userId   String
-  familyId String
-  role     UserRole // Role in this specific family
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Membership settings
-  isActive    Boolean @default(true)
-  isPrimary   Boolean @default(false) // Primary family for notifications, billing
-  canInvite   Boolean @default(false) // Can invite new members to this family
-  canManage   Boolean @default(false) // Can edit family settings
-  permissions Json?   // Flexible permissions object
-
-  // Relations
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  id          String   @id @default(cuid())
+  userId      String
+  familyId    String
+  role        String
+  createdAt   DateTime @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime @default(now()) @updatedAt @db.Timestamp(6)
+  isActive    Boolean  @default(true)
+  isPrimary   Boolean  @default(false)
+  canInvite   Boolean  @default(false)
+  canManage   Boolean  @default(false)
+  permissions Json?
+  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, familyId])
   @@map("family_memberships")
 }
 
 model Family {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Settings
-  weeklyAllowance      Float   @default(0)
-  autoApproveChores    Boolean @default(false)
-  weekCloseDay         Int     @default(0) // 0 = Sunday
-  emailNotifications   Boolean @default(true)
-
-  // NEW: Co-parenting settings
-  allowMultipleParents Boolean @default(true)  // Allow children to be in multiple families
-  shareReports         Boolean @default(false) // Share reports with other families
-  crossFamilyApproval  Boolean @default(false) // Allow parents from other families to approve
-
-  // Gamification Settings
-  enableStreaks        Boolean @default(true)
-  enableLeaderboard    Boolean @default(true)
-  enableAchievements   Boolean @default(true)
-  streakFreezeLimit    Int     @default(3) // Per month
-
-  // Relations
-  users            User[]
-  familyMemberships FamilyMembership[] // NEW: Multiple family support
-  chores           Chore[]
-  choreAssignments ChoreAssignment[]
-  messages         Message[]
-  weeklyReports    WeeklyReport[]
-  achievements     Achievement[]
+  id                   String             @id @default(cuid())
+  name                 String
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  weeklyAllowance      Float              @default(0)
+  autoApproveChores    Boolean            @default(false)
+  weekCloseDay         Int                @default(0)
+  emailNotifications   Boolean            @default(true)
+  enableStreaks        Boolean            @default(true)
+  enableLeaderboard    Boolean            @default(true)
+  enableAchievements   Boolean            @default(true)
+  streakFreezeLimit    Int                @default(3)
+  allowMultipleParents Boolean            @default(true)
+  shareReports         Boolean            @default(false)
+  crossFamilyApproval  Boolean            @default(false)
+  achievements         Achievement[]
+  choreAssignments     ChoreAssignment[]
+  chores               Chore[]
+  familyMemberships    FamilyMembership[]
+  messages             Message[]
+  users                User[]
+  weeklyReports        WeeklyReport[]
 
   @@map("families")
 }
 
 model Chore {
-  id          String    @id @default(cuid())
-  familyId    String
-  title       String
-  description String?
-  type        ChoreType
-  frequency   ChoreFrequency
-  isRequired  Boolean   @default(false)
-  reward      Float     @default(0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  // Schedule settings
-  scheduledDays   String? // JSON array of days of week (0-6, Sunday=0)
-  scheduledTime   String? // HH:MM format
+  id               String            @id @default(cuid())
+  familyId         String
+  title            String
+  description      String?
+  type             ChoreType
+  frequency        ChoreFrequency
+  isRequired       Boolean           @default(false)
+  reward           Float             @default(0)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  scheduledDays    Int[]
+  scheduledTime    String?
   estimatedMinutes Int?
-
-  // Relations
-  family           Family            @relation(fields: [familyId], references: [id], onDelete: Cascade)
   assignments      ChoreAssignment[]
+  family           Family            @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
   @@map("chores")
 }
 
 model ChoreAssignment {
-  id       String   @id @default(cuid())
-  familyId String
-  userId   String
-  choreId  String
-  weekStart DateTime // Start of the week this assignment is for
-  createdAt DateTime @default(now())
-
-  // Relations
+  id          String            @id @default(cuid())
+  familyId    String
+  userId      String
+  choreId     String
+  weekStart   DateTime
+  createdAt   DateTime          @default(now())
+  chore       Chore             @relation(fields: [choreId], references: [id], onDelete: Cascade)
   family      Family            @relation(fields: [familyId], references: [id], onDelete: Cascade)
   user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  chore       Chore             @relation(fields: [choreId], references: [id], onDelete: Cascade)
   submissions ChoreSubmission[]
 
   @@unique([userId, choreId, weekStart])
@@ -162,34 +129,30 @@ model ChoreAssignment {
 }
 
 model ChoreSubmission {
-  id               String            @id @default(cuid())
-  assignmentId     String
-  userId           String
-  submittedAt      DateTime          @default(now())
-  completedAt      DateTime
-  notes            String?
-  imageUrl         String?
-  status           SubmissionStatus  @default(PENDING)
-
-  // Relations
-  assignment ChoreAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  approval   ChoreApproval?
+  id           String           @id @default(cuid())
+  assignmentId String
+  userId       String
+  submittedAt  DateTime         @default(now())
+  completedAt  DateTime
+  notes        String?
+  imageUrl     String?
+  status       SubmissionStatus @default(PENDING)
+  approval     ChoreApproval?
+  assignment   ChoreAssignment  @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("chore_submissions")
 }
 
 model ChoreApproval {
-  id           String   @id @default(cuid())
-  submissionId String   @unique
+  id           String          @id @default(cuid())
+  submissionId String          @unique
   approvedBy   String
-  approvedAt   DateTime @default(now())
+  approvedAt   DateTime        @default(now())
   approved     Boolean
   feedback     String?
-
-  // Relations
-  submission ChoreSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
-  approver   User             @relation(fields: [approvedBy], references: [id], onDelete: Cascade)
+  approver     User            @relation(fields: [approvedBy], references: [id], onDelete: Cascade)
+  submission   ChoreSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
 
   @@map("chore_approvals")
 }
@@ -198,15 +161,13 @@ model Message {
   id        String      @id @default(cuid())
   familyId  String
   fromId    String
-  toId      String?     // null for broadcast messages
+  toId      String?
   content   String
   type      MessageType @default(CHAT)
   createdAt DateTime    @default(now())
   readAt    DateTime?
-
-  // Relations
-  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  from   User   @relation(fields: [fromId], references: [id], onDelete: Cascade)
+  family    Family      @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  from      User        @relation(fields: [fromId], references: [id], onDelete: Cascade)
 
   @@map("messages")
 }
@@ -220,86 +181,72 @@ model Reward {
   type        RewardType @default(MONEY)
   awardedAt   DateTime   @default(now())
   awardedBy   String
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("rewards")
 }
 
 model WeeklyReport {
-  id           String   @id @default(cuid())
-  familyId     String
-  userId       String
-  weekStart    DateTime
-  weekEnd      DateTime
-  generatedAt  DateTime @default(now())
-
-  // Metrics
-  totalChores      Int
-  completedChores  Int
-  approvedChores   Int
-  deniedChores     Int
-  totalEarnings    Float
+  id                String   @id @default(cuid())
+  familyId          String
+  userId            String
+  weekStart         DateTime
+  weekEnd           DateTime
+  generatedAt       DateTime @default(now())
+  totalChores       Int
+  completedChores   Int
+  approvedChores    Int
+  deniedChores      Int
+  totalEarnings     Float
   potentialEarnings Float
-  
-  // AI Insights
-  aiInsights       Json?
-  recommendations  String?
-
-  // Relations
-  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aiInsights        Json?
+  recommendations   String?
+  family            Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, weekStart])
   @@map("weekly_reports")
 }
 
 model Achievement {
-  id          String   @id @default(cuid())
-  familyId    String
-  title       String
-  description String
-  icon        String   // Emoji or icon name
-  type        AchievementType
-  category    AchievementCategory
-  difficulty  AchievementDifficulty
-  points      Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-
-  // Requirements (JSON structure for flexibility)
-  requirements Json // { "streakDays": 7, "choreCount": 10, etc. }
-
-  // Rewards
-  rewardType        RewardType @default(MONEY)
-  rewardAmount      Float      @default(0)
+  id                String                @id @default(cuid())
+  familyId          String
+  title             String
+  description       String
+  icon              String
+  type              AchievementType
+  category          AchievementCategory
+  difficulty        AchievementDifficulty
+  points            Int                   @default(0)
+  isActive          Boolean               @default(true)
+  createdAt         DateTime              @default(now())
+  requirements      Json
+  rewardType        RewardType            @default(MONEY)
+  rewardAmount      Float                 @default(0)
   rewardDescription String?
+  family            Family                @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  userAchievements  UserAchievement[]
 
-  // Relations
-  family         Family            @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  userAchievements UserAchievement[]
-
+  @@index([familyId])
   @@map("achievements")
 }
 
 model UserAchievement {
-  id            String   @id @default(cuid())
+  id            String      @id @default(cuid())
   userId        String
   achievementId String
-  unlockedAt    DateTime @default(now())
-  progress      Float    @default(0) // 0.0 to 1.0 for partial progress
-  isCompleted   Boolean  @default(false)
-
-  // Relations
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  unlockedAt    DateTime    @default(now())
+  progress      Float       @default(0)
+  isCompleted   Boolean     @default(false)
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, achievementId])
+  @@index([achievementId])
+  @@index([userId])
   @@map("user_achievements")
 }
 
-// Enums
 enum UserRole {
   PARENT
   CHILD
@@ -331,8 +278,6 @@ enum MessageType {
   SYSTEM
   REMINDER
   REWARD_NOTIFICATION
-  ACHIEVEMENT_UNLOCK
-  STREAK_MILESTONE
 }
 
 enum RewardType {
@@ -340,8 +285,6 @@ enum RewardType {
   PRIVILEGE
   ITEM
   EXPERIENCE
-  POINTS
-  BADGE
 }
 
 enum AchievementType {

@@ -20,6 +20,8 @@ export default function ParentDashboard() {
   const [isAddChoreDialogOpen, setIsAddChoreDialogOpen] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showInviteDialog, setShowInviteDialog] = useState(false)
+  const [settingsChanged, setSettingsChanged] = useState(false)
+  const [pendingSettings, setPendingSettings] = useState<any>({})
 
   useEffect(() => {
     if (status === 'loading') return // Still loading
@@ -186,6 +188,47 @@ export default function ParentDashboard() {
       type: 'success',
       text: successMessage
     })
+  }
+
+  const handleSettingChange = (setting: string, value: boolean) => {
+    setPendingSettings((prev: any) => ({
+      ...prev,
+      [setting]: value
+    }))
+    setSettingsChanged(true)
+  }
+
+  const handleSaveSettings = async () => {
+    try {
+      const response = await fetch('/api/family-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pendingSettings)
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update settings')
+      }
+
+      const result = await response.json()
+      
+      setMessage({
+        type: 'success',
+        text: 'Settings updated successfully!'
+      })
+      
+      // Refresh dashboard data to reflect changes
+      fetchDashboardData()
+      setShowSettings(false)
+      setSettingsChanged(false)
+      setPendingSettings({})
+      
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: 'Failed to update settings. Please try again.'
+      })
+    }
   }
 
   return (
@@ -425,41 +468,56 @@ export default function ParentDashboard() {
               <CardDescription>Configure your family's preferences</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Auto-approve chores</span>
-                  <Badge variant={dashboardData.family.settings.autoApproveChores ? "default" : "secondary"}>
-                    {dashboardData.family.settings.autoApproveChores ? "On" : "Off"}
-                  </Badge>
+                  <input
+                    type="checkbox"
+                    checked={dashboardData.family.settings.autoApproveChores}
+                    onChange={(e) => handleSettingChange('autoApproveChores', e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
                 </div>
+                <p className="text-xs text-gray-500 ml-0">
+                  When enabled, children's chore submissions are automatically approved and rewards are awarded instantly. When disabled (default), parents must manually review and approve each submission.
+                </p>
+                
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Allow multiple parents</span>
-                  <Badge variant={dashboardData.family.settings.allowMultipleParents ? "default" : "secondary"}>
-                    {dashboardData.family.settings.allowMultipleParents ? "On" : "Off"}
-                  </Badge>
+                  <input
+                    type="checkbox"
+                    checked={dashboardData.family.settings.allowMultipleParents}
+                    onChange={(e) => handleSettingChange('allowMultipleParents', e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
                 </div>
+                
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Email notifications</span>
-                  <Badge variant={dashboardData.family.settings.emailNotifications ? "default" : "secondary"}>
-                    {dashboardData.family.settings.emailNotifications ? "On" : "Off"}
-                  </Badge>
+                  <input
+                    type="checkbox"
+                    checked={dashboardData.family.settings.emailNotifications}
+                    onChange={(e) => handleSettingChange('emailNotifications', e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
                 </div>
+                
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Share reports</span>
-                  <Badge variant={dashboardData.family.settings.shareReports ? "default" : "secondary"}>
-                    {dashboardData.family.settings.shareReports ? "On" : "Off"}
-                  </Badge>
+                  <input
+                    type="checkbox"
+                    checked={dashboardData.family.settings.shareReports}
+                    onChange={(e) => handleSettingChange('shareReports', e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
                 </div>
               </div>
               <div className="flex justify-end space-x-2">
                 <Button variant="outline" onClick={() => setShowSettings(false)}>
                   Close
                 </Button>
-                <Button onClick={() => {
-                  setMessage({ type: 'success', text: 'Settings feature coming soon!' })
-                  setShowSettings(false)
-                }}>
-                  Edit Settings
+                <Button onClick={handleSaveSettings} disabled={!settingsChanged}>
+                  Save Changes
                 </Button>
               </div>
             </CardContent>

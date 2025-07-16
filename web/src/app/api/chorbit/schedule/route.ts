@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { chorbit } from '@/lib/chorbit'
+import { chorbie } from '@/lib/chorbit'
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const schedule = await chorbit.generateSchedule(
+    const schedule = await chorbie.generateSchedule(
       userInput,
       availableTime,
       currentChores || [],
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(schedule)
     
   } catch (error) {
-    console.error('Chorbit schedule generation error:', error)
+    console.error('Chorbie schedule generation error:', error)
     return NextResponse.json(
       { error: 'Failed to generate schedule' },
       { status: 500 }

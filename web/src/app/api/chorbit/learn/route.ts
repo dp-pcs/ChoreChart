@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     // For now, just log the learning data
     // In a full implementation, you'd save this to a database
-    console.log('Chorbit Learning:', {
+    console.log('Chorbie Learning:', {
       userId,
       conversation: conversation.substring(0, 100) + '...',
       source,
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     })
     
   } catch (error) {
-    console.error('Chorbit learn error:', error)
+    console.error('Chorbie learn error:', error)
     return NextResponse.json(
       { error: 'Failed to process learning data' },
       { status: 500 }

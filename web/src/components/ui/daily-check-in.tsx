@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { ChorbitChat } from '@/components/ui/chorbit-chat'
+import { ChorbieChat } from '@/components/ui/chorbit-chat'
 import type { DailyCheckIn } from '@/lib/behavior-tracking'
 
 interface QuickCheckInProps {
@@ -19,7 +19,7 @@ export function DailyCheckIn({ userId, userName, onSubmit, existingCheckIn }: Qu
   const [currentStep, setCurrentStep] = useState(0)
   const [checkInData, setCheckInData] = useState<Partial<DailyCheckIn>>(existingCheckIn || {})
   const [calendarEvents, setCalendarEvents] = useState<any[]>([])
-  const [showChorbitHelper, setShowChorbitHelper] = useState(false)
+  const [showChorbieHelper, setShowChorbieHelper] = useState(false)
 
   // Quick selection options
   const energyLevels = [
@@ -336,19 +336,19 @@ export function DailyCheckIn({ userId, userName, onSubmit, existingCheckIn }: Qu
       )
     },
     {
-      title: "Quick reflection with Chorbit 🤖",
+      title: "Quick reflection with Chorbie 🤖",
       component: (
         <div className="space-y-4">
           <div className="text-center">
             <p className="text-lg text-gray-600 mb-4">
-              Chorbit wants to hear about your day! This helps us understand patterns and give you better advice.
+              Chorbie wants to hear about your day! This helps us understand patterns and give you better advice.
             </p>
           </div>
           
                      <Card>
              <CardContent className="p-4">
                <div className="h-80 overflow-hidden">
-                 <ChorbitChat
+                 <ChorbieChat
                    userId={userId}
                    userRole="CHILD"
                    userName={userName}
@@ -392,7 +392,7 @@ export function DailyCheckIn({ userId, userName, onSubmit, existingCheckIn }: Qu
       case 1: return checkInData.physicalActivity && checkInData.physicalActivity.length > 0
       case 2: return checkInData.socialTime
       case 3: return checkInData.screenTime !== undefined && checkInData.bedtimeLastNight
-      case 4: return true // Chorbit chat is optional
+      case 4: return true // Chorbie chat is optional
       default: return false
     }
   }
@@ -448,10 +448,10 @@ export function DailyCheckIn({ userId, userName, onSubmit, existingCheckIn }: Qu
              {currentStep < steps.length - 1 && (
                <Button 
                  variant="outline"
-                 onClick={() => setShowChorbitHelper(!showChorbitHelper)}
+                 onClick={() => setShowChorbieHelper(!showChorbieHelper)}
                  size="sm"
                >
-                 💬 Ask Chorbit
+                 💬 Ask Chorbie
                </Button>
              )}
              
@@ -467,15 +467,15 @@ export function DailyCheckIn({ userId, userName, onSubmit, existingCheckIn }: Qu
          </div>
       </Card>
 
-             {/* Optional Chorbit Helper */}
-       {showChorbitHelper && (
+                       {/* Optional Chorbie Helper */}
+          {showChorbieHelper && (
          <Card>
            <CardHeader>
-             <CardTitle className="text-lg">Ask Chorbit for Help 🤖</CardTitle>
+                           <CardTitle className="text-lg">Ask Chorbie for Help 🤖</CardTitle>
              <Button 
                variant="ghost" 
                size="sm" 
-               onClick={() => setShowChorbitHelper(false)}
+                               onClick={() => setShowChorbieHelper(false)}
                className="absolute top-4 right-4"
              >
                ✕
@@ -483,7 +483,7 @@ export function DailyCheckIn({ userId, userName, onSubmit, existingCheckIn }: Qu
            </CardHeader>
            <CardContent>
              <div className="h-64 overflow-hidden">
-               <ChorbitChat
+               <ChorbieChat
                  userId={userId}
                  userRole="CHILD"
                  userName={userName}

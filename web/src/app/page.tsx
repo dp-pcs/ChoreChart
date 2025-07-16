@@ -66,7 +66,7 @@ export default function Home() {
         <div className="max-w-4xl mx-auto text-center">
           <div className="text-6xl sm:text-8xl mb-6">🤖👨‍👩‍👧‍👦</div>
           <h2 className="text-4xl sm:text-6xl font-bold text-gray-900 mb-6">
-            Meet <span className="text-blue-600">Chorbit</span>
+            Meet <span className="text-blue-600">Chorbie</span>
           </h2>
           <p className="text-xl sm:text-2xl text-gray-600 mb-8 leading-relaxed">
             The first AI assistant designed specifically for kids to make chores fun, 
@@ -118,7 +118,7 @@ export default function Home() {
             <Card className="border-2 hover:border-blue-200 transition-colors">
               <CardHeader className="text-center pb-3">
                 <div className="text-4xl mb-3">🤖</div>
-                <CardTitle className="text-xl">Chorbit AI Assistant</CardTitle>
+                <CardTitle className="text-xl">Chorbie AI Assistant</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 text-center text-sm sm:text-base">
@@ -174,7 +174,7 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 text-center text-sm sm:text-base">
-                  Chorbit teaches kids how to estimate time, prioritize tasks, 
+                  Chorbie teaches kids how to estimate time, prioritize tasks, 
                   and build routines that stick.
                 </p>
               </CardContent>
@@ -203,7 +203,7 @@ export default function Home() {
             See ChoreChart in Action
           </h3>
           <p className="text-lg text-gray-600 mb-8">
-            Try our interactive demos to see how Chorbit helps families
+            Try our interactive demos to see how Chorbie helps families
           </p>
 
           <div className="grid sm:grid-cols-2 gap-6">
@@ -212,7 +212,7 @@ export default function Home() {
                 <div className="text-5xl mb-3">🧒</div>
                 <CardTitle className="text-xl">Kid Experience</CardTitle>
                 <CardDescription>
-                  See how Noah interacts with Chorbit
+                  See how Noah interacts with Chorbie
                 </CardDescription>
               </CardHeader>
               <CardContent>

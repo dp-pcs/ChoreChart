@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { chorbit } from '@/lib/chorbit'
+import { chorbie } from '@/lib/chorbit'
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,13 +15,13 @@ export async function POST(request: NextRequest) {
     const exportStartDate = startDate ? new Date(startDate) : new Date()
     
     if (format === 'ics' || !format) {
-      const icsContent = chorbit.generateiOSCalendarFile(schedule, exportStartDate)
+      const icsContent = chorbie.generateiOSCalendarFile(schedule, exportStartDate)
       
       return new NextResponse(icsContent, {
         status: 200,
         headers: {
           'Content-Type': 'text/calendar',
-          'Content-Disposition': `attachment; filename="chorbit-schedule-${schedule.id}.ics"`
+          'Content-Disposition': `attachment; filename="chorbie-schedule-${schedule.id}.ics"`
         }
       })
     }
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
         schedule,
         startDate: exportStartDate,
         appName: 'ChoreChart',
-        generatedBy: 'Chorbit AI'
+        generatedBy: 'Chorbie AI'
       }
       
       return NextResponse.json(shortcutsData)
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     )
     
   } catch (error) {
-    console.error('Chorbit export error:', error)
+    console.error('Chorbie export error:', error)
     return NextResponse.json(
       { error: 'Failed to export schedule' },
       { status: 500 }

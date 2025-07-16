@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Chorebit - Smart Family Management',
-  description: 'AI-powered family chore management with smart allowance tracking, behavioral insights, and Chorbit AI assistant for kids.',
+  description: 'AI-powered family chore management with smart allowance tracking, behavioral insights, and Chorbie AI assistant for kids.',
   keywords: ['chores', 'family', 'kids', 'allowance', 'AI', 'parenting', 'behavior tracking'],
   authors: [{ name: 'Chorebit Team' }],
   creator: 'Chorebit',

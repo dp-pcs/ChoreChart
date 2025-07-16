@@ -5,20 +5,20 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import type { ChorbitMessage, ChorbitSchedule, UserPreferences } from '@/lib/chorbit'
+import type { ChorbieMessage, ChorbieSchedule, UserPreferences } from '@/lib/chorbit'
 
-interface ChorbitChatProps {
+interface ChorbieChatProps {
   userId: string
   userRole: 'PARENT' | 'CHILD'
   userName: string
   currentChores?: any[]
   weeklyEarnings?: number
   completionRate?: number
-  onScheduleGenerated?: (schedule: ChorbitSchedule) => void
-  onExportRequest?: (schedule: ChorbitSchedule) => void
+  onScheduleGenerated?: (schedule: ChorbieSchedule) => void
+  onExportRequest?: (schedule: ChorbieSchedule) => void
 }
 
-export function ChorbitChat({
+export function ChorbieChat({
   userId,
   userRole,
   userName,
@@ -27,14 +27,14 @@ export function ChorbitChat({
   completionRate = 0,
   onScheduleGenerated,
   onExportRequest
-}: ChorbitChatProps) {
-  const [messages, setMessages] = useState<ChorbitMessage[]>([])
+}: ChorbieChatProps) {
+  const [messages, setMessages] = useState<ChorbieMessage[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null)
   const [isInitialized, setIsInitialized] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
-  const [generatedSchedule, setGeneratedSchedule] = useState<ChorbitSchedule | null>(null)
+  const [generatedSchedule, setGeneratedSchedule] = useState<ChorbieSchedule | null>(null)
 
   const scrollToBottom = () => {
     if (scrollAreaRef.current) {
@@ -83,14 +83,14 @@ export function ChorbitChat({
         const interests = userPreferences.interests || []
         
         if (interests.includes('basketball')) {
-          return `Hey ${userName}! 🏀 I'm Chorbit, your AI chore assistant! Ready to dominate today's game plan? Let's strategize your chores and maybe chat about basketball too!`
-        }
-        
-        if (interests.includes('gaming')) {
-          return `Hey ${userName}! 🎮 I'm Chorbit, your AI chore assistant! Ready to tackle today's quest? Let's level up your productivity!`
-        }
-        
-        return `Hey ${userName}! 👋 I'm Chorbit, your AI chore assistant! I can help you plan your day, prioritize tasks, and make chores more manageable. What would you like to work on?`
+                  return `Hey ${userName}! 🏀 I'm Chorbie, your AI best friend! Ready to dominate today? I can help with chores, homework, chat about basketball, answer questions, or just hang out! What's up? ⭐`
+      }
+      
+      if (interests.includes('gaming')) {
+        return `Hey ${userName}! 🎮 I'm Chorbie, your AI buddy! Ready for today's quests? I can help with chores, homework, chat about games, answer any questions, or just talk about whatever! What's going on? ✨`
+      }
+      
+      return `Hey ${userName}! 👋 I'm Chorbie, your AI friend! I'm here to help with chores, homework, answer questions about anything, or just chat about your interests! Think of me as your always-available smart buddy. What's happening today? 🌟`
       }
 
       setMessages([{
@@ -106,7 +106,7 @@ export function ChorbitChat({
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return
 
-    const userMessage: ChorbitMessage = {
+    const userMessage: ChorbieMessage = {
       id: `user-${Date.now()}`,
       role: 'user',
       content: input.trim(),
@@ -159,7 +159,7 @@ export function ChorbitChat({
 
     } catch (error) {
       console.error('Chat error:', error)
-      const errorMessage: ChorbitMessage = {
+      const errorMessage: ChorbieMessage = {
         id: `error-${Date.now()}`,
         role: 'assistant',
         content: "I'm having some technical difficulties right now, but I'm still here to help! Could you try asking me that again? 🤖",
@@ -191,7 +191,7 @@ export function ChorbitChat({
 
       if (!response.ok) throw new Error('Failed to generate schedule')
 
-      const schedule: ChorbitSchedule = await response.json()
+      const schedule: ChorbieSchedule = await response.json()
       setGeneratedSchedule(schedule)
       onScheduleGenerated?.(schedule)
 
@@ -213,36 +213,42 @@ export function ChorbitChat({
     }
   }
 
-  // Personalized quick prompts based on user interests
+  // Enhanced quick prompts that make kids want to engage
   const getQuickPrompts = () => {
     const interests = userPreferences?.interests || []
     
     if (interests.includes('basketball')) {
       return [
-        "Help me game plan my day",
-        "What's my starting lineup of chores?",
-        "I need motivation, coach!",
-        "Let's create a winning strategy",
-        "How do I stay in the zone?"
+        "Help me plan my day like a game strategy 🏀",
+        "What should I tackle first?",
+        "I need some motivation, coach!",
+        "Help me with my math homework 📐",
+        "Tell me something cool about basketball! 🏆",
+        "I'm feeling overwhelmed 😅"
       ]
     }
     
     if (interests.includes('gaming')) {
       return [
-        "Help me plan my daily quest",
-        "What should I level up first?",
-        "I need a power-up boost!",
-        "Create my achievement route",
-        "How do I unlock today's rewards?"
+        "Help me plan my daily quests 🎮",
+        "What's my next achievement?",
+        "I need a motivation power-up! ⚡",
+        "Help me with homework 📚",
+        "Tell me a cool gaming fact! 🎯",
+        "I'm stuck on something 🤔"
       ]
     }
     
+    // Default prompts that appeal to all kids
     return [
-      "Help me plan my morning",
+      "Help me plan my day 📅",
+      "I need help with homework 📚",
       "What should I do first?",
-      "I'm feeling overwhelmed",
-      "Make chores more fun",
-      "How do I stay motivated?"
+      "I'm feeling overwhelmed 😅",
+      "Tell me something interesting! 🤓",
+      "Make my chores more fun 🎉",
+      "I have a random question 🤔",
+      "I'm bored, entertain me! 😄"
     ]
   }
 
@@ -259,15 +265,15 @@ export function ChorbitChat({
             </span>
           </div>
           <div>
-            <CardTitle className="text-xl">Chorbit AI</CardTitle>
+            <CardTitle className="text-xl">Chorbie AI</CardTitle>
             <CardDescription className="text-purple-100">
-              {userPreferences?.interests?.includes('basketball') ? 'Your basketball-loving chore coach' :
-               userPreferences?.interests?.includes('gaming') ? 'Your gaming-style quest master' :
-               'Your friendly chore assistant'}
+              {userPreferences?.interests?.includes('basketball') ? 'Your basketball-loving AI friend' :
+               userPreferences?.interests?.includes('gaming') ? 'Your gaming buddy AI assistant' :
+               'Your smart AI best friend'}
             </CardDescription>
           </div>
           <Badge variant="secondary" className="ml-auto">
-            {userRole === 'CHILD' ? 'Kid Mode' : 'Parent Mode'}
+            {userRole === 'CHILD' ? '🌟 Friend Mode' : '👨‍👩‍👧‍👦 Parent Mode'}
           </Badge>
         </div>
       </CardHeader>
@@ -285,13 +291,13 @@ export function ChorbitChat({
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] p-3 rounded-lg ${
+                  className={`max-w-[85%] p-3 rounded-lg ${
                     message.role === 'user'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-100 text-gray-900'
+                      ? 'bg-blue-500 text-white rounded-br-sm'
+                      : 'bg-gray-100 text-gray-900 rounded-bl-sm'
                   }`}
                 >
-                  <p className="text-sm">{message.content}</p>
+                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                   <p className="text-xs opacity-70 mt-1">
                     {new Date(message.timestamp).toLocaleTimeString()}
                   </p>
@@ -301,11 +307,11 @@ export function ChorbitChat({
             
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-gray-100 p-3 rounded-lg">
+                <div className="bg-gray-100 p-3 rounded-lg rounded-bl-sm">
                   <p className="text-sm text-gray-600">
-                    {userPreferences?.interests?.includes('basketball') ? 'Coach Chorbit is drawing up a play... 🏀' :
-                     userPreferences?.interests?.includes('gaming') ? 'Chorbit is loading the next level... 🎮' :
-                     'Chorbit is thinking... 🤔'}
+                    {userPreferences?.interests?.includes('basketball') ? 'Chorbie is drawing up the perfect play... 🏀💭' :
+                     userPreferences?.interests?.includes('gaming') ? 'Chorbie is loading the next level... 🎮⚡' :
+                     'Chorbie is thinking of the best way to help... 🤖💭'}
                   </p>
                 </div>
               </div>
@@ -338,15 +344,18 @@ export function ChorbitChat({
 
       <CardFooter className="p-4 border-t flex-shrink-0">
         <div className="w-full space-y-3">
-          {/* Quick Prompts */}
-          <div className="flex flex-wrap gap-2">
-            {quickPrompts.map((prompt) => (
+          {/* Enhanced Quick Prompts */}
+          <div className="flex flex-wrap gap-1.5">
+            {quickPrompts.map((prompt, index) => (
               <Button
                 key={prompt}
                 variant="outline"
                 size="sm"
                 onClick={() => setInput(prompt)}
-                className="text-xs"
+                className={`text-xs transition-all hover:scale-105 ${
+                  index < 3 ? 'bg-purple-50 border-purple-200 hover:bg-purple-100' : 
+                  'bg-blue-50 border-blue-200 hover:bg-blue-100'
+                }`}
               >
                 {prompt}
               </Button>
@@ -360,9 +369,9 @@ export function ChorbitChat({
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder={
-                userPreferences?.interests?.includes('basketball') ? "Ask your coach anything about chores, strategy, or basketball..." :
-                userPreferences?.interests?.includes('gaming') ? "Ask about your daily quests, achievements, or gaming..." :
-                "Ask Chorbit anything about chores, schedules, or time management..."
+                userPreferences?.interests?.includes('basketball') ? "Ask me about chores, homework, basketball, or anything! 🏀" :
+                userPreferences?.interests?.includes('gaming') ? "Ask about chores, homework, games, or anything at all! 🎮" :
+                "Ask me about chores, homework, or anything you're curious about! 🤖"
               }
               disabled={isLoading}
               className="flex-1"
@@ -370,9 +379,9 @@ export function ChorbitChat({
             <Button 
               onClick={sendMessage} 
               disabled={!input.trim() || isLoading}
-              className="bg-purple-500 hover:bg-purple-600"
+              className="bg-purple-500 hover:bg-purple-600 px-6"
             >
-              Send
+              {isLoading ? '🤔' : '💬'}
             </Button>
           </div>
         </div>

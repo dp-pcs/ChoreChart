@@ -1,4 +1,4 @@
-// Chorbit - AI Assistant for ChoreChart
+// Chorbie - AI Assistant for ChoreChart
 let openai: any = null
 
 // Initialize OpenAI only on server side
@@ -9,13 +9,13 @@ if (typeof window === 'undefined' && process.env.OPENAI_API_KEY) {
     openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     })
-    console.log('OpenAI initialized successfully for Chorbit')
+    console.log('OpenAI initialized successfully for Chorbie')
   } catch (error) {
-    console.log('OpenAI not available, using demo mode for Chorbit:', error)
+    console.log('OpenAI not available, using demo mode for Chorbie:', error)
   }
 }
 
-export interface ChorbitMessage {
+export interface ChorbieMessage {
   id: string
   role: 'user' | 'assistant' | 'system'
   content: string
@@ -23,7 +23,7 @@ export interface ChorbitMessage {
   userId: string
 }
 
-export interface ChorbitSchedule {
+export interface ChorbieSchedule {
   id: string
   title: string
   tasks: {
@@ -49,46 +49,43 @@ export interface UserPreferences {
   learnedFacts: { [key: string]: any } // AI-discovered preferences
 }
 
-// Chorbit's enhanced personality and capabilities
-const CHORBIT_BASE_PROMPT = `You are Chorbit, a friendly and encouraging AI assistant designed specifically for kids and families managing chores and responsibilities.
+// Enhanced Chorbie personality - much more engaging and kid-friendly
+const CHORBIE_BASE_PROMPT = `You are Chorbie, an amazing AI best friend designed specifically for kids! You're like having a super-smart, encouraging friend who never gets tired of helping.
 
 CORE PERSONALITY:
-- Enthusiastic and positive, but not overly childish
-- Encouraging and supportive, especially when kids feel overwhelmed
-- Respectful of family rules and parental authority
-- Uses age-appropriate language and concepts
-- Makes chores feel manageable and sometimes even fun
+- Super enthusiastic and genuinely excited to help kids succeed
+- Like a mix of a helpful older sibling, a great teacher, and a fun friend
+- Use age-appropriate language but don't talk down to kids
+- Celebrate wins (even small ones!) and provide comfort during challenges
+- Make everything feel achievable and fun
+- Remember what kids tell you and reference it in future conversations
 
-CAPABILITIES:
-- Help kids prioritize and schedule their chores
-- Break down overwhelming tasks into manageable steps
-- Suggest time-saving tips and efficient workflows
-- Generate personalized schedules that can be exported to iOS
-- Provide motivational support and celebrate progress
-- Teach time management and responsibility skills
-- Answer questions about chores, cleaning, and organization
-- PERSONALIZATION: Use user interests and preferences to make conversations more engaging
+YOUR SUPERPOWERS:
+🎯 CHORE HELPER: Turn boring chores into missions, games, or challenges
+📚 HOMEWORK BUDDY: Help break down assignments, study tips, organization
+🏀 SPORTS & INTERESTS: Chat about basketball, soccer, gaming, hobbies - you love what they love!
+⏰ TIME WIZARD: Create schedules, plans, and help with time management
+🌟 LIFE COACH: Motivation, confidence building, problem-solving
+🤔 KNOWLEDGE FRIEND: Answer questions about science, history, math, life
 
-SAFETY GUIDELINES:
-- Always suggest kids discuss major schedule changes with parents
-- Never override parental rules or chore assignments
-- While you're great at helping with chores and time management, you can also have natural conversations about their interests!
-- When they share interests (like basketball, sports, gaming), engage genuinely and connect it back to motivation and life skills
-- Use their interests to make chores more engaging and provide relevant encouragement
-- Encourage family communication and cooperation
+CONVERSATION STYLE:
+- Be genuinely curious about their interests and life
+- Ask follow-up questions to show you care
+- Share fun facts related to their interests
+- Use emojis and enthusiasm appropriately
+- Connect everything back to building confidence and good habits
+- Remember: You're not just a chore app - you're their AI friend who helps with EVERYTHING!
 
-RESPONSE STYLE:
-- Keep responses helpful but concise (2-3 sentences usually)
-- Use encouraging language ("Great question!", "You've got this!", "Smart thinking!")
-- Offer specific, actionable advice
-- When appropriate, break tasks into numbered steps
-- Celebrate small wins and progress
-- PERSONALIZE based on user interests when possible
+SAFETY & RESPECT:
+- Always suggest discussing big decisions with parents
+- Respect family rules and authority
+- Encourage healthy habits and positive choices
+- If asked about anything inappropriate, redirect to positive topics
 
-Remember: You're here to help kids succeed with their responsibilities while building good habits and confidence!`
+Remember: Kids should feel like they have a super-smart, always-available friend who genuinely cares about them and wants to help them succeed in everything!`
 
 export class ChorbitAI {
-  private conversationHistory: ChorbitMessage[] = []
+  private conversationHistory: ChorbieMessage[] = []
   
   async chat(
     message: string, 
@@ -101,10 +98,10 @@ export class ChorbitAI {
       completionRate: number
       preferences?: UserPreferences
     }
-  ): Promise<ChorbitMessage> {
+  ): Promise<ChorbieMessage> {
     
     // Add user message to history
-    const userMessage: ChorbitMessage = {
+    const userMessage: ChorbieMessage = {
       id: `user-${Date.now()}`,
       role: 'user',
       content: message,
@@ -114,7 +111,7 @@ export class ChorbitAI {
     this.conversationHistory.push(userMessage)
     
     // Build personalized context
-    let contextualPrompt = CHORBIT_BASE_PROMPT
+    let contextualPrompt = CHORBIE_BASE_PROMPT
     
     if (userContext) {
       contextualPrompt += `\n\nCURRENT USER CONTEXT:
@@ -180,30 +177,30 @@ PERSONALIZATION INSTRUCTIONS:
         temperature: 0.7,
       })
       
-      const chorbitResponse: ChorbitMessage = {
-        id: `chorbit-${Date.now()}`,
+      const chorbieResponse: ChorbieMessage = {
+        id: `chorbie-${Date.now()}`,
         role: 'assistant',
         content: response.choices[0]?.message?.content || "Sorry, I'm having trouble thinking right now. Try asking me again!",
         timestamp: new Date(),
         userId
       }
       
-      this.conversationHistory.push(chorbitResponse)
+      this.conversationHistory.push(chorbieResponse)
       
       // Learn from conversation
       if (userContext?.preferences) {
-        await this.learnFromConversation(message, chorbitResponse.content, userId)
+        await this.learnFromConversation(message, chorbieResponse.content, userId)
       }
       
-      return chorbitResponse
+      return chorbieResponse
       
     } catch (error) {
       console.error('Chorbit AI Error:', error)
       
-      // Provide personalized fallback responses
-      let fallbackContent = this.getPersonalizedFallback(message, userContext?.preferences)
+      // Use enhanced intelligent fallback responses
+      let fallbackContent = this.getIntelligentFallback(message, userContext)
       
-      const errorResponse: ChorbitMessage = {
+      const errorResponse: ChorbieMessage = {
         id: `error-${Date.now()}`,
         role: 'assistant',
         content: fallbackContent,
@@ -211,6 +208,7 @@ PERSONALIZATION INSTRUCTIONS:
         userId
       }
       
+      this.conversationHistory.push(errorResponse)
       return errorResponse
     }
   }
@@ -311,48 +309,114 @@ PERSONALIZATION INSTRUCTIONS:
     }
   }
 
-  private getPersonalizedFallback(message: string, preferences?: UserPreferences): string {
-    const interests = preferences?.interests || []
+  // MASSIVELY enhanced intelligent fallback system
+  private getIntelligentFallback(message: string, userContext?: any): string {
     const msg = message.toLowerCase()
+    const userName = userContext?.userName || 'friend'
+    const interests = userContext?.preferences?.interests || []
     
-    // Greeting responses
-    if (msg.includes('hello') || msg.includes('hi') || msg.includes('hey') || msg.includes('good morning')) {
-      return "Hey there! 👋 I'm Chorbit, your AI chore assistant! I'm here to help you tackle your tasks, stay organized, and maybe even make chores fun. What's on your to-do list today?"
+    // === GREETINGS & INTRODUCTIONS ===
+    if (msg.includes('hello') || msg.includes('hi') || msg.includes('hey') || msg.includes('good morning') || msg.includes('what are you') || msg.includes('who are you')) {
+      const greetings = [
+        `Hey ${userName}! 👋 I'm Chorbie, your AI friend! Think of me as your super-smart buddy who's always here to help with chores, homework, questions about life, or just to chat about what you're into! What's on your mind today?`,
+        `Hi there, ${userName}! 🌟 I'm Chorbie - imagine having a really smart friend who never gets tired of helping you succeed! I can help with chores, homework, answer questions about almost anything, and chat about your interests. What would you like to explore today?`,
+        `Hey ${userName}! 🚀 I'm Chorbie, your personal AI assistant and friend! I'm here to help make your day awesome - whether that's tackling chores, getting homework done, learning cool stuff, or just having a fun conversation. What's going on today?`
+      ]
+      return greetings[Math.floor(Math.random() * greetings.length)]
     }
-    
-    // Schedule/planning help
-    if (msg.includes('schedule') || msg.includes('plan') || msg.includes('organize')) {
-      if (interests.includes('basketball')) {
-        return "Let's game-plan your day! 🏀 Just like creating plays on the court, we can strategize your chores to maximize your time. Tell me what tasks you need to tackle, and I'll help you create a winning schedule!"
+
+    // === HOMEWORK & SCHOOL HELP ===
+    if (msg.includes('homework') || msg.includes('school') || msg.includes('study') || msg.includes('math') || msg.includes('science') || msg.includes('history') || msg.includes('english') || msg.includes('assignment')) {
+      if (msg.includes('math')) {
+        return `📐 Math homework, ${userName}? I love helping with math! Whether it's basic arithmetic, fractions, algebra, or geometry - I can break it down step by step. What specific math topic are you working on? Don't worry, we'll make it click! 🧮✨`
       }
-      return "I love helping with planning! 📅 Let's break down your day and make it manageable. What chores or tasks do you need to get done? I can help you prioritize and create a schedule that works!"
-    }
-    
-    // Motivation and encouragement
-    if (msg.includes('motivation') || msg.includes('tired') || msg.includes('overwhelmed') || msg.includes('hard')) {
-      if (interests.includes('basketball')) {
-        return "You've got this, superstar! 🏀⭐ Even the best players have tough days, but champions push through. Remember: every chore you complete is like scoring points - you're building your skills and getting stronger! Take it one task at a time!"
+      if (msg.includes('science')) {
+        return `🔬 Science is so cool! Whether it's biology, chemistry, physics, or earth science, I can help explain concepts in ways that make sense. What science topic are you studying? Let's make learning fun! ⚗️🌟`
       }
-      return "I believe in you! 💪✨ When things feel overwhelming, remember that every big accomplishment starts with small steps. Pick just ONE easy task to start with - momentum builds motivation! You're doing great!"
+      if (msg.includes('history')) {
+        return `📚 History tells amazing stories! I can help you understand timelines, important events, and why things happened. What period or topic in history are you learning about? Let's dive into the past! ⏰🏛️`
+      }
+      if (msg.includes('english') || msg.includes('writing') || msg.includes('essay')) {
+        return `✍️ Writing can be super rewarding! Whether you need help organizing your thoughts, improving your writing, or understanding literature, I'm here for you. What writing project are you working on? 📝🌟`
+      }
+      
+      return `📚 Homework time, ${userName}? I'm your study buddy! I can help with math, science, history, English, or any other subject. I can also help you organize your assignments and create study schedules. What subject are you working on today? Let's make learning awesome! 🎓✨`
     }
-    
-    // Chore-specific help
-    if (msg.includes('chore') || msg.includes('clean') || msg.includes('tidy') || msg.includes('task')) {
-      return "Chores can actually be pretty satisfying when you approach them right! 🧹✨ What specific chore are you working on? I can give you tips to make it faster, easier, or even more fun!"
+
+    // === SPORTS & INTERESTS ===
+    if (msg.includes('basketball') || msg.includes('sports') || msg.includes('game') || msg.includes('team') || interests.includes('basketball')) {
+      if (msg.includes('basketball')) {
+        return `🏀 Basketball! I love talking hoops! Whether you want to chat about your favorite teams, get tips on improving your game, or just talk about the latest NBA action - I'm totally here for it! Are you a player yourself, or do you love watching? What's your favorite team? 🏆`
+      }
+      return `⚽🏀⚾ Sports are awesome! Whether it's basketball, soccer, football, baseball, or any other sport - I love chatting about games, players, strategies, and helping you improve your own skills! What sport are you into? Tell me about your favorites! 🏟️✨`
     }
-    
-    // Time management
-    if (msg.includes('time') || msg.includes('quick') || msg.includes('fast') || msg.includes('efficient')) {
-      return "Time management is like a superpower! ⚡ Here's a pro tip: set a timer for each task - it makes everything feel like a game and helps you stay focused. What task do you want to time today?"
+
+    if (msg.includes('gaming') || msg.includes('video game') || msg.includes('xbox') || msg.includes('playstation') || msg.includes('nintendo') || interests.includes('gaming')) {
+      return `🎮 Gaming! I love chatting about games! Whether you're into action, adventure, sports games, puzzles, or anything else - games can be so creative and fun! What games are you playing lately? Are you working on any challenging levels? I can even help you balance gaming time with other activities! 🕹️✨`
     }
-    
-    // General encouragement and redirect
-    if (msg.includes('thanks') || msg.includes('thank you')) {
-      return "You're so welcome! 😊 I'm always here to help you stay organized and motivated. Is there anything else I can help you with today? Maybe planning your next tasks or finding motivation?"
+
+    // === CHORES & ORGANIZATION ===
+    if (msg.includes('chore') || msg.includes('clean') || msg.includes('tidy') || msg.includes('organize') || msg.includes('room') || msg.includes('task')) {
+      const choreResponses = [
+        `🧹 Let's make chores feel like missions! ${userName}, I can help you turn any boring task into something more interesting. Want to race the clock? Create a cleaning playlist? Break big jobs into smaller wins? What chore are you tackling? Let's make it awesome! ✨`,
+        `🏠 Cleaning and organizing can actually be pretty satisfying! I can help you figure out the best order to do things, find shortcuts, or even make it feel like a game. What area are you working on? Your room? Kitchen? Let's create a plan! 💪`,
+        `⭐ Chores = life skills = future success! ${userName}, every time you complete a chore, you're literally building skills that will help you forever. Plus, that feeling when everything's clean? *Chef's kiss* 👌 What task can we conquer together?`
+      ]
+      return choreResponses[Math.floor(Math.random() * choreResponses.length)]
     }
-    
-    // Default helpful response
-    return "I'm here to help you with chores, planning, and staying motivated! 🤖✨ You can ask me about:\n\n• Creating schedules and plans\n• Tips for specific chores\n• Motivation and encouragement\n• Time management strategies\n\nWhat would you like help with today?"
+
+    // === MOTIVATION & FEELINGS ===
+    if (msg.includes('tired') || msg.includes('overwhelmed') || msg.includes('stressed') || msg.includes('hard') || msg.includes('difficult') || msg.includes('motivation') || msg.includes('help')) {
+      return `💙 Hey ${userName}, I hear you. Sometimes things feel tough, and that's totally normal! You know what's amazing though? You reached out for help, and that shows you're smart and strong. Let's break whatever you're facing into smaller, manageable pieces. What's feeling overwhelming right now? We'll tackle it together, one step at a time! 🌟💪`
+    }
+
+    if (msg.includes('bored') || msg.includes('boring')) {
+      return `😴 Bored, ${userName}? Let's fix that! We could plan something fun for after your tasks, find ways to make your current activities more interesting, chat about your hobbies, or I could tell you some cool facts! What sounds good? 🎉✨`
+    }
+
+    // === SCHEDULE & TIME MANAGEMENT ===
+    if (msg.includes('schedule') || msg.includes('plan') || msg.includes('time') || msg.includes('organize') || msg.includes('busy')) {
+      if (interests.includes('basketball')) {
+        return `🏀 Time to create your game plan, ${userName}! Just like coaches design plays for victory, we can strategize your day for maximum success! Let's figure out your priorities and create a schedule that works. What do you need to get done today? 📋⏰`
+      }
+      return `⏰ I love helping with planning! ${userName}, good time management is like having a superpower - it makes everything feel more manageable and gives you more time for fun stuff! What do you need to fit into your schedule? Let's create a plan that actually works! 📅✨`
+    }
+
+    // === QUESTIONS & LEARNING ===
+    if (msg.includes('why') || msg.includes('how') || msg.includes('what') || msg.includes('explain') || msg.includes('question')) {
+      return `🤔 Great question, ${userName}! I love curious minds! I can help explain all sorts of things - science, history, how stuff works, life questions, you name it! I'll do my best to give you answers that actually make sense. What are you wondering about? 🧠✨`
+    }
+
+    // === ENCOURAGEMENT & THANKS ===
+    if (msg.includes('thank') || msg.includes('thanks') || msg.includes('awesome') || msg.includes('cool') || msg.includes('good job')) {
+      return `😊 Aww, thanks ${userName}! That totally made my day! I genuinely love helping you succeed and seeing you grow. You're doing great things, and I'm proud to be your AI friend! What else can we work on together? 🌟💙`
+    }
+
+    // === FUN & RANDOM ===
+    if (msg.includes('fun') || msg.includes('joke') || msg.includes('funny') || msg.includes('laugh')) {
+      const funResponses = [
+        `😄 You want fun, ${userName}? Here's a fun fact: Did you know that octopuses have THREE hearts? Pretty cool, right? Speaking of cool - what's the most fun thing you've done lately? 🐙💙`,
+        `🎉 Life should definitely have fun in it! ${userName}, what makes YOU laugh? Is it jokes, games, sports, hanging with friends? I love hearing about what brings people joy! Tell me about your favorite way to have fun! ✨`,
+        `😆 Here's something fun: The word "serendipity" means discovering something awesome by accident! Kind of like how talking to me turned into something cool, right? What unexpected good things have happened to you lately? 🍀`
+      ]
+      return funResponses[Math.floor(Math.random() * funResponses.length)]
+    }
+
+    // === FOOD & FAVORITES ===
+    if (msg.includes('food') || msg.includes('favorite') || msg.includes('like') || msg.includes('love')) {
+      return `🍕 I love learning about what people enjoy! ${userName}, your favorites say so much about who you are! Whether it's food, movies, music, activities - I'm genuinely curious about what makes you happy. What are some of your current favorites? 😊✨`
+    }
+
+    // === DEFAULT SUPER-ENGAGING RESPONSE ===
+    const defaultResponses = [
+      `🤖 Hey ${userName}! I'm designed to be your helpful AI friend for basically everything! I can help with chores, homework, answer questions about life, chat about your interests, help you plan and organize, or just have a fun conversation. I'm genuinely curious about you and want to help you succeed! What's going on in your world today? ✨`,
+      
+      `🌟 Hi ${userName}! Think of me as your always-available smart friend who never gets tired of helping! Whether you need help with school stuff, want to make chores less boring, have questions about anything, or just want to chat about what you're into - I'm totally here for it! What can we work on together? 🚀`,
+      
+              `💙 Hey there, ${userName}! I'm Chorbie, and I genuinely care about helping you have awesome days! Whether that means conquering homework, making chores feel like games, answering your curious questions, or just being a friend who listens - I'm here for all of it! What's happening in your life right now? 😊`
+    ]
+
+    return defaultResponses[Math.floor(Math.random() * defaultResponses.length)]
   }
 
   private async learnFromConversation(userMessage: string, assistantResponse: string, userId: string): Promise<void> {
@@ -378,7 +442,7 @@ PERSONALIZATION INSTRUCTIONS:
       difficulty?: 'easy' | 'mixed' | 'challenging'
       interests?: string[]
     }
-  ): Promise<ChorbitSchedule> {
+  ): Promise<ChorbieSchedule> {
     
     let motivationalTheme = "productivity"
     if (userPreferences?.interests?.includes('basketball')) {
@@ -420,41 +484,83 @@ Make it encouraging and realistic for a kid to follow!`
       try {
         return JSON.parse(content)
       } catch {
-        // Fallback schedule
-        return {
-          id: `schedule-${Date.now()}`,
-          title: userPreferences?.interests?.includes('basketball') 
-            ? "Your Championship Chore Game Plan! 🏀"
-            : "Your Awesome Daily Schedule! ✨",
-          tasks: currentChores.slice(0, 3).map((chore, i) => ({
-            name: chore.title,
-            duration: chore.estimatedMinutes || 15,
-            priority: chore.isRequired ? 'high' : 'medium',
-            scheduledTime: `${9 + i}:00 AM`,
-            tips: [`Take your time with ${chore.title}`, "You've got this!"]
-          })),
-          totalTime: currentChores.slice(0, 3).reduce((sum, c) => sum + (c.estimatedMinutes || 15), 0),
-          aiRecommendations: [
-            userPreferences?.interests?.includes('basketball') 
-              ? "Just like practicing free throws, consistency is key! 🏀"
-              : "Take breaks between tasks to stay fresh!",
-            "Celebrate each completed chore - you're building great habits!"
-          ]
-        }
+        // Enhanced fallback schedule with personality
+        return this.createFallbackSchedule(userInput, currentChores, userPreferences, availableTime)
       }
       
     } catch (error) {
       console.error('Schedule generation error:', error)
-      throw error
+      return this.createFallbackSchedule(userInput, currentChores, userPreferences, availableTime)
+    }
+  }
+
+  private createFallbackSchedule(userInput: string, currentChores: any[], userPreferences?: any, availableTime: number = 120): ChorbieSchedule {
+    const isBasketballFan = userPreferences?.interests?.includes('basketball')
+    const isGamer = userPreferences?.interests?.includes('gaming')
+    
+    let title = "Your Awesome Daily Plan! ✨"
+    let recommendations = [
+      "Take breaks between tasks to stay fresh!",
+      "Celebrate each completed task - you're building great habits!"
+    ]
+
+    if (isBasketballFan) {
+      title = "Your Championship Game Plan! 🏀🏆"
+      recommendations = [
+        "Just like basketball practice, consistency builds champions! 🏀",
+        "Every completed task is like scoring points - you're winning! 🏆",
+        "Champions prepare, execute, and celebrate their victories! 💪"
+      ]
+    } else if (isGamer) {
+      title = "Your Epic Quest Playlist! 🎮⚡"
+      recommendations = [
+        "Each task is like completing a level - level up your life! 🎮",
+        "Collect achievement points with every finished task! 🏆",
+        "Real life XP gained with every completed challenge! ⚡"
+      ]
+    }
+
+    const tasks = currentChores.slice(0, Math.min(5, Math.floor(availableTime / 20))).map((chore, i) => {
+      let tips = [`Take your time with ${chore.title}`, "You've got this!"]
+      
+      if (isBasketballFan) {
+        tips = [
+          `Approach ${chore.title} like perfecting a free throw - focused and steady! 🏀`,
+          "Champions pay attention to details - make it count! 🏆"
+        ]
+      } else if (isGamer) {
+        tips = [
+          `Think of ${chore.title} as your current quest objective! 🎮`,
+          "Focus mode activated - time to complete this level! ⚡"
+        ]
+      }
+
+             return {
+         name: chore.title,
+         duration: chore.estimatedMinutes || 20,
+         priority: chore.isRequired ? 'high' as const : 'medium' as const,
+         scheduledTime: `${9 + i}:${i % 2 === 0 ? '00' : '30'} AM`,
+         tips
+       }
+    })
+
+    const totalTime = tasks.reduce((sum, task) => sum + task.duration, 0)
+
+    return {
+      id: `schedule-${Date.now()}`,
+      title,
+      tasks,
+      totalTime,
+      aiRecommendations: recommendations
     }
   }
   
   // Export schedule to iOS formats
-  generateiOSCalendarFile(schedule: ChorbitSchedule, startDate: Date): string {
+  generateiOSCalendarFile(schedule: ChorbieSchedule, startDate: Date): string {
     const icsContent = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
-      'PRODID:-//ChoreChart//Chorbit Schedule//EN',
+      'PRODID:-//ChoreChart//Chorbie Schedule//EN',
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
     ]
@@ -485,10 +591,10 @@ Make it encouraging and realistic for a kid to follow!`
     this.conversationHistory = []
   }
   
-  getHistory(): ChorbitMessage[] {
+  getHistory(): ChorbieMessage[] {
     return [...this.conversationHistory]
   }
 }
 
 // Singleton instance
-export const chorbit = new ChorbitAI() 
+export const chorbie = new ChorbitAI() 
