@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AddChoreDialog } from '@/components/ui/add-chore-dialog'
+import { AddChildDialog } from '@/components/ui/add-child-dialog'
 
 export default function ParentDashboard() {
   const { data: session, status } = useSession()
@@ -18,6 +19,7 @@ export default function ParentDashboard() {
   const [processingApprovals, setProcessingApprovals] = useState<Set<string>>(new Set())
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [isAddChoreDialogOpen, setIsAddChoreDialogOpen] = useState(false)
+  const [isAddChildDialogOpen, setIsAddChildDialogOpen] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showInviteDialog, setShowInviteDialog] = useState(false)
   const [settingsChanged, setSettingsChanged] = useState(false)
@@ -175,6 +177,8 @@ export default function ParentDashboard() {
   const handleQuickAction = (action: string) => {
     if (action === 'Add New Chore') {
       setIsAddChoreDialogOpen(true)
+    } else if (action === 'Add Child Account') {
+      setIsAddChildDialogOpen(true)
     } else {
       setMessage({
         type: 'success',
@@ -188,6 +192,17 @@ export default function ParentDashboard() {
       type: 'success',
       text: successMessage
     })
+    // Refresh dashboard data to show new chore
+    fetchDashboardData()
+  }
+
+  const handleAddChildSuccess = (successMessage: string) => {
+    setMessage({
+      type: 'success',
+      text: successMessage
+    })
+    // Refresh dashboard data to show new child
+    fetchDashboardData()
   }
 
   const handleSettingChange = (setting: string, value: boolean) => {
@@ -452,12 +467,19 @@ export default function ParentDashboard() {
         </Card>
       </div>
 
-      {/* Add Chore Dialog */}
-      <AddChoreDialog
-        isOpen={isAddChoreDialogOpen}
-        onClose={() => setIsAddChoreDialogOpen(false)}
-        onSuccess={handleAddChoreSuccess}
-      />
+              {/* Add Chore Dialog */}
+        <AddChoreDialog
+          isOpen={isAddChoreDialogOpen}
+          onClose={() => setIsAddChoreDialogOpen(false)}
+          onSuccess={handleAddChoreSuccess}
+        />
+
+        {/* Add Child Dialog */}
+        <AddChildDialog
+          isOpen={isAddChildDialogOpen}
+          onClose={() => setIsAddChildDialogOpen(false)}
+          onSuccess={handleAddChildSuccess}
+        />
 
       {/* Settings Dialog */}
       {showSettings && (

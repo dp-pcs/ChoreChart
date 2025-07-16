@@ -96,19 +96,19 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess }: AddChoreDialogPro
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <CardHeader>
-          <CardTitle className="text-xl">Add New Chore</CardTitle>
-          <CardDescription>
+      <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-white">
+        <CardHeader className="bg-white">
+          <CardTitle className="text-xl text-gray-900">📋 Add New Chore</CardTitle>
+          <CardDescription className="text-gray-600">
             Create a new chore for your family
           </CardDescription>
         </CardHeader>
         
-        <CardContent>
+        <CardContent className="bg-white">
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Title */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-900 mb-1">
                 Chore Title *
               </label>
               <Input
@@ -116,25 +116,27 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess }: AddChoreDialogPro
                 onChange={(e) => handleInputChange('title', e.target.value)}
                 placeholder="e.g., Clean bedroom, Take out trash"
                 required
+                className="bg-white border-gray-300 text-gray-900"
               />
             </div>
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-900 mb-1">
                 Description (optional)
               </label>
               <Input
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 placeholder="Additional details about the chore"
+                className="bg-white border-gray-300 text-gray-900"
               />
             </div>
 
             {/* Reward and Time */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-900 mb-1">
                   Reward ($) *
                 </label>
                 <Input
@@ -145,11 +147,12 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess }: AddChoreDialogPro
                   onChange={(e) => handleInputChange('reward', e.target.value)}
                   placeholder="2.50"
                   required
+                  className="bg-white border-gray-300 text-gray-900"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-900 mb-1">
                   Time (min) *
                 </label>
                 <Input
@@ -159,6 +162,7 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess }: AddChoreDialogPro
                   onChange={(e) => handleInputChange('estimatedMinutes', e.target.value)}
                   placeholder="15"
                   required
+                  className="bg-white border-gray-300 text-gray-900"
                 />
               </div>
             </div>
@@ -172,15 +176,15 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess }: AddChoreDialogPro
                   onChange={(e) => handleInputChange('isRequired', e.target.checked)}
                   className="rounded"
                 />
-                <span className="text-sm font-medium text-gray-700">
-                  Required chore (must be completed)
+                <span className="text-sm font-medium text-gray-900">
+                  ⚠️ Required chore (must be completed)
                 </span>
               </label>
             </div>
 
             {/* Assign to Children */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-900 mb-2">
                 Assign to Children
               </label>
               <div className="flex flex-wrap gap-2">
@@ -196,7 +200,7 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess }: AddChoreDialogPro
                   </Badge>
                 ))}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-600 mt-1">
                 Click to assign/unassign. Leave empty to assign to all children.
               </p>
             </div>
@@ -208,14 +212,14 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess }: AddChoreDialogPro
                 variant="outline"
                 onClick={handleClose}
                 disabled={isSubmitting}
-                className="flex-1"
+                className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-1 bg-green-600 hover:bg-green-700"
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
               >
                 {isSubmitting ? (
                   <>
@@ -223,7 +227,7 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess }: AddChoreDialogPro
                     Adding...
                   </>
                 ) : (
-                  'Add Chore'
+                  '📋 Add Chore'
                 )}
               </Button>
             </div>
