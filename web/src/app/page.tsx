@@ -43,8 +43,8 @@ export default function Home() {
       <header className="px-4 sm:px-6 lg:px-8 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="text-3xl">🏡</div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">ChoreChart</h1>
+            <img src="/chorbie_logo_transparent.png" alt="Chorbie Logo" className="w-10 h-10" />
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Chorbie</h1>
           </div>
           <div className="flex items-center gap-3">
             <Link href="/auth/signin">
@@ -106,7 +106,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h3 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Why Families Love ChoreChart
+              Why Families Love Chorbie
             </h3>
             <p className="text-lg text-gray-600">
               More than just a chore app - it's a complete family development platform
@@ -278,11 +278,11 @@ export default function Home() {
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center gap-3 mb-4 md:mb-0">
-              <div className="text-2xl">🏡</div>
-              <span className="text-xl font-bold">ChoreChart</span>
+              <img src="/chorbie_logo_transparent.png" alt="Chorbie Logo" className="w-8 h-8" />
+              <span className="text-xl font-bold">Chorbie</span>
             </div>
             <div className="text-sm text-gray-400 text-center md:text-right">
-              <p>© 2024 ChoreChart. Built with ❤️ for families.</p>
+              <p>© 2024 Chorbie. Built with ❤️ for families.</p>
               <p className="mt-1">Empowering kids with AI • Teaching responsibility • Building better habits</p>
             </div>
           </div>

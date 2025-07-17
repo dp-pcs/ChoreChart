@@ -47,8 +47,10 @@ export default function ForgotPassword() {
       <div className="w-full max-w-md space-y-4">
         {/* App Header */}
         <div className="text-center mb-8">
-          <div className="text-4xl sm:text-5xl mb-2">🏡</div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">ChoreChart</h1>
+          <div className="flex justify-center mb-4">
+            <img src="/chorbie_logo_transparent.png" alt="Chorbie Logo" className="w-16 h-16" />
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">Chorbie</h1>
           <p className="text-gray-600 text-sm sm:text-base">Smart family chore management with AI</p>
         </div>
 
