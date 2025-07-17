@@ -483,8 +483,8 @@ export default function ParentDashboard() {
 
       {/* Settings Dialog */}
       {showSettings && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md bg-white">
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md bg-white shadow-2xl">
             <CardHeader>
               <CardTitle>Family Settings</CardTitle>
               <CardDescription>Configure your family's preferences</CardDescription>
@@ -549,8 +549,8 @@ export default function ParentDashboard() {
 
       {/* Invite Parent Dialog */}
       {showInviteDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md bg-white">
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md bg-white shadow-2xl">
             <CardHeader>
               <CardTitle>Invite Another Parent</CardTitle>
               <CardDescription>Send an invitation to join your family</CardDescription>

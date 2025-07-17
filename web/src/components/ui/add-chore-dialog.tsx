@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface AddChoreDialogProps {
   isOpen: boolean
@@ -18,6 +19,8 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess }: AddChoreDialogPro
     description: '',
     reward: '',
     estimatedMinutes: '',
+    frequency: 'once' as 'once' | 'daily' | 'weekly' | 'monthly',
+    selectedDays: [] as number[],
     isRequired: false,
     assignedChildIds: [] as string[]
   })
@@ -48,8 +51,8 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess }: AddChoreDialogPro
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!formData.title || !formData.reward || !formData.estimatedMinutes) {
-      alert('Please fill in all required fields')
+    if (!formData.title) {
+      alert('Please enter a chore title')
       return
     }
 
@@ -86,6 +89,8 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess }: AddChoreDialogPro
       description: '',
       reward: '',
       estimatedMinutes: '',
+      frequency: 'once',
+      selectedDays: [],
       isRequired: false,
       assignedChildIds: []
     })
@@ -95,8 +100,8 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess }: AddChoreDialogPro
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-white">
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+      <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-white shadow-2xl">
         <CardHeader className="bg-white">
           <CardTitle className="text-xl text-gray-900">📋 Add New Chore</CardTitle>
           <CardDescription className="text-gray-600">
@@ -137,7 +142,7 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess }: AddChoreDialogPro
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-900 mb-1">
-                  Reward ($) *
+                  Reward ($) (optional)
                 </label>
                 <Input
                   type="number"
@@ -146,14 +151,13 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess }: AddChoreDialogPro
                   value={formData.reward}
                   onChange={(e) => handleInputChange('reward', e.target.value)}
                   placeholder="2.50"
-                  required
                   className="bg-white border-gray-300 text-gray-900"
                 />
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-900 mb-1">
-                  Time (min) *
+                  Time (min) (optional)
                 </label>
                 <Input
                   type="number"
@@ -161,11 +165,63 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess }: AddChoreDialogPro
                   value={formData.estimatedMinutes}
                   onChange={(e) => handleInputChange('estimatedMinutes', e.target.value)}
                   placeholder="15"
-                  required
                   className="bg-white border-gray-300 text-gray-900"
                 />
               </div>
             </div>
+
+            {/* Frequency */}
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-1">
+                Frequency
+              </label>
+              <Select
+                value={formData.frequency}
+                onValueChange={(value) => handleInputChange('frequency', value)}
+              >
+                <SelectTrigger className="bg-white border-gray-300 text-gray-900">
+                  <SelectValue placeholder="Select frequency" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="once">Once</SelectItem>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Day Selection */}
+            {(formData.frequency === 'daily' || formData.frequency === 'weekly') && (
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  {formData.frequency === 'daily' ? 'Select Days' : 'Select Day'}
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
+                    <Badge
+                      key={day}
+                      variant={formData.selectedDays.includes(index) ? "default" : "outline"}
+                      className="cursor-pointer hover:bg-blue-100 transition-colors"
+                      onClick={() => {
+                        const newDays = formData.selectedDays.includes(index)
+                          ? formData.selectedDays.filter(d => d !== index)
+                          : [...formData.selectedDays, index]
+                        handleInputChange('selectedDays', newDays)
+                      }}
+                    >
+                      {day}
+                    </Badge>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-600 mt-1">
+                  {formData.frequency === 'daily' 
+                    ? 'Select which days this chore should be available' 
+                    : 'Select which day of the week this chore should be available'
+                  }
+                </p>
+              </div>
+            )}
 
             {/* Required Toggle */}
             <div>

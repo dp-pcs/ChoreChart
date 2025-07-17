@@ -148,8 +148,8 @@ export function StreakDashboard({ userId, userName }: StreakDashboardProps) {
     <div className="space-y-6">
       {/* Celebration Animation */}
       {showCelebration && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg p-8 text-center animate-bounce">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
+          <div className="bg-white rounded-lg p-8 text-center animate-bounce shadow-2xl">
             <div className="text-6xl mb-4">🎉</div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Streak Updated!</h2>
             <p className="text-gray-600">Keep up the amazing work!</p>

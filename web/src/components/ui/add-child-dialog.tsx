@@ -95,8 +95,8 @@ export function AddChildDialog({ isOpen, onClose, onSuccess }: AddChildDialogPro
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-white">
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+      <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-white shadow-2xl">
         <CardHeader className="bg-white">
           <CardTitle className="text-xl text-gray-900">👶 Add Child Account</CardTitle>
           <CardDescription className="text-gray-600">
