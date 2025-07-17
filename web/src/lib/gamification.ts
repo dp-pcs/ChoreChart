@@ -295,7 +295,7 @@ export class GamificationSystem {
         familyId: user.familyId,
         fromId: userId, // System message
         content: `🎉 Achievement Unlocked: ${title}! Reward: ${reward}`,
-        type: 'ACHIEVEMENT_UNLOCK'
+        type: 'REWARD_NOTIFICATION'
       }
     })
   }
