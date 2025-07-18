@@ -14,6 +14,7 @@ import {
   CreateChoreForm,
   SubmitChoreForm,
   CreateRewardForm,
+  ScoreChoreForm,
   LoginCredentials,
   SignupCredentials,
   AuthUser,
@@ -177,6 +178,10 @@ export const submissionsApi = {
 
   async approveSubmission(id: string, approved: boolean, feedback?: string, token?: string): Promise<ApiResponse<ChoreSubmission>> {
     return api.put(`/submissions/${id}/approve`, { approved, feedback }, token)
+  },
+
+  async scoreSubmission(scoreData: ScoreChoreForm, token?: string): Promise<ApiResponse<ChoreSubmission>> {
+    return api.put(`/submissions/${scoreData.submissionId}/score`, scoreData, token)
   },
 
   async getPendingApprovals(token: string): Promise<ApiResponse<ChoreSubmission[]>> {

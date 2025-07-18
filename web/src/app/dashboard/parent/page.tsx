@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { AddChoreDialog } from '@/components/ui/add-chore-dialog'
 import { AddChildDialog } from '@/components/ui/add-child-dialog'
+import { ChoreScoringDialog } from '@/components/ui/chore-scoring-dialog'
 
 export default function ParentDashboard() {
   const { data: session, status } = useSession()
@@ -24,6 +25,10 @@ export default function ParentDashboard() {
   const [showInviteDialog, setShowInviteDialog] = useState(false)
   const [settingsChanged, setSettingsChanged] = useState(false)
   const [pendingSettings, setPendingSettings] = useState<any>({})
+  const [scoringDialog, setScoringDialog] = useState<{ isOpen: boolean; submission: any }>({
+    isOpen: false,
+    submission: null
+  })
 
   useEffect(() => {
     if (status === 'loading') return // Still loading
@@ -131,6 +136,60 @@ export default function ParentDashboard() {
       setProcessingApprovals(prev => {
         const newSet = new Set(prev)
         newSet.delete(id)
+        return newSet
+      })
+    }
+  }
+
+  const handleScore = async (id: string) => {
+    const submission = dashboardData.pendingApprovals.find((a: any) => a.id === id)
+    setScoringDialog({
+      isOpen: true,
+      submission: submission
+    })
+  }
+
+  const handleScoreSubmission = async (score: number, feedback: string) => {
+    const submissionId = scoringDialog.submission.id
+    setProcessingApprovals(prev => new Set([...prev, submissionId]))
+    
+    try {
+      const response = await fetch('/api/chores/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          submissionId: submissionId, 
+          approved: true, 
+          score: score,
+          feedback: feedback 
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to score chore')
+      }
+      
+      const result = await response.json()
+      const partialReward = result.data.partialReward
+      const originalReward = result.data.originalReward
+      
+      setMessage({
+        type: 'success',
+        text: `✅ Scored ${scoringDialog.submission.choreName} for ${scoringDialog.submission.childName} - ${score}% quality = $${partialReward} earned (${originalReward - partialReward > 0 ? `$${originalReward - partialReward} deducted` : 'full reward'})`
+      })
+      
+      // Refresh dashboard data
+      fetchDashboardData()
+      
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: '❌ Failed to score chore. Please try again.'
+      })
+    } finally {
+      setProcessingApprovals(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(submissionId)
         return newSet
       })
     }
@@ -411,6 +470,22 @@ export default function ParentDashboard() {
                       </Button>
                       <Button
                         size="sm"
+                        variant="outline"
+                        onClick={() => handleScore(approval.id)}
+                        disabled={processingApprovals.has(approval.id)}
+                        className="text-blue-600 border-blue-200 hover:bg-blue-50 disabled:opacity-50"
+                      >
+                        {processingApprovals.has(approval.id) ? (
+                          <>
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mr-1"></div>
+                            Scoring...
+                          </>
+                        ) : (
+                          'Score'
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
                         onClick={() => handleApprove(approval.id)}
                         disabled={processingApprovals.has(approval.id)}
                         className="bg-green-600 hover:bg-green-700 disabled:opacity-50"
@@ -454,7 +529,17 @@ export default function ParentDashboard() {
                     </span>
                     <span>
                       {activity.childName} {activity.action} "{activity.choreName}"
-                      {activity.action === 'completed' && ` and earned $${activity.reward}`}
+                      {activity.action === 'completed' && (
+                        <>
+                          {activity.score && activity.score < 100 ? (
+                            <span className="text-orange-600">
+                              {' '}and earned ${activity.partialReward || activity.reward} ({activity.score}% quality)
+                            </span>
+                          ) : (
+                            <span> and earned ${activity.reward}</span>
+                          )}
+                        </>
+                      )}
                     </span>
                     <span className="text-gray-400 text-xs">
                       {new Date(activity.timestamp).toLocaleDateString()}
@@ -479,6 +564,14 @@ export default function ParentDashboard() {
           isOpen={isAddChildDialogOpen}
           onClose={() => setIsAddChildDialogOpen(false)}
           onSuccess={handleAddChildSuccess}
+        />
+
+        {/* Chore Scoring Dialog */}
+        <ChoreScoringDialog
+          isOpen={scoringDialog.isOpen}
+          onClose={() => setScoringDialog({ isOpen: false, submission: null })}
+          submission={scoringDialog.submission}
+          onScore={handleScoreSubmission}
         />
 
       {/* Settings Dialog */}

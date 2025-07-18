@@ -75,6 +75,8 @@ export interface ChoreSubmission {
   notes?: string
   imageUrl?: string
   status: 'PENDING' | 'APPROVED' | 'DENIED' | 'AUTO_APPROVED'
+  score?: number // New: Quality score (0-100)
+  partialReward?: number // New: Partial reward amount based on score
 }
 
 export interface ChoreApproval {
@@ -84,6 +86,9 @@ export interface ChoreApproval {
   approvedAt: string
   approved: boolean
   feedback?: string
+  score?: number // New: Quality score (0-100)
+  partialReward?: number // New: Partial reward amount based on score
+  originalReward?: number // New: Original full reward amount
 }
 
 export interface Message {
@@ -197,6 +202,13 @@ export interface SubmitChoreForm {
   completedAt: Date
   notes?: string
   imageUrl?: string
+}
+
+export interface ScoreChoreForm {
+  submissionId: string
+  score: number // 0-100 quality score
+  feedback?: string
+  partialReward?: number // Calculated based on score
 }
 
 export interface CreateRewardForm {
