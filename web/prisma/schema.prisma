@@ -129,30 +129,35 @@ model ChoreAssignment {
 }
 
 model ChoreSubmission {
-  id           String           @id @default(cuid())
-  assignmentId String
-  userId       String
-  submittedAt  DateTime         @default(now())
-  completedAt  DateTime
-  notes        String?
-  imageUrl     String?
-  status       SubmissionStatus @default(PENDING)
-  approval     ChoreApproval?
-  assignment   ChoreAssignment  @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String           @id @default(cuid())
+  assignmentId  String
+  userId        String
+  submittedAt   DateTime         @default(now())
+  completedAt   DateTime
+  notes         String?
+  imageUrl      String?
+  status        SubmissionStatus @default(PENDING)
+  score         Int?
+  partialReward Int?
+  approval      ChoreApproval?
+  assignment    ChoreAssignment  @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("chore_submissions")
 }
 
 model ChoreApproval {
-  id           String          @id @default(cuid())
-  submissionId String          @unique
-  approvedBy   String
-  approvedAt   DateTime        @default(now())
-  approved     Boolean
-  feedback     String?
-  approver     User            @relation(fields: [approvedBy], references: [id], onDelete: Cascade)
-  submission   ChoreSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  id             String          @id @default(cuid())
+  submissionId   String          @unique
+  approvedBy     String
+  approvedAt     DateTime        @default(now())
+  approved       Boolean
+  feedback       String?
+  score          Int?
+  partialReward  Int?
+  originalReward Int?
+  approver       User            @relation(fields: [approvedBy], references: [id], onDelete: Cascade)
+  submission     ChoreSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
 
   @@map("chore_approvals")
 }
