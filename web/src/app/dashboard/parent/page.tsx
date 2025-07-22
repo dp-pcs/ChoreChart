@@ -51,16 +51,34 @@ export default function ParentDashboard() {
     try {
       setLoading(true)
       const response = await fetch('/api/dashboard/parent')
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch dashboard data')
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Dashboard API error:', errorData)
+        
+        let errorMessage = 'Failed to load dashboard data. Please refresh the page.'
+        
+        if (errorData.code === 'NO_FAMILY') {
+          errorMessage = 'No family found for your account. Please contact support or set up your family first.'
+        } else if (errorData.error) {
+          errorMessage = errorData.error
+        }
+        
+        throw new Error(errorMessage)
       }
+      
       const result = await response.json()
+      
+      if (!result.success || !result.data) {
+        throw new Error('Invalid response from dashboard API')
+      }
+      
       setDashboardData(result.data)
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
       setMessage({
         type: 'error',
-        text: 'Failed to load dashboard data. Please refresh the page.'
+        text: error.message || 'Failed to load dashboard data. Please refresh the page.'
       })
     } finally {
       setLoading(false)
