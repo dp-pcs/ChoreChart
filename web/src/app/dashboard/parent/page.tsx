@@ -78,7 +78,7 @@ export default function ParentDashboard() {
       console.error('Error fetching dashboard data:', error)
       setMessage({
         type: 'error',
-        text: error.message || 'Failed to load dashboard data. Please refresh the page.'
+        text: (error as Error).message || 'Failed to load dashboard data. Please refresh the page.'
       })
     } finally {
       setLoading(false)
@@ -321,6 +321,12 @@ export default function ParentDashboard() {
         text: 'Failed to update settings. Please try again.'
       })
     }
+  }
+
+  const handleCancelSettings = () => {
+    setPendingSettings({})
+    setSettingsChanged(false)
+    setShowSettings(false)
   }
 
   return (
@@ -606,7 +612,7 @@ export default function ParentDashboard() {
                   <span className="text-sm font-medium">Auto-approve chores</span>
                   <input
                     type="checkbox"
-                    checked={dashboardData.family.settings.autoApproveChores}
+                    checked={pendingSettings.autoApproveChores ?? dashboardData.family.settings.autoApproveChores}
                     onChange={(e) => handleSettingChange('autoApproveChores', e.target.checked)}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
@@ -619,7 +625,7 @@ export default function ParentDashboard() {
                   <span className="text-sm font-medium">Allow multiple parents</span>
                   <input
                     type="checkbox"
-                    checked={dashboardData.family.settings.allowMultipleParents}
+                    checked={pendingSettings.allowMultipleParents ?? dashboardData.family.settings.allowMultipleParents}
                     onChange={(e) => handleSettingChange('allowMultipleParents', e.target.checked)}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
@@ -629,7 +635,7 @@ export default function ParentDashboard() {
                   <span className="text-sm font-medium">Email notifications</span>
                   <input
                     type="checkbox"
-                    checked={dashboardData.family.settings.emailNotifications}
+                    checked={pendingSettings.emailNotifications ?? dashboardData.family.settings.emailNotifications}
                     onChange={(e) => handleSettingChange('emailNotifications', e.target.checked)}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
@@ -639,19 +645,28 @@ export default function ParentDashboard() {
                   <span className="text-sm font-medium">Share reports</span>
                   <input
                     type="checkbox"
-                    checked={dashboardData.family.settings.shareReports}
+                    checked={pendingSettings.shareReports ?? dashboardData.family.settings.shareReports}
                     onChange={(e) => handleSettingChange('shareReports', e.target.checked)}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
                 </div>
               </div>
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setShowSettings(false)}>
-                  Close
-                </Button>
-                <Button onClick={handleSaveSettings} disabled={!settingsChanged}>
-                  Save Changes
-                </Button>
+              <div className="flex justify-between">
+                <div className="text-xs text-gray-500">
+                  {settingsChanged && '⚠️ You have unsaved changes'}
+                </div>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleCancelSettings}
+                    disabled={!settingsChanged}
+                  >
+                    {settingsChanged ? 'Cancel' : 'Close'}
+                  </Button>
+                  <Button onClick={handleSaveSettings} disabled={!settingsChanged}>
+                    Save Changes
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
