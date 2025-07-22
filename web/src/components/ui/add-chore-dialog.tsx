@@ -11,9 +11,10 @@ interface AddChoreDialogProps {
   isOpen: boolean
   onClose: () => void
   onSuccess: (message: string) => void
+  familyChildren: Array<{ id: string; name: string; email: string; }>
 }
 
-export function AddChoreDialog({ isOpen, onClose, onSuccess }: AddChoreDialogProps) {
+export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren }: AddChoreDialogProps) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -26,11 +27,8 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess }: AddChoreDialogPro
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   
-  // Mock children data - in real app, this would come from props or API
-  const mockChildren = [
-    { id: 'child-1', name: 'Noah' },
-    { id: 'child-2', name: 'Emma' }
-  ]
+  // Children data from parent component props
+  const children = familyChildren || []
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
@@ -244,7 +242,7 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess }: AddChoreDialogPro
                 Assign to Children
               </label>
               <div className="flex flex-wrap gap-2">
-                {mockChildren.map(child => (
+                {children.map((child: { id: string; name: string }) => (
                   <Badge
                     key={child.id}
                     variant={formData.assignedChildIds.includes(child.id) ? "default" : "outline"}

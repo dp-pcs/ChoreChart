@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { AddChoreDialog } from '@/components/ui/add-chore-dialog'
 import { AddChildDialog } from '@/components/ui/add-child-dialog'
 import { ChoreScoringDialog } from '@/components/ui/chore-scoring-dialog'
+import { ChildManagementDialog } from '@/components/ui/child-management-dialog'
 
 export default function ParentDashboard() {
   const { data: session, status } = useSession()
@@ -21,6 +22,7 @@ export default function ParentDashboard() {
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [isAddChoreDialogOpen, setIsAddChoreDialogOpen] = useState(false)
   const [isAddChildDialogOpen, setIsAddChildDialogOpen] = useState(false)
+  const [isChildManagementOpen, setIsChildManagementOpen] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showInviteDialog, setShowInviteDialog] = useState(false)
   const [settingsChanged, setSettingsChanged] = useState(false)
@@ -256,6 +258,8 @@ export default function ParentDashboard() {
       setIsAddChoreDialogOpen(true)
     } else if (action === 'Add Child Account') {
       setIsAddChildDialogOpen(true)
+    } else if (action === 'Manage Children') {
+      setIsChildManagementOpen(true)
     } else {
       setMessage({
         type: 'success',
@@ -414,6 +418,14 @@ export default function ParentDashboard() {
                   onClick={() => handleQuickAction('Add Child Account')}
                 >
                   Add Child Account
+                </Button>
+                <Button 
+                  size="sm" 
+                  className="w-full" 
+                  variant="outline"
+                  onClick={() => handleQuickAction('Manage Children')}
+                >
+                  👨‍👩‍👧‍👦 Manage Children
                 </Button>
                 <Button 
                   size="sm" 
@@ -581,6 +593,7 @@ export default function ParentDashboard() {
           isOpen={isAddChoreDialogOpen}
           onClose={() => setIsAddChoreDialogOpen(false)}
           onSuccess={handleAddChoreSuccess}
+          familyChildren={dashboardData?.children || []}
         />
 
         {/* Add Child Dialog */}
@@ -588,6 +601,17 @@ export default function ParentDashboard() {
           isOpen={isAddChildDialogOpen}
           onClose={() => setIsAddChildDialogOpen(false)}
           onSuccess={handleAddChildSuccess}
+        />
+
+        {/* Child Management Dialog */}
+        <ChildManagementDialog
+          isOpen={isChildManagementOpen}
+          onClose={() => setIsChildManagementOpen(false)}
+          onSuccess={(message) => {
+            setMessage({ type: 'success', text: message })
+            fetchDashboardData() // Refresh dashboard data
+          }}
+          children={dashboardData?.children || []}
         />
 
         {/* Chore Scoring Dialog */}
