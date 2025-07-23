@@ -26,6 +26,7 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren }: A
     assignedChildIds: [] as string[]
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showDuration, setShowDuration] = useState(false)
   
   // Children data from parent component props
   const children = familyChildren || []
@@ -99,6 +100,7 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren }: A
       isRequired: false,
       assignedChildIds: []
     })
+    setShowDuration(false)
     onClose()
   }
 
@@ -161,17 +163,28 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren }: A
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">
-                  Time (min) (optional)
-                </label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={formData.estimatedMinutes}
-                  onChange={(e) => handleInputChange('estimatedMinutes', e.target.value)}
-                  placeholder="15"
-                  className="bg-white border-gray-300 text-gray-900"
-                />
+                <div className="flex items-center gap-2 mb-2">
+                  <input
+                    type="checkbox"
+                    id="showDuration"
+                    checked={showDuration}
+                    onChange={(e) => setShowDuration(e.target.checked)}
+                    className="rounded border-gray-300"
+                  />
+                  <label htmlFor="showDuration" className="text-sm font-medium text-gray-900">
+                    Set time duration (optional)
+                  </label>
+                </div>
+                {showDuration && (
+                  <Input
+                    type="number"
+                    min="1"
+                    value={formData.estimatedMinutes}
+                    onChange={(e) => handleInputChange('estimatedMinutes', e.target.value)}
+                    placeholder="15"
+                    className="bg-white border-gray-300 text-gray-900"
+                  />
+                )}
               </div>
             </div>
 
@@ -187,7 +200,7 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren }: A
                 <SelectTrigger className="bg-white border-gray-300 text-gray-900">
                   <SelectValue placeholder="Select frequency" />
                 </SelectTrigger>
-                <SelectContent className="z-50">
+                <SelectContent className="z-50 bg-white border border-gray-200 shadow-lg">
                   <SelectItem value="once">Once</SelectItem>
                   <SelectItem value="daily">Daily</SelectItem>
                   <SelectItem value="weekly">Weekly</SelectItem>
@@ -200,18 +213,20 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren }: A
             {(formData.frequency === 'daily' || formData.frequency === 'weekly') && (
               <div>
                 <label className="block text-sm font-medium text-gray-900 mb-2">
-                  {formData.frequency === 'daily' ? 'Select Days (when to do this chore)' : 'Select Day (when to do this chore)'}
+                  {formData.frequency === 'daily' ? 'Select Days (click multiple days)' : 'Select Day (click one day)'}
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
                     <Badge
                       key={day}
                       variant={formData.selectedDays.includes(index) ? "default" : "outline"}
-                      className="cursor-pointer hover:bg-blue-100 transition-colors"
+                      className="cursor-pointer hover:bg-blue-100 transition-colors select-none"
                       onClick={() => {
                         const newDays = formData.selectedDays.includes(index)
                           ? formData.selectedDays.filter(d => d !== index)
-                          : [...formData.selectedDays, index]
+                          : formData.frequency === 'weekly' 
+                            ? [index] // For weekly, only allow one day
+                            : [...formData.selectedDays, index] // For daily, allow multiple
                         handleInputChange('selectedDays', newDays)
                       }}
                     >
@@ -221,8 +236,8 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren }: A
                 </div>
                 <p className="text-xs text-gray-600 mt-1">
                   {formData.frequency === 'daily' 
-                    ? 'Select which days this chore should be available' 
-                    : 'Select which day of the week this chore should be available'
+                    ? '✨ Click multiple days! (e.g., Mon, Wed, Fri for a daily chore done 3x/week)' 
+                    : 'Choose which day of the week this chore should be done'
                   }
                 </p>
               </div>
