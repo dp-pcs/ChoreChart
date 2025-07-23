@@ -54,6 +54,13 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren }: A
       return
     }
 
+    // Prepare data with proper defaults
+    const submitData = {
+      ...formData,
+      reward: formData.reward ? parseFloat(formData.reward) : 0,
+      estimatedMinutes: formData.estimatedMinutes ? parseInt(formData.estimatedMinutes) : 15
+    }
+
     setIsSubmitting(true)
 
     try {
@@ -62,7 +69,7 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren }: A
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(submitData)
       })
 
       const result = await response.json()
@@ -180,7 +187,7 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren }: A
                 <SelectTrigger className="bg-white border-gray-300 text-gray-900">
                   <SelectValue placeholder="Select frequency" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-50">
                   <SelectItem value="once">Once</SelectItem>
                   <SelectItem value="daily">Daily</SelectItem>
                   <SelectItem value="weekly">Weekly</SelectItem>
@@ -193,7 +200,7 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren }: A
             {(formData.frequency === 'daily' || formData.frequency === 'weekly') && (
               <div>
                 <label className="block text-sm font-medium text-gray-900 mb-2">
-                  {formData.frequency === 'daily' ? 'Select Days' : 'Select Day'}
+                  {formData.frequency === 'daily' ? 'Select Days (when to do this chore)' : 'Select Day (when to do this chore)'}
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (

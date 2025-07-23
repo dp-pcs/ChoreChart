@@ -6,12 +6,12 @@ import { Providers } from '@/components/providers'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Chorebit - Smart Family Management',
+  title: 'Chorbie - Smart Family Management',
   description: 'AI-powered family chore management with smart allowance tracking, behavioral insights, and Chorbie AI assistant for kids.',
   keywords: ['chores', 'family', 'kids', 'allowance', 'AI', 'parenting', 'behavior tracking'],
-  authors: [{ name: 'Chorebit Team' }],
-  creator: 'Chorebit',
-  publisher: 'Chorebit',
+  authors: [{ name: 'Chorbie Team' }],
+  creator: 'Chorbie',
+  publisher: 'Chorbie',
   formatDetection: {
     email: false,
     address: false,
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Chorebit',
+    title: 'Chorbie',
     startupImage: [
       '/apple-touch-startup-image-768x1004.png',
       '/apple-touch-startup-image-1536x2008.png',
@@ -29,22 +29,22 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: 'website',
-    siteName: 'Chorebit',
-    title: 'Chorebit - Smart Family Management',
-    description: 'AI-powered family chore management with Chorbit AI assistant for kids',
+    siteName: 'Chorbie',
+    title: 'Chorbie - Smart Family Management',
+    description: 'AI-powered family chore management with Chorbie AI assistant for kids',
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Chorebit - Family Management App',
+        alt: 'Chorbie - Family Management App',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Chorebit - Smart Family Management',
-    description: 'AI-powered family chore management with Chorbit AI assistant for kids',
+    title: 'Chorbie - Smart Family Management',
+    description: 'AI-powered family chore management with Chorbie AI assistant for kids',
     images: ['/og-image.png'],
   },
   icons: {
