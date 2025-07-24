@@ -10,6 +10,7 @@ import { AddChoreDialog } from '@/components/ui/add-chore-dialog'
 import { AddChildDialog } from '@/components/ui/add-child-dialog'
 import { ChoreScoringDialog } from '@/components/ui/chore-scoring-dialog'
 import { ChildManagementDialog } from '@/components/ui/child-management-dialog'
+import { ImpromptuReviewDialog } from '@/components/ui/impromptu-review-dialog'
 
 export default function ParentDashboard() {
   const { data: session, status } = useSession()
@@ -34,6 +35,11 @@ export default function ParentDashboard() {
   const [currentChores, setCurrentChores] = useState<any[]>([])
   const [editingChore, setEditingChore] = useState<any>(null)
   const [isEditChoreDialogOpen, setIsEditChoreDialogOpen] = useState(false)
+  const [impromptuSubmissions, setImpromptuSubmissions] = useState<any[]>([])
+  const [impromptuReviewDialog, setImpromptuReviewDialog] = useState<{ isOpen: boolean; submission: any }>({
+    isOpen: false,
+    submission: null
+  })
 
   useEffect(() => {
     if (status === 'loading') return // Still loading
@@ -51,6 +57,7 @@ export default function ParentDashboard() {
     // Fetch dashboard data
     fetchDashboardData()
     fetchCurrentChores()
+    fetchImpromptuSubmissions()
   }, [session, status, router])
 
   const fetchCurrentChores = async () => {
@@ -63,6 +70,18 @@ export default function ParentDashboard() {
       setCurrentChores(result.chores || [])
     } catch (error) {
       console.error('Error fetching chores:', error)
+    }
+  }
+
+  const fetchImpromptuSubmissions = async () => {
+    try {
+      const response = await fetch('/api/impromptu-submissions?status=PENDING')
+      if (response.ok) {
+        const result = await response.json()
+        setImpromptuSubmissions(result.submissions || [])
+      }
+    } catch (error) {
+      console.error('Error fetching impromptu submissions:', error)
     }
   }
 
@@ -354,6 +373,22 @@ export default function ParentDashboard() {
     fetchDashboardData()
   }
 
+  const handleImpromptuReview = (submission: any) => {
+    setImpromptuReviewDialog({
+      isOpen: true,
+      submission: submission
+    })
+  }
+
+  const handleImpromptuResponse = (successMessage: string) => {
+    setMessage({
+      type: 'success',
+      text: successMessage
+    })
+    // Refresh impromptu submissions
+    fetchImpromptuSubmissions()
+  }
+
   const handleSettingChange = (setting: string, value: boolean) => {
     setPendingSettings((prev: any) => ({
       ...prev,
@@ -522,27 +557,59 @@ export default function ParentDashboard() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              Pending Approvals 
-              {dashboardData.pendingApprovals.length > 0 && (
+              Pending Reviews 
+              {(dashboardData.pendingApprovals.length + impromptuSubmissions.length) > 0 && (
                 <Badge variant="destructive">
-                  {dashboardData.pendingApprovals.length}
+                  {dashboardData.pendingApprovals.length + impromptuSubmissions.length}
                 </Badge>
               )}
             </CardTitle>
             <CardDescription>
-              Review and approve completed chores
+              Review chores and special submissions from your children
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {dashboardData.pendingApprovals.length === 0 ? (
+            {(dashboardData.pendingApprovals.length === 0 && impromptuSubmissions.length === 0) ? (
               <div className="text-center py-8 text-gray-500">
-                <p>🎉 All caught up! No pending approvals.</p>
+                <p>🎉 All caught up! No pending reviews.</p>
               </div>
             ) : (
               <div className="space-y-4">
+                {/* Impromptu Submissions */}
+                {impromptuSubmissions.map((submission: any) => (
+                  <div 
+                    key={`impromptu-${submission.id}`}
+                    className="flex items-center justify-between p-4 bg-purple-50 border border-purple-200 rounded-lg"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">✨</span>
+                        <div>
+                          <p className="font-medium">{submission.child.name} did something special!</p>
+                          <p className="text-sm font-semibold text-purple-800">"{submission.title}"</p>
+                          <p className="text-sm text-gray-600 mt-1">{submission.description}</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Submitted {new Date(submission.submittedAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => handleImpromptuReview(submission)}
+                        className="bg-purple-600 hover:bg-purple-700 text-white"
+                      >
+                        Review ✨
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Chore Submissions */}
                 {dashboardData.pendingApprovals.map((approval: any) => (
                   <div 
-                    key={approval.id}
+                    key={`chore-${approval.id}`}
                     className="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg"
                   >
                     <div className="flex-1">
@@ -702,6 +769,14 @@ export default function ParentDashboard() {
           onClose={() => setScoringDialog({ isOpen: false, submission: null })}
           submission={scoringDialog.submission}
           onScore={handleScoreSubmission}
+        />
+
+        {/* Impromptu Review Dialog */}
+        <ImpromptuReviewDialog
+          isOpen={impromptuReviewDialog.isOpen}
+          onClose={() => setImpromptuReviewDialog({ isOpen: false, submission: null })}
+          submission={impromptuReviewDialog.submission}
+          onSuccess={handleImpromptuResponse}
         />
 
       {/* Settings Dialog */}

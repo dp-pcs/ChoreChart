@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { ChorbieChat } from '@/components/ui/chorbit-chat'
 import { DailyCheckIn } from '@/components/ui/daily-check-in'
 import { DailyCheckInReminder } from '@/components/ui/daily-check-in-reminder'
+import { ImpromptuSubmissionDialog } from '@/components/ui/impromptu-submission-dialog'
 import type { DailyCheckIn as DailyCheckInType } from '@/lib/behavior-tracking'
 import React from 'react'
 import { Badge } from '@/components/ui/badge'
@@ -37,10 +38,12 @@ const mockChildData = {
 export default function ChildDashboard() {
   const [showCheckIn, setShowCheckIn] = useState(false)
   const [showCheckInReminder, setShowCheckInReminder] = useState(false)
+  const [showImpromptuDialog, setShowImpromptuDialog] = useState(false)
   const [todaysCheckIn, setTodaysCheckIn] = useState<Partial<DailyCheckInType> | null>(null)
   const [submittedChores, setSubmittedChores] = useState<Set<string>>(new Set())
   const [approvedChores, setApprovedChores] = useState<Set<string>>(new Set()) // Mock parent approvals
   const [isCheckingToday, setIsCheckingToday] = useState(true)
+  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
   const { user, todaysChores, weeklyProgress } = mockChildData
 
@@ -202,6 +205,21 @@ export default function ChildDashboard() {
     }
   }
 
+  const handleImpromptuSuccess = (successMessage: string) => {
+    setMessage({
+      type: 'success',
+      text: successMessage
+    })
+  }
+
+  // Clear messages after 3 seconds
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => setMessage(null), 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [message])
+
   // Check if today's check-in is complete
   const isCheckInComplete = todaysCheckIn && 
     new Date(todaysCheckIn.date!).toDateString() === new Date().toDateString()
@@ -264,6 +282,15 @@ export default function ChildDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Success/Error Message */}
+      {message && (
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
+          message.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+        }`}>
+          {message.text}
+        </div>
+      )}
+
       {/* Mobile-Optimized Header */}
       <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
         <div className="px-4 py-6 sm:px-6">
@@ -318,6 +345,17 @@ export default function ChildDashboard() {
             📝 Daily Check-In
           </Button>
           
+          <Button 
+            onClick={() => setShowImpromptuDialog(true)}
+            variant="outline"
+            className="h-12 sm:h-14 text-base sm:text-lg border-2 hover:bg-purple-50 border-purple-200 text-purple-700"
+          >
+            ✨ Tell Parents!
+          </Button>
+        </div>
+
+        {/* New section for additional actions */}
+        <div className="grid grid-cols-1 gap-3">
           <Button 
             variant="outline"
             className="h-12 sm:h-14 text-base sm:text-lg border-2 hover:bg-gray-50"
@@ -522,6 +560,13 @@ export default function ChildDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Impromptu Submission Dialog */}
+        <ImpromptuSubmissionDialog
+          isOpen={showImpromptuDialog}
+          onClose={() => setShowImpromptuDialog(false)}
+          onSuccess={handleImpromptuSuccess}
+        />
       </div>
     </div>
   )
