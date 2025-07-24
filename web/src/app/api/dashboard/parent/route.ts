@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
         familyId = family.id
       }
     } catch (error) {
-      console.log('FamilyMembership query failed, likely table does not exist:', error.message)
+      console.log('FamilyMembership query failed, likely table does not exist:', error instanceof Error ? error.message : String(error))
     }
 
     // Fallback: use direct family relationship if no family membership exists
@@ -142,7 +142,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get pending chore submissions for approval
-    const pendingSubmissions = await prisma.choreSubmission.findMany({
+    const pendingSubmissions = familyId ? await prisma.choreSubmission.findMany({
       where: {
         assignment: {
           familyId: familyId
@@ -169,7 +169,7 @@ export async function GET(request: NextRequest) {
         }
       },
       orderBy: { submittedAt: 'desc' }
-    })
+    }) : []
 
     // Get weekly stats
     const weekStart = new Date()
@@ -180,7 +180,7 @@ export async function GET(request: NextRequest) {
     weekEnd.setDate(weekEnd.getDate() + 6)
     weekEnd.setHours(23, 59, 59, 999)
 
-    const weeklySubmissions = await prisma.choreSubmission.findMany({
+    const weeklySubmissions = familyId ? await prisma.choreSubmission.findMany({
       where: {
         assignment: {
           familyId: familyId
@@ -201,12 +201,12 @@ export async function GET(request: NextRequest) {
           }
         }
       }
-    })
+    }) : []
 
     // Calculate stats
-    const children = family.familyMemberships ? 
-      family.familyMemberships.filter((m: any) => m.role === 'CHILD' || (m.user && m.user.role === 'CHILD')) :
-      family.users ? family.users.filter((u: any) => u.role === 'CHILD') : []
+    const children = (family as any)?.familyMemberships ? 
+      (family as any).familyMemberships.filter((m: any) => m.role === 'CHILD' || (m.user && m.user.role === 'CHILD')) :
+      (family as any)?.users ? (family as any).users.filter((u: any) => u.role === 'CHILD') : []
     
     const completedChores = weeklySubmissions.filter((s: any) => s.status === 'APPROVED')
     const totalEarnings = completedChores.reduce((sum: number, s: any) => sum + (s.assignment.chore.reward || 0), 0)
@@ -215,7 +215,7 @@ export async function GET(request: NextRequest) {
       : 0
 
     // Get recent activity
-    const recentActivity = await prisma.choreSubmission.findMany({
+    const recentActivity = familyId ? await prisma.choreSubmission.findMany({
       where: {
         assignment: {
           familyId: familyId
@@ -240,22 +240,22 @@ export async function GET(request: NextRequest) {
       },
       orderBy: { submittedAt: 'desc' },
       take: 5
-    })
+    }) : []
 
     // Handle family settings with fallback for missing fields
     const familySettings = {
-      autoApproveChores: family.autoApproveChores || false,
-      allowMultipleParents: family.allowMultipleParents !== undefined ? family.allowMultipleParents : true,
-      emailNotifications: family.emailNotifications !== undefined ? family.emailNotifications : true,
-      shareReports: family.shareReports || false,
-      crossFamilyApproval: family.crossFamilyApproval || false
+      autoApproveChores: family?.autoApproveChores || false,
+      allowMultipleParents: family?.allowMultipleParents !== undefined ? family.allowMultipleParents : true,
+      emailNotifications: family?.emailNotifications !== undefined ? family.emailNotifications : true,
+      shareReports: family?.shareReports || false,
+      crossFamilyApproval: family?.crossFamilyApproval || false
     }
 
     const dashboardData = {
       family: {
-        name: family.name,
+        name: family?.name || 'Unknown Family',
         totalChildren: children.length,
-        weeklyAllowance: family.weeklyAllowance || 0,
+        weeklyAllowance: family?.weeklyAllowance || 0,
         settings: familySettings
       },
       weeklyStats: {
@@ -305,7 +305,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Parent dashboard API error:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch dashboard data', details: error.message },
+      { error: 'Failed to fetch dashboard data', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     )
   }

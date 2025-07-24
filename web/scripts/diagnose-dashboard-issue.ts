@@ -186,7 +186,7 @@ async function diagnoseDashboardIssue() {
           console.log(`   ✅ Dashboard would work using FamilyMembership`)
         }
       } catch (error) {
-        console.log(`   ❌ Dashboard would fail with error: ${error.message}`)
+        console.log(`   ❌ Dashboard would fail with error: ${error instanceof Error ? error.message : String(error)}`)
       }
     }
 
@@ -210,12 +210,14 @@ async function diagnoseDashboardIssue() {
   } catch (error) {
     console.error('❌ Diagnosis failed:', error)
     
-    if (error.message.includes('Environment variable not found: DATABASE_URL')) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    
+    if (errorMessage.includes('Environment variable not found: DATABASE_URL')) {
       console.log('\n💡 DATABASE_URL is not set. Please:')
       console.log('1. Copy .env.example to .env (if it exists)')
       console.log('2. Set DATABASE_URL in your .env file')
       console.log('3. Make sure your database server is running')
-    } else if (error.message.includes("Can't reach database server")) {
+    } else if (errorMessage.includes("Can't reach database server")) {
       console.log('\n💡 Cannot connect to database. Please:')
       console.log('1. Check your DATABASE_URL in .env file')
       console.log('2. Make sure your database server is running')
