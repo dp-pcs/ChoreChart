@@ -4,9 +4,33 @@ import type { DailyCheckIn } from '@/lib/behavior-tracking'
 
 export async function POST(request: NextRequest) {
   try {
-    const checkInData: Partial<DailyCheckIn> = await request.json()
+    const body = await request.json()
+    const { action, userId, ...checkInData } = body
     
-    // Validate required fields
+    // Handle "skip" action separately
+    if (action === 'skip') {
+      if (!userId) {
+        return NextResponse.json(
+          { error: 'Missing required field: userId' },
+          { status: 400 }
+        )
+      }
+
+      // Store skip status in localStorage on client side or session
+      // For now, just return success response
+      const response = {
+        id: `skip-${Date.now()}`,
+        userId,
+        date: new Date().toISOString(),
+        action: 'skipped',
+        success: true,
+        message: 'Check-in skipped for today'
+      }
+
+      return NextResponse.json(response)
+    }
+    
+    // Validate required fields for regular check-in
     if (!checkInData.userId || !checkInData.date) {
       return NextResponse.json(
         { error: 'Missing required fields: userId and date' },
@@ -46,12 +70,26 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
     const date = searchParams.get('date')
+    const checkToday = searchParams.get('checkToday')
 
     if (!userId) {
       return NextResponse.json(
         { error: 'Missing userId parameter' },
         { status: 400 }
       )
+    }
+
+    // Special endpoint to check if user has done today's check-in
+    if (checkToday === 'true') {
+      const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD format
+      
+      // TODO: Check database for today's check-in
+      // For now, always return false to show the reminder
+      return NextResponse.json({
+        hasCheckedInToday: false,
+        hasSkippedToday: false,
+        date: today
+      })
     }
 
     // TODO: Fetch from database

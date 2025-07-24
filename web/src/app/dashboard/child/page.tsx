@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { ChorbieChat } from '@/components/ui/chorbit-chat'
 import { DailyCheckIn } from '@/components/ui/daily-check-in'
+import { DailyCheckInReminder } from '@/components/ui/daily-check-in-reminder'
 import type { DailyCheckIn as DailyCheckInType } from '@/lib/behavior-tracking'
 import React from 'react'
 import { Badge } from '@/components/ui/badge'
@@ -35,11 +36,81 @@ const mockChildData = {
 
 export default function ChildDashboard() {
   const [showCheckIn, setShowCheckIn] = useState(false)
+  const [showCheckInReminder, setShowCheckInReminder] = useState(false)
   const [todaysCheckIn, setTodaysCheckIn] = useState<Partial<DailyCheckInType> | null>(null)
   const [submittedChores, setSubmittedChores] = useState<Set<string>>(new Set())
   const [approvedChores, setApprovedChores] = useState<Set<string>>(new Set()) // Mock parent approvals
+  const [isCheckingToday, setIsCheckingToday] = useState(true)
 
   const { user, todaysChores, weeklyProgress } = mockChildData
+
+  // Check if user has done today's check-in when component loads
+  useEffect(() => {
+    checkTodaysCheckInStatus()
+  }, [])
+
+  const checkTodaysCheckInStatus = async () => {
+    try {
+      setIsCheckingToday(true)
+      
+      // Check localStorage first for today's skip status
+      const today = new Date().toISOString().split('T')[0]
+      const skipKey = `checkin-skip-${user.id}-${today}`
+      const hasSkippedToday = localStorage.getItem(skipKey) === 'true'
+      
+      if (hasSkippedToday) {
+        setShowCheckInReminder(false)
+        setIsCheckingToday(false)
+        return
+      }
+
+      // Check API for completed check-in
+      const response = await fetch(`/api/check-in?userId=${user.id}&checkToday=true`)
+      if (response.ok) {
+        const result = await response.json()
+        
+        // Show reminder if they haven't checked in today and haven't skipped
+        if (!result.hasCheckedInToday && !result.hasSkippedToday) {
+          setShowCheckInReminder(true)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to check today\'s check-in status:', error)
+      // On error, don't show reminder to avoid blocking access
+    } finally {
+      setIsCheckingToday(false)
+    }
+  }
+
+  const handleStartCheckIn = () => {
+    setShowCheckInReminder(false)
+    setShowCheckIn(true)
+  }
+
+  const handleSkipCheckIn = async () => {
+    try {
+      // Call API to log the skip
+      await fetch('/api/check-in', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'skip',
+          userId: user.id
+        })
+      })
+
+      // Store skip status in localStorage
+      const today = new Date().toISOString().split('T')[0]
+      const skipKey = `checkin-skip-${user.id}-${today}`
+      localStorage.setItem(skipKey, 'true')
+      
+      setShowCheckInReminder(false)
+    } catch (error) {
+      console.error('Failed to skip check-in:', error)
+      // Even if API fails, close the reminder
+      setShowCheckInReminder(false)
+    }
+  }
 
   const handleChoreSubmit = (choreId: string) => {
     setSubmittedChores(prev => {
@@ -123,6 +194,7 @@ export default function ChildDashboard() {
         const result = await response.json()
         setTodaysCheckIn(result)
         setShowCheckIn(false)
+        setShowCheckInReminder(false) // Hide reminder after completing check-in
         console.log('✅ Check-in saved:', result)
       }
     } catch (error) {
@@ -134,16 +206,56 @@ export default function ChildDashboard() {
   const isCheckInComplete = todaysCheckIn && 
     new Date(todaysCheckIn.date!).toDateString() === new Date().toDateString()
 
+  // Show loading state while checking today's status
+  if (isCheckingToday) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">👋</div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Getting ready for {user.name}...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show daily check-in reminder overlay if needed
+  if (showCheckInReminder) {
+    return (
+      <>
+        <div className="min-h-screen bg-gray-50">
+          {/* Main dashboard content (blurred) */}
+          <div className="filter blur-sm pointer-events-none">
+            <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+              <div className="px-4 py-6 sm:px-6">
+                <div className="flex justify-between items-start">
+                  <div className="flex flex-col space-y-2">
+                    <h1 className="text-2xl sm:text-3xl font-bold">Hey {user.name}! 👋</h1>
+                    <p className="text-blue-100 text-sm sm:text-base">Ready to crush today's goals?</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Check-in reminder overlay */}
+        <DailyCheckInReminder 
+          userName={user.name}
+          onStartCheckIn={handleStartCheckIn}
+          onSkip={handleSkipCheckIn}
+        />
+      </>
+    )
+  }
+
   if (showCheckIn) {
     return (
       <div className="min-h-screen bg-gray-50">
         <DailyCheckIn 
           userId={user.id}
           userName={user.name}
-          onSubmit={(data) => {
-            setTodaysCheckIn(data)
-            setShowCheckIn(false)
-          }}
+          onSubmit={handleCheckInSubmit}
           existingCheckIn={todaysCheckIn || undefined}
         />
       </div>
