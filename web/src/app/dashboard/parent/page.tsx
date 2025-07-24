@@ -678,6 +678,110 @@ export default function ParentDashboard() {
           </CardContent>
         </Card>
 
+        {/* Current Chores Management */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              Current Chores
+              {currentChores.length > 0 && (
+                <Badge variant="secondary">
+                  {currentChores.length}
+                </Badge>
+              )}
+            </CardTitle>
+            <CardDescription>
+              Manage and edit your family's chores
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {currentChores.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>📝 No chores yet. Create your first chore to get started!</p>
+                <Button 
+                  onClick={() => setIsAddChoreDialogOpen(true)}
+                  className="mt-4 bg-blue-600 hover:bg-blue-700"
+                >
+                  Add First Chore
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {currentChores.map((chore: any) => (
+                  <div 
+                    key={chore.id}
+                    className="flex items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3">
+                        <div>
+                          <p className="font-medium text-gray-900">{chore.title}</p>
+                          <p className="text-sm text-gray-600 mt-1">{chore.description}</p>
+                          <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                            <span className="flex items-center gap-1">
+                              💰 ${chore.reward}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              ⏱️ {chore.estimatedMinutes}min
+                            </span>
+                            <span className="flex items-center gap-1">
+                              📅 {chore.frequency}
+                            </span>
+                            {chore.isRequired && (
+                              <span className="bg-red-100 text-red-700 px-2 py-1 rounded text-xs">
+                                Required
+                              </span>
+                            )}
+                            {chore.scheduledDays && chore.scheduledDays.length > 0 && (
+                              <span className="text-xs">
+                                {chore.scheduledDays.map((d: number) => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      {chore.assignments && chore.assignments.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-xs text-gray-500">
+                            Assigned to: {chore.assignments.map((a: any) => a.user?.name || 'Unknown').join(', ')}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEditChore(chore)}
+                        className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                      >
+                        ✏️ Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDeleteChore(chore.id, chore.title)}
+                        className="text-red-600 border-red-200 hover:bg-red-50"
+                      >
+                        🗑️ Delete
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Add New Chore Button */}
+                <div className="border-t pt-4">
+                  <Button 
+                    onClick={() => setIsAddChoreDialogOpen(true)}
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                  >
+                    ➕ Add New Chore
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Recent Activity */}
         <Card>
           <CardHeader>
