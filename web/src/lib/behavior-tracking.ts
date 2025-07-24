@@ -313,7 +313,7 @@ Please provide:
 
     try {
       const response = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || 'gpt-4',
+        model: process.env.OPENAI_MODEL || 'gpt-4o',
         messages: [
           { role: 'system', content: BEHAVIOR_COACHING_PROMPT },
           { role: 'user', content: dataPrompt }

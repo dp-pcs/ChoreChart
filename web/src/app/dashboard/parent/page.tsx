@@ -624,72 +624,132 @@ export default function ParentDashboard() {
 
       {/* Settings Dialog */}
       {showSettings && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-md bg-white shadow-2xl">
             <CardHeader>
               <CardTitle>Family Settings</CardTitle>
               <CardDescription>Configure your family's preferences</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Auto-approve chores</span>
-                  <input
-                    type="checkbox"
-                    checked={pendingSettings.autoApproveChores ?? dashboardData.family.settings.autoApproveChores}
-                    onChange={(e) => handleSettingChange('autoApproveChores', e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
+            <CardContent className="space-y-6">
+              <div className="space-y-6">
+                {/* Auto-approve chores */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Auto-approve chores</span>
+                    <button
+                      type="button"
+                      onClick={() => handleSettingChange('autoApproveChores', !(pendingSettings.autoApproveChores ?? dashboardData.family.settings.autoApproveChores))}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                        (pendingSettings.autoApproveChores ?? dashboardData.family.settings.autoApproveChores)
+                          ? 'bg-blue-600'
+                          : 'bg-gray-200'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          (pendingSettings.autoApproveChores ?? dashboardData.family.settings.autoApproveChores)
+                            ? 'translate-x-6'
+                            : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    When enabled, children's chore submissions are automatically approved and rewards are awarded instantly. When disabled (default), parents must manually review and approve each submission.
+                  </p>
                 </div>
-                <p className="text-xs text-gray-500 ml-0">
-                  When enabled, children's chore submissions are automatically approved and rewards are awarded instantly. When disabled (default), parents must manually review and approve each submission.
-                </p>
                 
+                {/* Allow multiple parents */}
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Allow multiple parents</span>
-                  <input
-                    type="checkbox"
-                    checked={pendingSettings.allowMultipleParents ?? dashboardData.family.settings.allowMultipleParents}
-                    onChange={(e) => handleSettingChange('allowMultipleParents', e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => handleSettingChange('allowMultipleParents', !(pendingSettings.allowMultipleParents ?? dashboardData.family.settings.allowMultipleParents))}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                      (pendingSettings.allowMultipleParents ?? dashboardData.family.settings.allowMultipleParents)
+                        ? 'bg-blue-600'
+                        : 'bg-gray-200'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        (pendingSettings.allowMultipleParents ?? dashboardData.family.settings.allowMultipleParents)
+                          ? 'translate-x-6'
+                          : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
                 </div>
                 
+                {/* Email notifications */}
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Email notifications</span>
-                  <input
-                    type="checkbox"
-                    checked={pendingSettings.emailNotifications ?? dashboardData.family.settings.emailNotifications}
-                    onChange={(e) => handleSettingChange('emailNotifications', e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => handleSettingChange('emailNotifications', !(pendingSettings.emailNotifications ?? dashboardData.family.settings.emailNotifications))}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                      (pendingSettings.emailNotifications ?? dashboardData.family.settings.emailNotifications)
+                        ? 'bg-blue-600'
+                        : 'bg-gray-200'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        (pendingSettings.emailNotifications ?? dashboardData.family.settings.emailNotifications)
+                          ? 'translate-x-6'
+                          : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
                 </div>
                 
+                {/* Share reports */}
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Share reports</span>
-                  <input
-                    type="checkbox"
-                    checked={pendingSettings.shareReports ?? dashboardData.family.settings.shareReports}
-                    onChange={(e) => handleSettingChange('shareReports', e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => handleSettingChange('shareReports', !(pendingSettings.shareReports ?? dashboardData.family.settings.shareReports))}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                      (pendingSettings.shareReports ?? dashboardData.family.settings.shareReports)
+                        ? 'bg-blue-600'
+                        : 'bg-gray-200'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        (pendingSettings.shareReports ?? dashboardData.family.settings.shareReports)
+                          ? 'translate-x-6'
+                          : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
                 </div>
               </div>
-              <div className="flex justify-between">
-                <div className="text-xs text-gray-500">
-                  {settingsChanged && '⚠️ You have unsaved changes'}
-                </div>
-                <div className="flex space-x-2">
-                  <Button 
-                    variant="outline" 
-                    onClick={handleCancelSettings}
-                    disabled={!settingsChanged}
-                  >
-                    {settingsChanged ? 'Cancel' : 'Close'}
-                  </Button>
-                  <Button onClick={handleSaveSettings} disabled={!settingsChanged}>
-                    Save Changes
-                  </Button>
+              
+              {/* Footer with actions */}
+              <div className="border-t pt-4">
+                <div className="flex justify-between items-center">
+                  <div className="text-xs text-gray-500">
+                    {settingsChanged && '⚠️ You have unsaved changes'}
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={handleCancelSettings}
+                      disabled={!settingsChanged}
+                      size="sm"
+                    >
+                      {settingsChanged ? 'Cancel' : 'Close'}
+                    </Button>
+                    <Button 
+                      onClick={handleSaveSettings} 
+                      disabled={!settingsChanged}
+                      size="sm"
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      Save Changes
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>

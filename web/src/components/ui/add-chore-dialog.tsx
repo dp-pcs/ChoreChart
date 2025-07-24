@@ -216,23 +216,41 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren }: A
                   {formData.frequency === 'daily' ? 'Select Days (click multiple days)' : 'Select Day (click one day)'}
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
-                    <Badge
-                      key={day}
-                      variant={formData.selectedDays.includes(index) ? "default" : "outline"}
-                      className="cursor-pointer hover:bg-blue-100 transition-colors select-none"
-                      onClick={() => {
-                        const newDays = formData.selectedDays.includes(index)
-                          ? formData.selectedDays.filter(d => d !== index)
-                          : formData.frequency === 'weekly' 
-                            ? [index] // For weekly, only allow one day
-                            : [...formData.selectedDays, index] // For daily, allow multiple
-                        handleInputChange('selectedDays', newDays)
-                      }}
-                    >
-                      {day}
-                    </Badge>
-                  ))}
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => {
+                    const isSelected = formData.selectedDays.includes(index)
+                    return (
+                      <button
+                        key={day}
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          console.log(`Clicked ${day} (index: ${index}), current frequency: ${formData.frequency}`)
+                          
+                          const newDays = isSelected
+                            ? formData.selectedDays.filter(d => d !== index)
+                            : formData.frequency === 'weekly' 
+                              ? [index] // For weekly, only allow one day
+                              : [...formData.selectedDays, index] // For daily, allow multiple
+                          
+                          console.log('New selected days:', newDays)
+                          handleInputChange('selectedDays', newDays)
+                        }}
+                        className={`
+                          px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200
+                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
+                          active:scale-95 select-none
+                          ${isSelected 
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-sm' 
+                            : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                          }
+                        `}
+                      >
+                        {day}
+                        {isSelected && ' ✓'}
+                      </button>
+                    )
+                  })}
                 </div>
                 <p className="text-xs text-gray-600 mt-1">
                   {formData.frequency === 'daily' 
@@ -240,6 +258,11 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren }: A
                     : 'Choose which day of the week this chore should be done'
                   }
                 </p>
+                
+                {/* Debug info */}
+                <div className="text-xs text-gray-500 mt-1">
+                  Selected: {formData.selectedDays.length > 0 ? formData.selectedDays.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ') : 'None'}
+                </div>
               </div>
             )}
 

@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     
     // Test a simple completion
     const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: 'You are a helpful assistant.' },
         { role: 'user', content: 'Say "Hello from Chorbit!" in exactly those words.' }

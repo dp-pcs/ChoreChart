@@ -87,6 +87,35 @@ Remember: Kids should feel like they have a super-smart, always-available friend
 export class ChorbitAI {
   private conversationHistory: ChorbieMessage[] = []
   
+  // Detect if a message is asking for factual information requiring accuracy
+  private isFactualQuestion(message: string): boolean {
+    const factualKeywords = [
+      // Sports & Events
+      'when', 'what time', 'date', 'schedule', 'training camp', 'season', 'playoffs',
+      'scores', 'standings', 'game', 'match', 'tournament', 'championship',
+      
+      // Current Events & News
+      'news', 'latest', 'recent', 'current', 'today', 'yesterday', 'this week', 
+      'happened', 'update', 'breaking',
+      
+      // Factual Information
+      'who is', 'what is', 'where is', 'how many', 'how much', 'how long',
+      'capital', 'president', 'population', 'distance', 'height', 'weight',
+      'temperature', 'weather', 'forecast',
+      
+      // Historical & Educational
+      'history', 'invented', 'discovered', 'born', 'died', 'founded', 'established',
+      'fact', 'facts', 'information', 'details', 'statistics', 'data',
+      
+      // Specific Queries
+      'exact', 'precise', 'specific', 'exactly', 'specifically', 'tell me about'
+    ]
+    
+    const msg = message.toLowerCase()
+    return factualKeywords.some(keyword => msg.includes(keyword)) ||
+           msg.includes('?') && (msg.includes('when') || msg.includes('what') || msg.includes('who') || msg.includes('where') || msg.includes('how'))
+  }
+  
   async chat(
     message: string, 
     userId: string, 
@@ -110,8 +139,18 @@ export class ChorbitAI {
     }
     this.conversationHistory.push(userMessage)
     
-    // Build personalized context
+    // Build personalized context and adjust for factual questions
     let contextualPrompt = CHORBIE_BASE_PROMPT
+    
+    // For factual questions, add accuracy instructions
+    if (this.isFactualQuestion(message)) {
+      contextualPrompt += `\n\nFACTUAL QUERY DETECTED: The user is asking for specific factual information. For this response:
+- Provide accurate, specific, and up-to-date information
+- Include exact dates, times, numbers when available
+- Be precise rather than vague (e.g., "July 25, 2024" not "late July")
+- If you don't have current information, clearly state your knowledge cutoff
+- Still maintain your friendly Chorbie personality while being factually accurate`
+    }
     
     if (userContext) {
       contextualPrompt += `\n\nCURRENT USER CONTEXT:
@@ -164,8 +203,14 @@ PERSONALIZATION INSTRUCTIONS:
         throw new Error('OpenAI not configured')
       }
 
+      // Determine if this is a factual question requiring accuracy
+      const isFactualQuery = this.isFactualQuestion(message)
+      const modelToUse = isFactualQuery 
+        ? (process.env.OPENAI_MODEL || 'gpt-4o') // Use most capable model for facts
+        : (process.env.OPENAI_MODEL || 'gpt-4o-mini') // Use efficient model for chat
+      
       const response = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
+        model: modelToUse,
         messages: [
           { role: 'system', content: contextualPrompt },
           ...this.conversationHistory.slice(-10).map(msg => ({
@@ -173,8 +218,8 @@ PERSONALIZATION INSTRUCTIONS:
             content: msg.content
           })),
         ],
-        max_tokens: 350,
-        temperature: 0.7,
+        max_tokens: isFactualQuery ? 800 : 350, // More tokens for detailed factual answers
+        temperature: isFactualQuery ? 0.1 : 0.7, // Lower temperature for accuracy
       })
       
       const chorbieResponse: ChorbieMessage = {
@@ -470,7 +515,7 @@ Make it encouraging and realistic for a kid to follow!`
       if (!openai) throw new Error('OpenAI not configured')
       
       const response = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
+        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
         messages: [
           { role: 'system', content: 'You are a helpful AI that creates structured chore schedules in JSON format.' },
           { role: 'user', content: prompt }

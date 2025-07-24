@@ -27,6 +27,8 @@ model User {
   longestCheckInStreak Int                @default(0)
   lastCheckInDate      DateTime?
   totalPoints          Int                @default(0)
+  availablePoints      Int                @default(0)  // Points available to spend
+  lifetimePoints       Int                @default(0)  // Total points ever earned
   level                Int                @default(1)
   experiencePoints     Int                @default(0)
   streakFreezes        Int                @default(0)
@@ -40,6 +42,11 @@ model User {
   messages             Message[]
   rewards              Reward[]
   achievements         UserAchievement[]
+  impromptuSubmissions ImpromptuSubmission[]  // Child submissions
+  realWorldActivities  RealWorldActivity[] @relation("ChildActivity")  // Activities logged for this child
+  loggedActivities     RealWorldActivity[] @relation("ParentLogger")   // Activities logged by this parent
+  correctiveBehaviors  CorrectiveBehavior[] @relation("ChildBehavior") // Behaviors logged for this child
+  loggedBehaviors      CorrectiveBehavior[] @relation("ParentLogger")  // Behaviors logged by this parent
   family               Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
   weeklyReports        WeeklyReport[]
 
@@ -81,6 +88,8 @@ model Family {
   allowMultipleParents Boolean            @default(true)
   shareReports         Boolean            @default(false)
   crossFamilyApproval  Boolean            @default(false)
+  pointsToMoneyRate    Float              @default(0.10)  // $0.10 per point
+  enablePointsSystem   Boolean            @default(true)
   achievements         Achievement[]
   choreAssignments     ChoreAssignment[]
   chores               Chore[]
@@ -100,7 +109,8 @@ model Chore {
   type             ChoreType
   frequency        ChoreFrequency
   isRequired       Boolean           @default(false)
-  reward           Float             @default(0)
+  reward           Float             @default(0)  // Keep for backward compatibility
+  points           Int               @default(0)  // New points-based reward
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   scheduledDays    Int[]
@@ -138,7 +148,8 @@ model ChoreSubmission {
   imageUrl      String?
   status        SubmissionStatus @default(PENDING)
   score         Int?
-  partialReward Int?
+  partialReward Int?            // Keep for backward compatibility
+  pointsAwarded Int?           // New points awarded
   approval      ChoreApproval?
   assignment    ChoreAssignment  @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
   user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -154,8 +165,10 @@ model ChoreApproval {
   approved       Boolean
   feedback       String?
   score          Int?
-  partialReward  Int?
-  originalReward Int?
+  partialReward  Int?           // Keep for backward compatibility
+  originalReward Int?           // Keep for backward compatibility
+  pointsAwarded  Int?           // New points awarded
+  originalPoints Int?           // Original points for this chore
   approver       User            @relation(fields: [approvedBy], references: [id], onDelete: Cascade)
   submission     ChoreSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
 
@@ -252,6 +265,54 @@ model UserAchievement {
   @@map("user_achievements")
 }
 
+model ImpromptuSubmission {
+  id          String                    @id @default(cuid())
+  childId     String
+  title       String
+  description String
+  submittedAt DateTime                  @default(now())
+  status      ImpromptuSubmissionStatus @default(PENDING)
+  responseAt  DateTime?
+  parentNote  String?
+  pointsAwarded Int?
+  child       User                      @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@map("impromptu_submissions")
+}
+
+model RealWorldActivity {
+  id          String   @id @default(cuid())
+  childId     String
+  parentId    String
+  title       String
+  description String?
+  occurredAt  DateTime
+  loggedAt    DateTime @default(now())
+  points      Int      @default(0)
+  child       User     @relation("ChildActivity", fields: [childId], references: [id], onDelete: Cascade)
+  parent      User     @relation("ParentLogger", fields: [parentId], references: [id], onDelete: Cascade)
+
+  @@map("real_world_activities")
+}
+
+model CorrectiveBehavior {
+  id          String              @id @default(cuid())
+  childId     String
+  parentId    String
+  behavior    String
+  description String?
+  occurredAt  DateTime
+  loggedAt    DateTime            @default(now())
+  severity    BehaviorSeverity    @default(MINOR)
+  status      BehaviorStatus      @default(NOTED)
+  actionTaken String?
+  pointsDeducted Int?
+  child       User                @relation("ChildBehavior", fields: [childId], references: [id], onDelete: Cascade)
+  parent      User                @relation("ParentLogger", fields: [parentId], references: [id], onDelete: Cascade)
+
+  @@map("corrective_behaviors")
+}
+
 enum UserRole {
   PARENT
   CHILD
@@ -315,4 +376,23 @@ enum AchievementDifficulty {
   MEDIUM
   HARD
   LEGENDARY
+}
+
+enum ImpromptuSubmissionStatus {
+  PENDING
+  ACKNOWLEDGED
+  REWARDED
+  DENIED
+}
+
+enum BehaviorSeverity {
+  MINOR
+  MODERATE
+  MAJOR
+}
+
+enum BehaviorStatus {
+  NOTED
+  ACTION_TAKEN
+  RESOLVED
 }

@@ -94,7 +94,7 @@ async function extractInterestsFromConversation(conversation: string, userName: 
     Only include things you're confident about (confidence > 0.5). If no clear interests, return empty array.`
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: 'You are an expert at identifying interests and preferences from conversations. Return valid JSON only.' },
         { role: 'user', content: prompt }
