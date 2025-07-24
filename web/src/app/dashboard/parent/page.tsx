@@ -31,6 +31,9 @@ export default function ParentDashboard() {
     isOpen: false,
     submission: null
   })
+  const [currentChores, setCurrentChores] = useState<any[]>([])
+  const [editingChore, setEditingChore] = useState<any>(null)
+  const [isEditChoreDialogOpen, setIsEditChoreDialogOpen] = useState(false)
 
   useEffect(() => {
     if (status === 'loading') return // Still loading
@@ -47,7 +50,21 @@ export default function ParentDashboard() {
 
     // Fetch dashboard data
     fetchDashboardData()
+    fetchCurrentChores()
   }, [session, status, router])
+
+  const fetchCurrentChores = async () => {
+    try {
+      const response = await fetch('/api/chores')
+      if (!response.ok) {
+        throw new Error('Failed to fetch chores')
+      }
+      const result = await response.json()
+      setCurrentChores(result.chores || [])
+    } catch (error) {
+      console.error('Error fetching chores:', error)
+    }
+  }
 
   const fetchDashboardData = async () => {
     try {
@@ -275,6 +292,57 @@ export default function ParentDashboard() {
     })
     // Refresh dashboard data to show new chore
     fetchDashboardData()
+    fetchCurrentChores()
+  }
+
+  const handleEditChore = (chore: any) => {
+    setEditingChore(chore)
+    setIsEditChoreDialogOpen(true)
+  }
+
+  const handleEditChoreSuccess = (successMessage: string) => {
+    setMessage({
+      type: 'success',
+      text: successMessage
+    })
+    setIsEditChoreDialogOpen(false)
+    setEditingChore(null)
+    fetchCurrentChores()
+  }
+
+  const handleDeleteChore = async (choreId: string, choreName: string) => {
+    if (!confirm(`Are you sure you want to delete "${choreName}"? This will remove all related submissions and assignments.`)) {
+      return
+    }
+
+    try {
+      const response = await fetch('/api/chores', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ choreId })
+      })
+
+      const result = await response.json()
+
+      if (response.ok) {
+        setMessage({
+          type: 'success',
+          text: result.message || 'Chore deleted successfully!'
+        })
+        fetchCurrentChores()
+      } else {
+        setMessage({
+          type: 'error',
+          text: result.error || 'Failed to delete chore'
+        })
+      }
+    } catch (error) {
+      console.error('Error deleting chore:', error)
+      setMessage({
+        type: 'error',
+        text: 'Failed to delete chore. Please try again.'
+      })
+    }
   }
 
   const handleAddChildSuccess = (successMessage: string) => {
@@ -596,6 +664,20 @@ export default function ParentDashboard() {
           familyChildren={dashboardData?.children || []}
         />
 
+        {/* Edit Chore Dialog */}
+        {editingChore && (
+          <AddChoreDialog
+            isOpen={isEditChoreDialogOpen}
+            onClose={() => {
+              setIsEditChoreDialogOpen(false)
+              setEditingChore(null)
+            }}
+            onSuccess={handleEditChoreSuccess}
+            familyChildren={dashboardData?.children || []}
+            editingChore={editingChore}
+          />
+        )}
+
         {/* Add Child Dialog */}
         <AddChildDialog
           isOpen={isAddChildDialogOpen}
@@ -736,7 +818,6 @@ export default function ParentDashboard() {
                     <Button 
                       variant="outline" 
                       onClick={handleCancelSettings}
-                      disabled={!settingsChanged}
                       size="sm"
                     >
                       {settingsChanged ? 'Cancel' : 'Close'}

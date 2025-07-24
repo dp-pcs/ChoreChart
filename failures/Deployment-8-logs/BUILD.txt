@@ -1,0 +1,74 @@
+2025-07-24T14:43:40.613Z [INFO]: # Build environment configured with Standard build compute type: 8GiB Memory, 4vCPUs, 128GB Disk Space
+2025-07-24T14:43:41.048Z [INFO]: # Cloning repository: git@github.com:dp-pcs/ChoreChart.git
+2025-07-24T14:43:42.662Z [INFO]: 
+2025-07-24T14:43:42.663Z [INFO]: Cloning into 'ChoreChart'...
+2025-07-24T14:43:42.663Z [INFO]: # Switching to commit: bd8bfd3a639b61159bcfef64ee5b6006e4b7d4a3
+2025-07-24T14:43:42.687Z [INFO]: Note: switching to 'bd8bfd3a639b61159bcfef64ee5b6006e4b7d4a3'.
+                                 You are in 'detached HEAD' state. You can look around, make experimental
+                                 changes and commit them, and you can discard any commits you make in this
+                                 state without impacting any branches by switching back to a branch.
+                                 If you want to create a new branch to retain commits you create, you may
+                                 do so (now or later) by using -c with the switch command. Example:
+                                 git switch -c <new-branch-name>
+                                 Or undo this operation with:
+                                 git switch -
+                                 Turn off this advice by setting config variable advice.detachedHead to false
+                                 HEAD is now at bd8bfd3 🤖 Fix Chorbie AI accuracy + 📋 Add comprehensive work log
+2025-07-24T14:43:42.762Z [INFO]: Successfully cleaned up Git credentials
+2025-07-24T14:43:42.762Z [INFO]: # Checking for Git submodules at: /codebuild/output/src3696343897/src/ChoreChart/.gitmodules
+2025-07-24T14:43:42.770Z [INFO]: # Retrieving environment cache...
+2025-07-24T14:43:42.806Z [WARNING]: ! Unable to write cache: {"code":"ERR_BAD_REQUEST","message":"Request failed with status code 404"})}
+2025-07-24T14:43:42.806Z [INFO]: ---- Setting Up SSM Secrets ----
+2025-07-24T14:43:42.806Z [INFO]: SSM params {"Path":"/amplify/d11j0r1on0yka9/main/","WithDecryption":true}
+2025-07-24T14:43:42.854Z [WARNING]: !Failed to set up process.env.secrets
+2025-07-24T14:43:43.770Z [INFO]: # No package override configuration found.
+2025-07-24T14:43:43.835Z [INFO]: # Retrieving cache...
+2025-07-24T14:44:00.924Z [INFO]: # Extracting cache...
+2025-07-24T14:44:10.277Z [INFO]: # Extraction completed
+2025-07-24T14:44:10.524Z [INFO]: # Retrieved cache
+2025-07-24T14:44:15.030Z [INFO]: ## Starting Backend Build
+                                 ## Checking for associated backend environment...
+                                 ## No backend environment association found, continuing...
+                                 ## Completed Backend Build
+2025-07-24T14:44:15.036Z [INFO]: ## Starting Frontend Build
+                                 # Starting phase: preBuild
+                                 # Executing command: echo "Current directory:" && pwd && ls -la
+                                 Current directory:
+                                 /codebuild/output/src3696343897/src/ChoreChart/web
+2025-07-24T14:44:15.042Z [INFO]: total 284
+                                 drwxr-xr-x 6 amplify amplify    325 Jul 24 14:44 .
+                                 drwxr-xr-x 8 amplify amplify   4096 Jul 24 14:44 ..
+                                 -rw-r--r-- 1 amplify amplify    503 Jul 24 14:43 .gitignore
+                                 -rw-r--r-- 1 amplify amplify    960 Jul 24 14:43 CHORBIT_SETUP.md
+                                 -rw-r--r-- 1 amplify amplify   1450 Jul 24 14:43 README.md
+                                 -rwxrwxrwx 1 amplify amplify   4077 Jul 24 14:44 amplify.sh
+                                 -rw-r--r-- 1 amplify amplify    856 Jul 24 14:43 eslint.config.mjs
+                                 -rw-r--r-- 1 amplify amplify    573 Jul 24 14:43 next.config.ts
+                                 -rw-r--r-- 1 amplify amplify 231909 Jul 24 14:43 package-lock.json
+                                 -rw-r--r-- 1 amplify amplify   1420 Jul 24 14:43 package.json
+                                 -rw-r--r-- 1 amplify amplify     82 Jul 24 14:43 postcss.config.js
+                                 drwxr-xr-x 3 amplify amplify     45 Jul 24 14:43 prisma
+                                 -rw-r--r-- 1 amplify amplify   1367 Jul 24 14:43 prod-ca-2021.crt
+                                 drwxr-xr-x 2 amplify amplify   4096 Jul 24 14:43 public
+                                 drwxr-xr-x 2 amplify amplify   4096 Jul 24 14:43 scripts
+                                 drwxr-xr-x 6 amplify amplify     59 Jul 24 14:43 src
+                                 -rw-r--r-- 1 amplify amplify   1751 Jul 24 14:43 tailwind.config.js
+                                 -rw-r--r-- 1 amplify amplify    602 Jul 24 14:43 tsconfig.json
+                                 # Executing command: echo "Installing dependencies for the web app..."
+                                 Installing dependencies for the web app...
+                                 # Executing command: npm ci
+2025-07-24T14:44:56.720Z [INFO]: added 508 packages, and audited 510 packages in 38s
+2025-07-24T14:44:56.725Z [INFO]: 170 packages are looking for funding
+                                 run `npm fund` for details
+                                 found 0 vulnerabilities
+2025-07-24T14:44:56.745Z [INFO]: # Executing command: echo "Generating Prisma client..."
+                                 Generating Prisma client...
+2025-07-24T14:44:56.746Z [INFO]: # Executing command: npx prisma generate
+2025-07-24T14:44:58.088Z [INFO]: Prisma schema loaded from prisma/schema.prisma
+2025-07-24T14:44:58.672Z [INFO]: ✔ Generated Prisma Client (v6.12.0) to ./src/generated/prisma in 225ms
+                                 Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+                                 Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+2025-07-24T14:44:58.692Z [INFO]: # Executing command: echo "Running database migrations..."
+                                 Running database migrations...
+2025-07-24T14:44:58.692Z [INFO]: # Executing command: npx prisma migrate resolve --applied "20250703035636_init_with_multiple_parents" || echo "Migration resolve failed, trying deploy..."
+2025-07-24T14:44:59.959Z [INFO]: Prisma schema loaded from prisma/schema.prisma

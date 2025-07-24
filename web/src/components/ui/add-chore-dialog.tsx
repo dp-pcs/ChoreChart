@@ -12,21 +12,24 @@ interface AddChoreDialogProps {
   onClose: () => void
   onSuccess: (message: string) => void
   familyChildren: Array<{ id: string; name: string; email: string; }>
+  editingChore?: any
 }
 
-export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren }: AddChoreDialogProps) {
+export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren, editingChore }: AddChoreDialogProps) {
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    reward: '',
-    estimatedMinutes: '',
-    frequency: 'once' as 'once' | 'daily' | 'weekly' | 'monthly',
-    selectedDays: [] as number[],
-    isRequired: false,
-    assignedChildIds: [] as string[]
+    title: editingChore?.title || '',
+    description: editingChore?.description || '',
+    reward: editingChore?.reward ? editingChore.reward.toString() : '',
+    estimatedMinutes: editingChore?.estimatedMinutes ? editingChore.estimatedMinutes.toString() : '',
+    frequency: (editingChore?.frequency?.toLowerCase() === 'daily' ? 'daily' : 
+               editingChore?.frequency?.toLowerCase() === 'weekly' ? 'weekly' : 
+               editingChore?.frequency?.toLowerCase() === 'monthly' ? 'monthly' : 'once') as 'once' | 'daily' | 'weekly' | 'monthly',
+    selectedDays: editingChore?.scheduledDays || [] as number[],
+    isRequired: editingChore?.isRequired || false,
+    assignedChildIds: editingChore?.assignments?.map((a: any) => a.userId) || [] as string[]
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [showDuration, setShowDuration] = useState(false)
+  const [showDuration, setShowDuration] = useState(!!editingChore?.estimatedMinutes)
   
   // Children data from parent component props
   const children = familyChildren || []
@@ -42,7 +45,7 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren }: A
     setFormData(prev => ({
       ...prev,
       assignedChildIds: prev.assignedChildIds.includes(childId)
-        ? prev.assignedChildIds.filter(id => id !== childId)
+        ? prev.assignedChildIds.filter((id: string) => id !== childId)
         : [...prev.assignedChildIds, childId]
     }))
   }
@@ -59,14 +62,15 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren }: A
     const submitData = {
       ...formData,
       reward: formData.reward ? parseFloat(formData.reward) : 0,
-      estimatedMinutes: formData.estimatedMinutes ? parseInt(formData.estimatedMinutes) : 15
+      estimatedMinutes: formData.estimatedMinutes ? parseInt(formData.estimatedMinutes) : 15,
+      ...(editingChore && { choreId: editingChore.id })
     }
 
     setIsSubmitting(true)
 
     try {
       const response = await fetch('/api/chores', {
-        method: 'POST',
+        method: editingChore ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -90,17 +94,19 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren }: A
   }
 
   const handleClose = () => {
-    setFormData({
-      title: '',
-      description: '',
-      reward: '',
-      estimatedMinutes: '',
-      frequency: 'once',
-      selectedDays: [],
-      isRequired: false,
-      assignedChildIds: []
-    })
-    setShowDuration(false)
+    if (!editingChore) {
+      setFormData({
+        title: '',
+        description: '',
+        reward: '',
+        estimatedMinutes: '',
+        frequency: 'once',
+        selectedDays: [],
+        isRequired: false,
+        assignedChildIds: []
+      })
+      setShowDuration(false)
+    }
     onClose()
   }
 
@@ -110,9 +116,11 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren }: A
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-white shadow-2xl">
         <CardHeader className="bg-white">
-          <CardTitle className="text-xl text-gray-900">📋 Add New Chore</CardTitle>
+          <CardTitle className="text-xl text-gray-900">
+            {editingChore ? '✏️ Edit Chore' : '📋 Add New Chore'}
+          </CardTitle>
           <CardDescription className="text-gray-600">
-            Create a new chore for your family
+            {editingChore ? 'Update chore details' : 'Create a new chore for your family'}
           </CardDescription>
         </CardHeader>
         
@@ -153,7 +161,7 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren }: A
                 </label>
                 <Input
                   type="number"
-                  step="0.50"
+                  step="0.01"
                   min="0"
                   value={formData.reward}
                   onChange={(e) => handleInputChange('reward', e.target.value)}
@@ -228,7 +236,7 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren }: A
                           console.log(`Clicked ${day} (index: ${index}), current frequency: ${formData.frequency}`)
                           
                           const newDays = isSelected
-                            ? formData.selectedDays.filter(d => d !== index)
+                            ? formData.selectedDays.filter((d: number) => d !== index)
                             : formData.frequency === 'weekly' 
                               ? [index] // For weekly, only allow one day
                               : [...formData.selectedDays, index] // For daily, allow multiple
@@ -261,7 +269,7 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren }: A
                 
                 {/* Debug info */}
                 <div className="text-xs text-gray-500 mt-1">
-                  Selected: {formData.selectedDays.length > 0 ? formData.selectedDays.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ') : 'None'}
+                  Selected: {formData.selectedDays.length > 0 ? formData.selectedDays.map((d: number) => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ') : 'None'}
                 </div>
               </div>
             )}
@@ -287,7 +295,7 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren }: A
                 Assign to Children
               </label>
               <div className="flex flex-wrap gap-2">
-                {children.map((child: { id: string; name: string }) => (
+                {children.map((child: { id: string; name: string; email: string }) => (
                   <Badge
                     key={child.id}
                     variant={formData.assignedChildIds.includes(child.id) ? "default" : "outline"}
@@ -326,7 +334,7 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren }: A
                     Adding...
                   </>
                 ) : (
-                  '📋 Add Chore'
+                  editingChore ? '✏️ Update Chore' : '📋 Add Chore'
                 )}
               </Button>
             </div>

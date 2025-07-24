@@ -1,0 +1,244 @@
+2025-07-22T04:19:36.016Z [INFO]: # Build environment configured with Standard build compute type: 8GiB Memory, 4vCPUs, 128GB Disk Space
+2025-07-22T04:19:36.453Z [INFO]: # Cloning repository: git@github.com:dp-pcs/ChoreChart.git
+2025-07-22T04:19:38.046Z [INFO]: 
+2025-07-22T04:19:38.046Z [INFO]: Cloning into 'ChoreChart'...
+2025-07-22T04:19:38.047Z [INFO]: # Switching to commit: 989964baa66611b67d042c374aa5b59ac37a69b9
+2025-07-22T04:19:38.071Z [INFO]: Note: switching to '989964baa66611b67d042c374aa5b59ac37a69b9'.
+                                 You are in 'detached HEAD' state. You can look around, make experimental
+                                 changes and commit them, and you can discard any commits you make in this
+                                 state without impacting any branches by switching back to a branch.
+                                 If you want to create a new branch to retain commits you create, you may
+                                 do so (now or later) by using -c with the switch command. Example:
+                                 git switch -c <new-branch-name>
+                                 Or undo this operation with:
+                                 git switch -
+                                 Turn off this advice by setting config variable advice.detachedHead to false
+                                 HEAD is now at 989964b Upgrade Prisma, improve dashboard data fetching and error handling (#15)
+2025-07-22T04:19:38.122Z [INFO]: Successfully cleaned up Git credentials
+2025-07-22T04:19:38.122Z [INFO]: # Checking for Git submodules at: /codebuild/output/src31855234/src/ChoreChart/.gitmodules
+2025-07-22T04:19:38.131Z [INFO]: # Retrieving environment cache...
+2025-07-22T04:19:38.165Z [WARNING]: ! Unable to write cache: {"code":"ERR_BAD_REQUEST","message":"Request failed with status code 404"})}
+2025-07-22T04:19:38.165Z [INFO]: ---- Setting Up SSM Secrets ----
+2025-07-22T04:19:38.165Z [INFO]: SSM params {"Path":"/amplify/d11j0r1on0yka9/main/","WithDecryption":true}
+2025-07-22T04:19:38.226Z [WARNING]: !Failed to set up process.env.secrets
+2025-07-22T04:19:38.928Z [INFO]: # No package override configuration found.
+2025-07-22T04:19:38.932Z [INFO]: # Retrieving cache...
+2025-07-22T04:19:54.141Z [INFO]: # Extracting cache...
+2025-07-22T04:20:03.128Z [INFO]: # Extraction completed
+2025-07-22T04:20:03.335Z [INFO]: # Retrieved cache
+2025-07-22T04:20:08.586Z [INFO]: ## Starting Backend Build
+                                 ## Checking for associated backend environment...
+                                 ## No backend environment association found, continuing...
+                                 ## Completed Backend Build
+2025-07-22T04:20:08.591Z [INFO]: {"backendDuration": 0}
+                                 ## Starting Frontend Build
+                                 # Starting phase: preBuild
+                                 # Executing command: echo "Current directory:" && pwd && ls -la
+                                 Current directory:
+                                 /codebuild/output/src31855234/src/ChoreChart/web
+2025-07-22T04:20:08.591Z [INFO]: total 280
+                                 drwxr-xr-x 6 amplify amplify    325 Jul 22 04:20 .
+                                 drwxr-xr-x 8 amplify amplify   4096 Jul 22 04:20 ..
+                                 -rw-r--r-- 1 amplify amplify    503 Jul 22 04:19 .gitignore
+                                 -rw-r--r-- 1 amplify amplify    345 Jul 22 04:19 CHORBIT_SETUP.md
+                                 -rw-r--r-- 1 amplify amplify   1450 Jul 22 04:19 README.md
+                                 -rwxrwxrwx 1 amplify amplify   4077 Jul 22 04:20 amplify.sh
+                                 -rw-r--r-- 1 amplify amplify    856 Jul 22 04:19 eslint.config.mjs
+                                 -rw-r--r-- 1 amplify amplify    573 Jul 22 04:19 next.config.ts
+                                 -rw-r--r-- 1 amplify amplify 231909 Jul 22 04:19 package-lock.json
+                                 -rw-r--r-- 1 amplify amplify   1420 Jul 22 04:19 package.json
+                                 -rw-r--r-- 1 amplify amplify     82 Jul 22 04:19 postcss.config.js
+                                 drwxr-xr-x 3 amplify amplify     45 Jul 22 04:19 prisma
+                                 -rw-r--r-- 1 amplify amplify   1367 Jul 22 04:19 prod-ca-2021.crt
+                                 drwxr-xr-x 2 amplify amplify   4096 Jul 22 04:19 public
+                                 drwxr-xr-x 2 amplify amplify    220 Jul 22 04:19 scripts
+                                 drwxr-xr-x 6 amplify amplify     59 Jul 22 04:19 src
+                                 -rw-r--r-- 1 amplify amplify   1751 Jul 22 04:19 tailwind.config.js
+                                 -rw-r--r-- 1 amplify amplify    602 Jul 22 04:19 tsconfig.json
+                                 # Executing command: echo "Installing dependencies for the web app..."
+                                 Installing dependencies for the web app...
+                                 # Executing command: npm ci
+2025-07-22T04:20:51.882Z [INFO]: added 508 packages, and audited 510 packages in 39s
+2025-07-22T04:20:51.887Z [INFO]: 170 packages are looking for funding
+                                 run `npm fund` for details
+                                 found 0 vulnerabilities
+2025-07-22T04:20:51.907Z [INFO]: # Executing command: echo "Generating Prisma client..."
+                                 Generating Prisma client...
+2025-07-22T04:20:51.908Z [INFO]: # Executing command: npx prisma generate
+2025-07-22T04:20:53.243Z [INFO]: Prisma schema loaded from prisma/schema.prisma
+2025-07-22T04:20:53.778Z [INFO]: ✔ Generated Prisma Client (v6.12.0) to ./src/generated/prisma in 185ms
+                                 Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+                                 Tip: Interested in query caching in just a few lines of code? Try Accelerate today! https://pris.ly/tip-3-accelerate
+2025-07-22T04:20:53.798Z [INFO]: # Executing command: echo "Running database migrations..."
+                                 Running database migrations...
+2025-07-22T04:20:53.799Z [INFO]: # Executing command: npx prisma migrate resolve --applied "20250703035636_init_with_multiple_parents" || echo "Migration resolve failed, trying deploy..."
+2025-07-22T04:20:55.078Z [INFO]: Prisma schema loaded from prisma/schema.prisma
+2025-07-22T04:20:55.084Z [INFO]: Datasource "db": PostgreSQL database "postgres", schema "public" at "aws-0-us-east-2.pooler.supabase.com:5432"
+2025-07-22T04:20:55.583Z [WARNING]: Error: P3008
+                                    The migration `20250703035636_init_with_multiple_parents` is already recorded as applied in the database.
+2025-07-22T04:20:55.599Z [INFO]: Migration resolve failed, trying deploy...
+2025-07-22T04:20:55.599Z [INFO]: # Executing command: npx prisma migrate deploy || echo "Migration deploy failed, database may already be up to date"
+2025-07-22T04:20:56.908Z [INFO]: Prisma schema loaded from prisma/schema.prisma
+2025-07-22T04:20:56.914Z [INFO]: Datasource "db": PostgreSQL database "postgres", schema "public" at "aws-0-us-east-2.pooler.supabase.com:5432"
+2025-07-22T04:20:57.121Z [INFO]: 2 migrations found in prisma/migrations
+2025-07-22T04:20:57.122Z [INFO]: 
+2025-07-22T04:20:57.372Z [INFO]: 
+2025-07-22T04:20:57.372Z [INFO]: No pending migrations to apply.
+2025-07-22T04:20:57.404Z [INFO]: # Executing command: echo "Updating database schema..."
+                                 Updating database schema...
+2025-07-22T04:20:57.404Z [INFO]: # Executing command: npx tsx scripts/update-database-schema.ts || echo "Schema update failed or not needed - continuing..."
+2025-07-22T04:20:58.106Z [INFO]: 🔄 Updating database schema...
+2025-07-22T04:20:58.106Z [INFO]: 📋 Running database schema updates...
+2025-07-22T04:20:58.377Z [INFO]: ✅ Added column: allowMultipleParents
+2025-07-22T04:20:58.448Z [INFO]: ✅ Added column: shareReports
+2025-07-22T04:20:58.517Z [INFO]: ✅ Added column: crossFamilyApproval
+2025-07-22T04:20:58.584Z [INFO]: ✅ Added column: enableStreaks
+2025-07-22T04:20:58.652Z [INFO]: ✅ Added column: enableLeaderboard
+2025-07-22T04:20:58.725Z [INFO]: ✅ Added column: enableAchievements
+2025-07-22T04:20:58.793Z [INFO]: ✅ Added column: streakFreezeLimit
+2025-07-22T04:20:58.861Z [INFO]: ✅ Added column: resetToken
+2025-07-22T04:20:58.930Z [INFO]: ✅ Added column: resetTokenExpiry
+2025-07-22T04:20:58.999Z [INFO]: ✅ Created table: family_memberships
+2025-07-22T04:20:59.069Z [INFO]: ✅ Created index: family_memberships_userId_familyId_key
+2025-07-22T04:20:59.070Z [INFO]: 🎉 Database schema update completed!
+                                 ✅ Successfully applied: 11 changes
+                                 ⏭️  Skipped (already exists): 0 changes
+                                 🔍 Verifying schema updates...
+2025-07-22T04:20:59.162Z [INFO]: 📊 Family table new columns: [
+                                 'allowMultipleParents',
+                                 'crossFamilyApproval',
+                                 'enableAchievements',
+                                 'enableLeaderboard',
+                                 'enableStreaks',
+                                 'shareReports',
+                                 'streakFreezeLimit'
+                                 ]
+2025-07-22T04:20:59.232Z [INFO]: 📊 User table new columns: [ 'resetToken', 'resetTokenExpiry' ]
+2025-07-22T04:20:59.303Z [INFO]: 📊 Family memberships table: EXISTS
+2025-07-22T04:20:59.373Z [INFO]: ⚠️  Could not mark migration as applied (table may not exist)
+2025-07-22T04:20:59.373Z [INFO]: 🏗️  Database is now ready for full application functionality!
+                                 - Multiple family features are now available
+                                 - Password reset functionality is enabled
+                                 - All Prisma schema features are supported
+2025-07-22T04:20:59.396Z [INFO]: # Executing command: echo "Seeding demo data..."
+                                 Seeding demo data...
+2025-07-22T04:20:59.397Z [INFO]: # Executing command: npx tsx scripts/seed-demo-users.ts || echo "Demo data already exists or seeding failed - continuing..."
+2025-07-22T04:21:00.093Z [INFO]: 🌱 Seeding demo users...
+2025-07-22T04:21:00.383Z [INFO]: ✅ Created demo family: The Demo Family
+2025-07-22T04:21:00.844Z [WARNING]: ❌ Error seeding demo users: PrismaClientKnownRequestError:
+                                    Invalid `prisma.user.create()` invocation in
+                                    /codebuild/output/src31855234/src/ChoreChart/web/scripts/seed-demo-users.ts:44:42
+                                    41 const hashedPassword = await bcrypt.hash('password', 12)
+                                    42
+                                    43 // Create parent user
+                                    → 44 const parentUser = await prisma.user.create(
+                                    Unique constraint failed on the fields: (`email`)
+                                    at ri.handleRequestError (/codebuild/output/src31855234/src/ChoreChart/web/src/generated/prisma/runtime/library.js:124:7459)
+                                    at ri.handleAndLogRequestError (/codebuild/output/src31855234/src/ChoreChart/web/src/generated/prisma/runtime/library.js:124:6784)
+                                    at ri.request (/codebuild/output/src31855234/src/ChoreChart/web/src/generated/prisma/runtime/library.js:124:6491)
+                                    at async l (/codebuild/output/src31855234/src/ChoreChart/web/src/generated/prisma/runtime/library.js:133:9812)
+                                    at seedDemoUsers (/codebuild/output/src31855234/src/ChoreChart/web/scripts/seed-demo-users.ts:44:24) {
+                                    code: 'P2002',
+                                    meta: { modelName: 'User', target: [ 'email' ] },
+                                    clientVersion: '6.12.0'
+                                    }
+2025-07-22T04:21:00.846Z [WARNING]: PrismaClientKnownRequestError:
+                                    Invalid `prisma.user.create()` invocation in
+                                    /codebuild/output/src31855234/src/ChoreChart/web/scripts/seed-demo-users.ts:44:42
+                                    41 const hashedPassword = await bcrypt.hash('password', 12)
+                                    42
+                                    43 // Create parent user
+                                    → 44 const parentUser = await prisma.user.create(
+                                    Unique constraint failed on the fields: (`email`)
+                                    at ri.handleRequestError (/codebuild/output/src31855234/src/ChoreChart/web/src/generated/prisma/runtime/library.js:124:7459)
+                                    at ri.handleAndLogRequestError (/codebuild/output/src31855234/src/ChoreChart/web/src/generated/prisma/runtime/library.js:124:6784)
+                                    at ri.request (/codebuild/output/src31855234/src/ChoreChart/web/src/generated/prisma/runtime/library.js:124:6491)
+                                    at async l (/codebuild/output/src31855234/src/ChoreChart/web/src/generated/prisma/runtime/library.js:133:9812)
+                                    at seedDemoUsers (/codebuild/output/src31855234/src/ChoreChart/web/scripts/seed-demo-users.ts:44:24) {
+                                    code: 'P2002',
+                                    meta: { modelName: 'User', target: [ 'email' ] },
+                                    clientVersion: '6.12.0'
+                                    }
+2025-07-22T04:21:00.863Z [INFO]: Demo data already exists or seeding failed - continuing...
+2025-07-22T04:21:00.863Z [INFO]: # Executing command: echo "Running family membership migration..."
+                                 Running family membership migration...
+                                 # Executing command: npx tsx scripts/migrate-to-multiple-families.ts || echo "Family membership migration failed or already done - continuing..."
+2025-07-22T04:21:01.556Z [INFO]: 🚀 Starting migration to multiple families support...
+2025-07-22T04:21:01.853Z [INFO]: 📊 Found 5 users to migrate
+2025-07-22T04:21:01.926Z [INFO]: ⏭️  Skipping parent@demo.com - already has membership
+2025-07-22T04:21:01.996Z [INFO]: ⏭️  Skipping child@demo.com - already has membership
+2025-07-22T04:21:02.069Z [INFO]: ⏭️  Skipping gbu2011@icloud.com - already has membership
+2025-07-22T04:21:02.142Z [INFO]: ⏭️  Skipping coparent@demo.com - already has membership
+2025-07-22T04:21:02.213Z [INFO]: ⏭️  Skipping noahwproctor@icloud.com - already has membership
+2025-07-22T04:21:02.359Z [INFO]: 📋 Updated 43 families with new settings
+2025-07-22T04:21:02.360Z [INFO]: 🎉 Migration completed successfully!
+                                 ✅ Migrated: 0 users
+                                 ⏭️  Skipped: 5 users
+                                 🏠 Updated: 43 families
+                                 📋 Next steps:
+                                 1. Test the new family membership features
+                                 2. Update frontend to use the new family context
+                                 3. Consider enabling cross-family features as needed
+2025-07-22T04:21:02.360Z [INFO]: 🎭 Creating demo data for multiple families...
+2025-07-22T04:21:02.546Z [INFO]: ✅ Created demo family: The Johnson Co-Parents
+2025-07-22T04:21:02.683Z [INFO]: ✅ Added child@demo.com to co-parent family
+2025-07-22T04:21:02.756Z [WARNING]: ❌ Demo data creation failed: PrismaClientKnownRequestError:
+                                    Invalid `prisma.user.create()` invocation in
+                                    /codebuild/output/src31855234/src/ChoreChart/web/scripts/migrate-to-multiple-families.ts:173:40
+                                    170 }
+                                    171
+                                    172 // Create a second parent for the co-parent family
+                                    → 173 const coParent = await prisma.user.create(
+                                    Unique constraint failed on the fields: (`email`)
+                                    at ri.handleRequestError (/codebuild/output/src31855234/src/ChoreChart/web/src/generated/prisma/runtime/library.js:124:7459)
+                                    at ri.handleAndLogRequestError (/codebuild/output/src31855234/src/ChoreChart/web/src/generated/prisma/runtime/library.js:124:6784)
+                                    at ri.request (/codebuild/output/src31855234/src/ChoreChart/web/src/generated/prisma/runtime/library.js:124:6491)
+                                    at async l (/codebuild/output/src31855234/src/ChoreChart/web/src/generated/prisma/runtime/library.js:133:9812)
+                                    at createDemoMultiFamilyData (/codebuild/output/src31855234/src/ChoreChart/web/scripts/migrate-to-multiple-families.ts:173:22)
+                                    at main (/codebuild/output/src31855234/src/ChoreChart/web/scripts/migrate-to-multiple-families.ts:216:3) {
+                                    code: 'P2002',
+                                    meta: { modelName: 'User', target: [ 'email' ] },
+                                    clientVersion: '6.12.0'
+                                    }
+2025-07-22T04:21:02.774Z [INFO]: # Completed phase: preBuild
+                                 # Starting phase: build
+                                 # Executing command: echo "Building the Next.js application..."
+2025-07-22T04:21:02.774Z [INFO]: Building the Next.js application...
+                                 # Executing command: npm run build
+2025-07-22T04:21:02.924Z [INFO]: > web@0.1.0 build
+                                 > next build
+2025-07-22T04:21:03.594Z [INFO]: ⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+2025-07-22T04:21:03.600Z [INFO]: Attention: Next.js now collects completely anonymous telemetry regarding usage.
+2025-07-22T04:21:03.600Z [INFO]: This information is used to shape Next.js' roadmap and prioritize features.
+                                 You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+                                 https://nextjs.org/telemetry
+2025-07-22T04:21:03.708Z [INFO]: ▲ Next.js 15.3.4
+2025-07-22T04:21:03.708Z [INFO]: 
+2025-07-22T04:21:03.743Z [INFO]: Creating an optimized production build ...
+2025-07-22T04:21:19.615Z [INFO]: ✓ Compiled successfully in 12.0s
+2025-07-22T04:21:19.621Z [INFO]: Skipping linting
+                                 Checking validity of types ...
+2025-07-22T04:21:27.314Z [WARNING]: Failed to compile.
+                                    ./scripts/diagnose-dashboard-issue.ts:189:62
+                                    Type error: 'error' is of type 'unknown'.
+                                    [0m [90m 187 |[39m         }[0m
+                                    [0m [90m 188 |[39m       } [36mcatch[39m (error) {[0m
+                                    [0m[31m[1m>[22m[39m[90m 189 |[39m         console[33m.[39mlog([32m`   ❌ Dashboard would fail with error: ${error.message}`[39m)[0m
+                                    [0m [90m     |[39m                                                              [31m[1m^[22m[39m[0m
+                                    [0m [90m 190 |[39m       }[0m
+                                    [0m [90m 191 |[39m     }[0m
+                                    [0m [90m 192 |[39m[0m
+2025-07-22T04:21:27.339Z [WARNING]: Next.js build worker exited with code: 1 and signal: null
+2025-07-22T04:21:27.350Z [WARNING]: npm error Lifecycle script `build` failed with error:
+2025-07-22T04:21:27.351Z [WARNING]: npm error code 1
+2025-07-22T04:21:27.351Z [WARNING]: npm error path /codebuild/output/src31855234/src/ChoreChart/web
+                                    npm error workspace web@0.1.0
+2025-07-22T04:21:27.351Z [WARNING]: npm error location /codebuild/output/src31855234/src/ChoreChart/web
+                                    npm error command failed
+                                    npm error command sh -c next build
+2025-07-22T04:21:27.465Z [ERROR]: !!! Build failed
+2025-07-22T04:21:27.465Z [INFO]: Please read more about Amplify Hosting's support for SSR frameworks to find if your build failure is related to an unsupported feature: https://docs.aws.amazon.com/amplify/latest/userguide/amplify-ssr-framework-support.html. You may also find this troubleshooting guide useful: https://docs.aws.amazon.com/amplify/latest/userguide/troubleshooting-ssr-deployment.html
+2025-07-22T04:21:27.465Z [ERROR]: !!! Error: Command failed with exit code 1
+2025-07-22T04:21:27.465Z [INFO]: # Starting environment caching...
+2025-07-22T04:21:27.465Z [INFO]: # Environment caching completed
+
