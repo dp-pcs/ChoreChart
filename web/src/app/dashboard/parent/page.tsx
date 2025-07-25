@@ -389,6 +389,54 @@ export default function ParentDashboard() {
     fetchImpromptuSubmissions()
   }
 
+  const handleReviewCompleted = async (completion: any, action: 'approve' | 'reject') => {
+    const confirmMessage = action === 'reject' 
+      ? `Are you sure you want to reject "${completion.choreName}" completed by ${completion.childName}? This will reverse the auto-approval and remove their reward.`
+      : `Confirm keeping "${completion.choreName}" by ${completion.childName} as approved.`
+    
+    if (!confirm(confirmMessage)) {
+      return
+    }
+
+    try {
+      const response = await fetch('/api/chores/approve', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          submissionId: completion.id,
+          approved: action === 'approve',
+          feedback: action === 'reject' ? 'Auto-approval reversed by parent review' : 'Confirmed by parent review'
+        })
+      })
+
+      const result = await response.json()
+
+      if (response.ok) {
+        setMessage({
+          type: 'success',
+          text: action === 'approve' 
+            ? `✅ Confirmed "${completion.choreName}" for ${completion.childName}`
+            : `❌ Rejected "${completion.choreName}" for ${completion.childName} - auto-approval reversed`
+        })
+        // Refresh dashboard data
+        fetchDashboardData()
+      } else {
+        setMessage({
+          type: 'error',
+          text: result.error || 'Failed to review completed chore'
+        })
+      }
+    } catch (error) {
+      console.error('Error reviewing completed chore:', error)
+      setMessage({
+        type: 'error',
+        text: 'Failed to review completed chore. Please try again.'
+      })
+    }
+  }
+
   const handleSettingChange = (setting: string, value: boolean) => {
     setPendingSettings((prev: any) => ({
       ...prev,
@@ -777,6 +825,100 @@ export default function ParentDashboard() {
                     ➕ Add New Chore
                   </Button>
                 </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Completed Chores */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              Completed Chores
+              {dashboardData.completedChores?.length > 0 && (
+                <Badge variant="secondary">
+                  {dashboardData.completedChores.length}
+                </Badge>
+              )}
+            </CardTitle>
+            <CardDescription>
+              {dashboardData.family.settings.autoApproveChores 
+                ? "Auto-approved and manually approved chores (last 7 days)" 
+                : "Recently completed chores (last 7 days)"
+              }
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!dashboardData.completedChores || dashboardData.completedChores.length === 0 ? (
+              <div className="text-center py-4 text-gray-500">
+                <p>No completed chores in the last 7 days</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {dashboardData.completedChores.map((completion: any) => (
+                  <div 
+                    key={completion.id} 
+                    className="flex items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-lg"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3">
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            {completion.choreName}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            by {completion.childName} • {new Date(completion.submittedAt).toLocaleDateString()}
+                            {completion.approval?.isAutoApproved && (
+                              <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                                Auto-approved
+                              </span>
+                            )}
+                          </p>
+                          {completion.notes && (
+                            <p className="text-xs text-gray-500 mt-1">"{completion.notes}"</p>
+                          )}
+                          {completion.approval?.feedback && (
+                            <p className="text-xs text-green-600 mt-1">
+                              Feedback: "{completion.approval.feedback}"
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-green-600">
+                          ${completion.approval?.partialReward || completion.reward}
+                          {completion.approval?.score && completion.approval.score < 100 && (
+                            <span className="text-xs text-gray-500 block">
+                              {completion.approval.score}% quality
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                      {completion.approval?.isAutoApproved && (
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleReviewCompleted(completion, 'approve')}
+                            className="text-green-600 border-green-200 hover:bg-green-50 text-xs px-2"
+                          >
+                            ✓ Keep
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleReviewCompleted(completion, 'reject')}
+                            className="text-red-600 border-red-200 hover:bg-red-50 text-xs px-2"
+                          >
+                            ✗ Reject
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>

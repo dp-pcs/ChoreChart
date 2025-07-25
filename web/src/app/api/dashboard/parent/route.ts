@@ -171,6 +171,55 @@ export async function GET(request: NextRequest) {
       orderBy: { submittedAt: 'desc' }
     }) : []
 
+    // Get completed chore submissions (auto-approved and manually approved) from last 7 days
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    
+    const completedSubmissions = familyId ? await prisma.choreSubmission.findMany({
+      where: {
+        assignment: {
+          familyId: familyId
+        },
+        status: {
+          in: ['AUTO_APPROVED', 'APPROVED']
+        },
+        submittedAt: {
+          gte: sevenDaysAgo
+        }
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        assignment: {
+          include: {
+            chore: {
+              select: {
+                id: true,
+                title: true,
+                reward: true
+              }
+            }
+          }
+        },
+        approval: {
+          select: {
+            approved: true,
+            feedback: true,
+            score: true,
+            partialReward: true,
+            originalReward: true,
+            approvedAt: true
+          }
+        }
+      },
+      orderBy: { submittedAt: 'desc' },
+      take: 20 // Limit to recent 20 completed chores
+    }) : []
+
     // Get weekly stats
     const weekStart = new Date()
     weekStart.setDate(weekStart.getDate() - weekStart.getDay())
@@ -271,6 +320,25 @@ export async function GET(request: NextRequest) {
         reward: submission.assignment.chore.reward,
         status: submission.status,
         notes: submission.notes
+      })),
+      completedChores: completedSubmissions.map((submission: any) => ({
+        id: submission.id,
+        childName: submission.user.name,
+        choreName: submission.assignment.chore.title,
+        submittedAt: submission.submittedAt,
+        completedAt: submission.completedAt,
+        reward: submission.assignment.chore.reward,
+        status: submission.status,
+        notes: submission.notes,
+        approval: submission.approval ? {
+          approved: submission.approval.approved,
+          feedback: submission.approval.feedback,
+          score: submission.approval.score,
+          partialReward: submission.approval.partialReward,
+          originalReward: submission.approval.originalReward,
+          approvedAt: submission.approval.approvedAt,
+          isAutoApproved: submission.status === 'AUTO_APPROVED'
+        } : null
       })),
       children: children.map((child: any) => {
         const childUser = child.user || child
