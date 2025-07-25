@@ -102,6 +102,20 @@ export async function POST(request: NextRequest) {
                           frequency === 'weekly' ? 'WEEKLY' :
                           frequency === 'monthly' ? 'MONTHLY' : 'AS_NEEDED'
 
+    // Get family children for auto-assignment if no specific children selected
+    let targetChildIds = assignedChildIds
+    if (!assignedChildIds || assignedChildIds.length === 0) {
+      // Auto-assign to all children in the family
+      const familyChildren = await prisma.user.findMany({
+        where: {
+          familyId: user.familyId,
+          role: 'CHILD'
+        },
+        select: { id: true }
+      })
+      targetChildIds = familyChildren.map(child => child.id)
+    }
+
     // Create the chore
     const chore = await prisma.chore.create({
       data: {
@@ -115,11 +129,11 @@ export async function POST(request: NextRequest) {
         frequency: choreFrequency,
         scheduledDays: selectedDays || [],
         assignments: {
-          create: assignedChildIds?.map((childId: string) => ({
+          create: targetChildIds.map((childId: string) => ({
             userId: childId,
             familyId: user.familyId,
             weekStart: new Date()
-          })) || []
+          }))
         }
       },
       include: {
@@ -236,16 +250,30 @@ export async function PUT(request: NextRequest) {
     })
 
     // Update assignments if provided
-    if (assignedChildIds) {
+    if (assignedChildIds !== undefined) {
       // Delete existing assignments
       await prisma.choreAssignment.deleteMany({
         where: { choreId }
       })
 
+      // Determine target children
+      let targetChildIds = assignedChildIds
+      if (!assignedChildIds || assignedChildIds.length === 0) {
+        // Auto-assign to all children in the family
+        const familyChildren = await prisma.user.findMany({
+          where: {
+            familyId: user.familyId,
+            role: 'CHILD'
+          },
+          select: { id: true }
+        })
+        targetChildIds = familyChildren.map(child => child.id)
+      }
+
       // Create new assignments
-      if (assignedChildIds.length > 0) {
+      if (targetChildIds.length > 0) {
         await prisma.choreAssignment.createMany({
-          data: assignedChildIds.map((childId: string) => ({
+          data: targetChildIds.map((childId: string) => ({
             choreId,
             userId: childId,
             familyId: user.familyId,

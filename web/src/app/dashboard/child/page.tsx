@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { signOut } from 'next-auth/react'
+import { useSession, signOut } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ChorbieChat } from '@/components/ui/chorbit-chat'
@@ -12,53 +13,101 @@ import type { DailyCheckIn as DailyCheckInType } from '@/lib/behavior-tracking'
 import React from 'react'
 import { Badge } from '@/components/ui/badge'
 
-// This will be replaced with real data from the database
-const mockChildData = {
-  user: {
-    id: 'child-1',
-    name: 'Noah',
-    role: 'CHILD' as const,
-    weeklyEarnings: 15.50,
-    completionRate: 78
-  },
-  todaysChores: [
-    { id: '1', title: 'Make Bed', reward: 2, estimatedMinutes: 5, isRequired: true },
-    { id: '2', title: 'Take Out Trash', reward: 3, estimatedMinutes: 10, isRequired: true },
-    { id: '3', title: 'Clean Room', reward: 5, estimatedMinutes: 30, isRequired: false },
-    { id: '4', title: 'Help with Dishes', reward: 4, estimatedMinutes: 15, isRequired: false }
-  ],
-  weeklyProgress: {
-    completed: 12,
-    total: 18,
-    earnings: 15.50,
-    potential: 25.00
-  }
-}
-
 export default function ChildDashboard() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  
+  // State management
   const [showCheckIn, setShowCheckIn] = useState(false)
   const [showCheckInReminder, setShowCheckInReminder] = useState(false)
   const [showImpromptuDialog, setShowImpromptuDialog] = useState(false)
   const [todaysCheckIn, setTodaysCheckIn] = useState<Partial<DailyCheckInType> | null>(null)
   const [submittedChores, setSubmittedChores] = useState<Set<string>>(new Set())
-  const [approvedChores, setApprovedChores] = useState<Set<string>>(new Set()) // Mock parent approvals
+  const [approvedChores, setApprovedChores] = useState<Set<string>>(new Set())
   const [isCheckingToday, setIsCheckingToday] = useState(true)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  
+  // Real data state
+  const [loading, setLoading] = useState(true)
+  const [todaysChores, setTodaysChores] = useState<any[]>([])
+  const [weeklyProgress, setWeeklyProgress] = useState({
+    completed: 0,
+    total: 0,
+    earnings: 0,
+    potential: 0
+  })
+  const [user, setUser] = useState<any>(null)
 
-  const { user, todaysChores, weeklyProgress } = mockChildData
-
-  // Check if user has done today's check-in when component loads
+  // Authentication and data loading
   useEffect(() => {
+    if (status === 'loading') return // Still loading
+
+    if (!session) {
+      router.push('/auth/signin')
+      return
+    }
+
+    if (session.user.role !== 'CHILD') {
+      router.push('/dashboard/parent')
+      return
+    }
+
+    // Set user data from session
+    setUser({
+      id: session.user.id,
+      name: session.user.name,
+      role: session.user.role,
+      weeklyEarnings: 0, // Will be calculated from chores
+      completionRate: 0  // Will be calculated from submissions
+    })
+
+    // Load dashboard data
+    fetchChoresData()
     checkTodaysCheckInStatus()
-  }, [])
+  }, [session, status, router])
+
+  const fetchChoresData = async () => {
+    try {
+      setLoading(true)
+      
+      // Fetch assigned chores
+      const response = await fetch('/api/chores')
+      if (response.ok) {
+        const result = await response.json()
+        const chores = result.chores || []
+        
+        // Filter chores assigned to this child
+        const myChores = chores.filter((chore: any) => 
+          chore.assignments?.some((assignment: any) => assignment.userId === session?.user?.id)
+        )
+        
+        setTodaysChores(myChores)
+        
+        // Calculate weekly progress (mock calculation for now)
+        const totalPotential = myChores.reduce((sum: number, chore: any) => sum + (chore.reward || 0), 0)
+        setWeeklyProgress({
+          completed: 0, // Will be updated based on submissions
+          total: myChores.length,
+          earnings: 0,  // Will be updated based on approved submissions
+          potential: totalPotential
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching chores:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const checkTodaysCheckInStatus = async () => {
+    if (!session?.user?.id) return
+    
     try {
       setIsCheckingToday(true)
       
       // Check localStorage first for today's skip status
       const today = new Date().toISOString().split('T')[0]
-      const skipKey = `checkin-skip-${user.id}-${today}`
+      const skipKey = `checkin-skip-${session.user.id}-${today}`
       const hasSkippedToday = localStorage.getItem(skipKey) === 'true'
       
       if (hasSkippedToday) {
@@ -68,7 +117,7 @@ export default function ChildDashboard() {
       }
 
       // Check API for completed check-in
-      const response = await fetch(`/api/check-in?userId=${user.id}&checkToday=true`)
+      const response = await fetch(`/api/check-in?userId=${session.user.id}&checkToday=true`)
       if (response.ok) {
         const result = await response.json()
         
@@ -91,6 +140,8 @@ export default function ChildDashboard() {
   }
 
   const handleSkipCheckIn = async () => {
+    if (!session?.user?.id) return
+    
     try {
       // Call API to log the skip
       await fetch('/api/check-in', {
@@ -98,13 +149,13 @@ export default function ChildDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'skip',
-          userId: user.id
+          userId: session.user.id
         })
       })
 
       // Store skip status in localStorage
       const today = new Date().toISOString().split('T')[0]
-      const skipKey = `checkin-skip-${user.id}-${today}`
+      const skipKey = `checkin-skip-${session.user.id}-${today}`
       localStorage.setItem(skipKey, 'true')
       
       setShowCheckInReminder(false)
@@ -145,12 +196,12 @@ export default function ChildDashboard() {
 
   // Calculate earnings
   const submittedEarnings = todaysChores
-    .filter(chore => submittedChores.has(chore.id))
-    .reduce((sum, chore) => sum + chore.reward, 0)
+    .filter((chore: any) => submittedChores.has(chore.id))
+    .reduce((sum: number, chore: any) => sum + (chore.reward || 0), 0)
 
   const approvedEarnings = todaysChores
-    .filter(chore => approvedChores.has(chore.id))
-    .reduce((sum, chore) => sum + chore.reward, 0)
+    .filter((chore: any) => approvedChores.has(chore.id))
+    .reduce((sum: number, chore: any) => sum + (chore.reward || 0), 0)
 
   const handleScheduleGenerated = (schedule: any) => {
     console.log('Schedule generated:', schedule)
@@ -224,14 +275,16 @@ export default function ChildDashboard() {
   const isCheckInComplete = todaysCheckIn && 
     new Date(todaysCheckIn.date!).toDateString() === new Date().toDateString()
 
-  // Show loading state while checking today's status
-  if (isCheckingToday) {
+  // Show loading state while authenticating or fetching data
+  if (status === 'loading' || loading || isCheckingToday || !user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">👋</div>
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Getting ready for {user.name}...</p>
+          <p className="text-gray-600">
+            {!user ? 'Loading your dashboard...' : `Getting ready for ${user.name}...`}
+          </p>
         </div>
       </div>
     )
@@ -379,7 +432,7 @@ export default function ChildDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {todaysChores.map((chore) => {
+              {todaysChores.map((chore: any) => {
                 const isSubmitted = submittedChores.has(chore.id)
                 const isApproved = approvedChores.has(chore.id)
                 
@@ -472,7 +525,7 @@ export default function ChildDashboard() {
                   {submittedEarnings === approvedEarnings && (
                     <div>
                       <div className="text-xl sm:text-2xl font-bold text-gray-400">
-                        ${todaysChores.reduce((sum, chore) => sum + chore.reward, 0) - approvedEarnings}
+                        ${todaysChores.reduce((sum: number, chore: any) => sum + (chore.reward || 0), 0) - approvedEarnings}
                       </div>
                       <div className="text-xs sm:text-sm text-gray-600">Possible</div>
                     </div>
