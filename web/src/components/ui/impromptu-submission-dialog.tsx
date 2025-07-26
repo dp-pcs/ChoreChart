@@ -55,19 +55,11 @@ export function ImpromptuSubmissionDialog({ isOpen, onClose, onSuccess }: Improm
         onSuccess(result.message || 'Submission sent successfully!')
         handleClose()
       } else {
-        console.error('Impromptu submission failed:', {
-          status: response.status,
-          statusText: response.statusText,
-          result
-        })
-        const errorMsg = result.details 
-          ? `${result.error}: ${result.details}` 
-          : result.error || 'Failed to submit. Please try again.'
-        alert(errorMsg)
+        alert(result.error || 'Failed to submit. Please try again.')
       }
     } catch (error) {
       console.error('Error submitting:', error)
-      alert('Network error: Failed to submit. Please check your connection and try again.')
+      alert('Failed to submit. Please try again.')
     } finally {
       setIsSubmitting(false)
     }

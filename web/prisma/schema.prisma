@@ -11,43 +11,43 @@ datasource db {
 }
 
 model User {
-  id                   String             @id @default(cuid())
-  email                String             @unique
+  id                   String                @id @default(cuid())
+  email                String                @unique
   name                 String
   password             String?
   role                 UserRole
   familyId             String
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
   preferences          Json?
-  currentLoginStreak   Int                @default(0)
-  longestLoginStreak   Int                @default(0)
+  currentLoginStreak   Int                   @default(0)
+  longestLoginStreak   Int                   @default(0)
   lastLoginDate        DateTime?
-  currentCheckInStreak Int                @default(0)
-  longestCheckInStreak Int                @default(0)
+  currentCheckInStreak Int                   @default(0)
+  longestCheckInStreak Int                   @default(0)
   lastCheckInDate      DateTime?
-  totalPoints          Int                @default(0)
-  availablePoints      Int                @default(0)  // Points available to spend
-  lifetimePoints       Int                @default(0)  // Total points ever earned
-  level                Int                @default(1)
-  experiencePoints     Int                @default(0)
-  streakFreezes        Int                @default(0)
+  totalPoints          Int                   @default(0)
+  level                Int                   @default(1)
+  experiencePoints     Int                   @default(0)
+  streakFreezes        Int                   @default(0)
   lastStreakFreezeUsed DateTime?
   resetToken           String?
-  resetTokenExpiry     DateTime?          @db.Timestamp(6)
+  resetTokenExpiry     DateTime?             @db.Timestamp(6)
+  availablePoints      Int                   @default(0)
+  lifetimePoints       Int                   @default(0)
   choreApprovals       ChoreApproval[]
   choreAssignments     ChoreAssignment[]
   choreSubmissions     ChoreSubmission[]
+  correctiveBehaviors  CorrectiveBehavior[]  @relation("ChildBehavior")
+  loggedBehaviors      CorrectiveBehavior[]  @relation("ParentLogger")
   familyMemberships    FamilyMembership[]
+  impromptuSubmissions ImpromptuSubmission[]
   messages             Message[]
+  realWorldActivities  RealWorldActivity[]   @relation("ChildActivity")
+  loggedActivities     RealWorldActivity[]   @relation("ParentLogger")
   rewards              Reward[]
   achievements         UserAchievement[]
-  impromptuSubmissions ImpromptuSubmission[]  // Child submissions
-  realWorldActivities  RealWorldActivity[] @relation("ChildActivity")  // Activities logged for this child
-  loggedActivities     RealWorldActivity[] @relation("ParentLogger")   // Activities logged by this parent
-  correctiveBehaviors  CorrectiveBehavior[] @relation("ChildBehavior") // Behaviors logged for this child
-  loggedBehaviors      CorrectiveBehavior[] @relation("ParentLogger")  // Behaviors logged by this parent
-  family               Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  family               Family                @relation(fields: [familyId], references: [id], onDelete: Cascade)
   weeklyReports        WeeklyReport[]
 
   @@map("users")
@@ -88,7 +88,7 @@ model Family {
   allowMultipleParents Boolean            @default(true)
   shareReports         Boolean            @default(false)
   crossFamilyApproval  Boolean            @default(false)
-  pointsToMoneyRate    Float              @default(0.10)  // $0.10 per point
+  pointsToMoneyRate    Float              @default(0.10)
   enablePointsSystem   Boolean            @default(true)
   achievements         Achievement[]
   choreAssignments     ChoreAssignment[]
@@ -109,13 +109,13 @@ model Chore {
   type             ChoreType
   frequency        ChoreFrequency
   isRequired       Boolean           @default(false)
-  reward           Float             @default(0)  // Keep for backward compatibility
-  points           Int               @default(0)  // New points-based reward
+  reward           Float             @default(0)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   scheduledDays    Int[]
   scheduledTime    String?
   estimatedMinutes Int?
+  points           Int               @default(0)
   assignments      ChoreAssignment[]
   family           Family            @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
@@ -148,8 +148,8 @@ model ChoreSubmission {
   imageUrl      String?
   status        SubmissionStatus @default(PENDING)
   score         Int?
-  partialReward Int?            // Keep for backward compatibility
-  pointsAwarded Int?           // New points awarded
+  partialReward Int?
+  pointsAwarded Int?
   approval      ChoreApproval?
   assignment    ChoreAssignment  @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
   user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -165,10 +165,10 @@ model ChoreApproval {
   approved       Boolean
   feedback       String?
   score          Int?
-  partialReward  Int?           // Keep for backward compatibility
-  originalReward Int?           // Keep for backward compatibility
-  pointsAwarded  Int?           // New points awarded
-  originalPoints Int?           // Original points for this chore
+  partialReward  Int?
+  originalReward Int?
+  pointsAwarded  Int?
+  originalPoints Int?
   approver       User            @relation(fields: [approvedBy], references: [id], onDelete: Cascade)
   submission     ChoreSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
 
@@ -266,17 +266,19 @@ model UserAchievement {
 }
 
 model ImpromptuSubmission {
-  id          String                    @id @default(cuid())
-  childId     String
-  title       String
-  description String
-  submittedAt DateTime                  @default(now())
-  status      ImpromptuSubmissionStatus @default(PENDING)
-  responseAt  DateTime?
-  parentNote  String?
+  id            String                    @id @default(cuid())
+  childId       String
+  title         String
+  description   String
+  submittedAt   DateTime                  @default(now())
+  status        ImpromptuSubmissionStatus @default(PENDING)
+  responseAt    DateTime?
+  parentNote    String?
   pointsAwarded Int?
-  child       User                      @relation(fields: [childId], references: [id], onDelete: Cascade)
+  child         User                      @relation(fields: [childId], references: [id], onDelete: Cascade)
 
+  @@index([childId])
+  @@index([status])
   @@map("impromptu_submissions")
 }
 
@@ -292,24 +294,31 @@ model RealWorldActivity {
   child       User     @relation("ChildActivity", fields: [childId], references: [id], onDelete: Cascade)
   parent      User     @relation("ParentLogger", fields: [parentId], references: [id], onDelete: Cascade)
 
+  @@index([childId])
+  @@index([occurredAt])
+  @@index([parentId])
   @@map("real_world_activities")
 }
 
 model CorrectiveBehavior {
-  id          String              @id @default(cuid())
-  childId     String
-  parentId    String
-  behavior    String
-  description String?
-  occurredAt  DateTime
-  loggedAt    DateTime            @default(now())
-  severity    BehaviorSeverity    @default(MINOR)
-  status      BehaviorStatus      @default(NOTED)
-  actionTaken String?
+  id             String           @id @default(cuid())
+  childId        String
+  parentId       String
+  behavior       String
+  description    String?
+  occurredAt     DateTime
+  loggedAt       DateTime         @default(now())
+  severity       BehaviorSeverity @default(MINOR)
+  status         BehaviorStatus   @default(NOTED)
+  actionTaken    String?
   pointsDeducted Int?
-  child       User                @relation("ChildBehavior", fields: [childId], references: [id], onDelete: Cascade)
-  parent      User                @relation("ParentLogger", fields: [parentId], references: [id], onDelete: Cascade)
+  child          User             @relation("ChildBehavior", fields: [childId], references: [id], onDelete: Cascade)
+  parent         User             @relation("ParentLogger", fields: [parentId], references: [id], onDelete: Cascade)
 
+  @@index([childId])
+  @@index([occurredAt])
+  @@index([parentId])
+  @@index([status])
   @@map("corrective_behaviors")
 }
 

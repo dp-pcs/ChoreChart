@@ -75,31 +75,23 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
-    console.log('Impromptu submission POST - Session:', session?.user)
-    
     if (!session?.user?.id) {
-      console.log('Unauthorized: No session or user ID')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     if (session.user.role !== 'CHILD') {
-      console.log('Forbidden: User role is not CHILD, role:', session.user.role)
       return NextResponse.json({ error: 'Only children can create impromptu submissions' }, { status: 403 })
     }
 
     const { title, description } = await request.json()
-    console.log('Request data:', { title, description })
 
     if (!title || !description) {
-      console.log('Missing required fields:', { title: !!title, description: !!description })
       return NextResponse.json(
         { error: 'Title and description are required' },
         { status: 400 }
       )
     }
 
-    console.log('Creating impromptu submission for child:', session.user.id)
-    
     const submission = await prisma.impromptuSubmission.create({
       data: {
         childId: session.user.id,
@@ -116,8 +108,6 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    console.log('Impromptu submission created successfully:', submission.id)
-
     return NextResponse.json({
       success: true,
       submission,
@@ -126,10 +116,8 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Impromptu submission creation error:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('Error details:', errorMessage)
     return NextResponse.json(
-      { error: 'Failed to create impromptu submission', details: errorMessage },
+      { error: 'Failed to create impromptu submission' },
       { status: 500 }
     )
   }
