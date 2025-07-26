@@ -1,14 +1,15 @@
 {
-  "name": "Chorbie",
+  "name": "Chorbie - Smart Family Management",
   "short_name": "Chorbie",
-  "description": "AI-powered family chore management with smart allowance tracking and behavioral insights featuring Chorbie AI helper",
+  "description": "AI-powered family chore management with smart allowance tracking, behavioral insights, and Chorbie AI assistant for kids.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4CAF50",
   "orientation": "portrait",
   "scope": "/",
-  "categories": ["lifestyle", "productivity", "family"],
+  "lang": "en",
+  "categories": ["lifestyle", "productivity", "family", "education"],
   "icons": [
     {
       "src": "/icon-192.png",
@@ -21,20 +22,30 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
     }
   ],
   "screenshots": [
     {
-      "src": "/screenshot-mobile.png",
-      "sizes": "390x844",
+      "src": "/chorbie_logo_current.png",
+      "sizes": "1024x1024",
       "type": "image/png",
-      "form_factor": "narrow"
-    },
-    {
-      "src": "/screenshot-desktop.png", 
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide"
+      "form_factor": "wide",
+      "label": "Chorbie App Screenshot"
     }
   ],
   "features": [
@@ -42,8 +53,25 @@
     "Chore tracking & approval",
     "Allowance management", 
     "Behavioral insights",
-    "Mobile-first design"
+    "Mobile-first design",
+    "Offline support"
   ],
   "related_applications": [],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View family dashboard",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Add Chore",
+      "short_name": "Add Chore",
+      "description": "Create a new chore",
+      "url": "/dashboard/chores/new",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
 } 

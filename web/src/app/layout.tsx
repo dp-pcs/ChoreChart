@@ -34,9 +34,9 @@ export const metadata: Metadata = {
     description: 'AI-powered family chore management with Chorbie AI assistant for kids',
     images: [
       {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
+        url: '/chorbie_logo_current.png',
+        width: 1024,
+        height: 1024,
         alt: 'Chorbie - Family Management App',
       },
     ],
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Chorbie - Smart Family Management',
     description: 'AI-powered family chore management with Chorbie AI assistant for kids',
-    images: ['/og-image.png'],
+    images: ['/chorbie_logo_current.png'],
   },
   icons: {
     icon: [
@@ -81,6 +81,17 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        {/* Additional PWA meta tags */}
+        <meta name="application-name" content="Chorbie" />
+        <meta name="msapplication-TileColor" content="#4CAF50" />
+        <meta name="msapplication-config" content="/browserconfig.xml" />
+        <meta name="theme-color" content="#4CAF50" />
+        
+        {/* Preload key resources */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      </head>
       <body className={`${inter.className} antialiased`}>
         <Providers>
           {children}
