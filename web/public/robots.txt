@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+# Important pages for crawling
+Allow: /auth/signin
+Allow: /auth/signup
+
+# Disallow admin and API routes
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /admin/
+
+# Sitemap location
+Sitemap: https://chorbie.app/sitemap.xml

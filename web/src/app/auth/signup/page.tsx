@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
+import Logo from '@/components/ui/Logo'
 
 export default function SignUp() {
   const [familyName, setFamilyName] = useState('')
@@ -94,7 +95,7 @@ export default function SignUp() {
         {/* App Header */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <img src="/chorbie_logo_transparent.png" alt="Chorbie Logo" className="w-16 h-16" />
+            <Logo size="lg" priority />
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">Chorbie</h1>
           <p className="text-gray-600 text-sm sm:text-base">Create your family account</p>
