@@ -7,6 +7,7 @@ import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
+import Logo from '@/components/ui/Logo'
 
 export default function Home() {
   const { data: session, status } = useSession()
@@ -43,7 +44,7 @@ export default function Home() {
       <header className="px-4 sm:px-6 lg:px-8 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/chorbie_logo_transparent.png" alt="Chorbie Logo" className="w-10 h-10" />
+            <Logo size="md" priority />
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Chorbie</h1>
           </div>
           <div className="flex items-center gap-3">
@@ -278,7 +279,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center gap-3 mb-4 md:mb-0">
-              <img src="/chorbie_logo_transparent.png" alt="Chorbie Logo" className="w-8 h-8" />
+              <Logo size="sm" />
               <span className="text-xl font-bold">Chorbie</span>
             </div>
             <div className="text-sm text-gray-400 text-center md:text-right">
