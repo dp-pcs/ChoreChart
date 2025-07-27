@@ -24,6 +24,8 @@ export default function ChildDashboard() {
   const [todaysCheckIn, setTodaysCheckIn] = useState<Partial<DailyCheckInType> | null>(null)
   const [submittedChores, setSubmittedChores] = useState<Set<string>>(new Set())
   const [approvedChores, setApprovedChores] = useState<Set<string>>(new Set())
+  const [pendingChores, setPendingChores] = useState<Set<string>>(new Set())
+  const [submittingChores, setSubmittingChores] = useState<Set<string>>(new Set())
   const [isCheckingToday, setIsCheckingToday] = useState(true)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   
@@ -70,7 +72,7 @@ export default function ChildDashboard() {
     try {
       setLoading(true)
       
-      // Fetch assigned chores
+      // Fetch assigned chores and their submission status
       const response = await fetch('/api/chores')
       if (response.ok) {
         const result = await response.json()
@@ -83,19 +85,72 @@ export default function ChildDashboard() {
         
         setTodaysChores(myChores)
         
-        // Calculate weekly progress (mock calculation for now)
+        // Calculate weekly progress
         const totalPotential = myChores.reduce((sum: number, chore: any) => sum + (chore.reward || 0), 0)
         setWeeklyProgress({
-          completed: 0, // Will be updated based on submissions
+          completed: 0, // Will be updated based on submissions from backend
           total: myChores.length,
-          earnings: 0,  // Will be updated based on approved submissions
+          earnings: 0,  // Will be updated based on approved submissions from backend
           potential: totalPotential
         })
       }
+
+      // Fetch submission status for assigned chores
+      await fetchSubmissionStatus()
     } catch (error) {
       console.error('Error fetching chores:', error)
+      setMessage({
+        type: 'error',
+        text: 'Failed to load chores. Please refresh the page.'
+      })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchSubmissionStatus = async () => {
+    try {
+      // Get current week's submissions for this user
+      const response = await fetch('/api/dashboard/child')
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success && result.data) {
+          const { submissions } = result.data
+          
+          // Update chore status based on backend data
+          const newSubmitted = new Set<string>()
+          const newApproved = new Set<string>()
+          const newPending = new Set<string>()
+          
+          submissions.forEach((submission: any) => {
+            const choreId = submission.choreId
+            newSubmitted.add(choreId)
+            
+            if (submission.status === 'APPROVED' || submission.status === 'AUTO_APPROVED') {
+              newApproved.add(choreId)
+            } else if (submission.status === 'PENDING') {
+              newPending.add(choreId)
+            }
+          })
+          
+          setSubmittedChores(newSubmitted)
+          setApprovedChores(newApproved)
+          setPendingChores(newPending)
+          
+          // Update earnings from approved submissions
+          const approvedEarnings = submissions
+            .filter((s: any) => s.status === 'APPROVED' || s.status === 'AUTO_APPROVED')
+            .reduce((sum: number, s: any) => sum + (s.reward || 0), 0)
+          
+          setWeeklyProgress(prev => ({
+            ...prev,
+            completed: newApproved.size,
+            earnings: approvedEarnings
+          }))
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching submission status:', error)
     }
   }
 
@@ -166,33 +221,62 @@ export default function ChildDashboard() {
     }
   }
 
-  const handleChoreSubmit = (choreId: string) => {
-    setSubmittedChores(prev => {
-      const newSubmitted = new Set(prev)
-      if (newSubmitted.has(choreId)) {
-        newSubmitted.delete(choreId)
+  const handleChoreSubmit = async (choreId: string) => {
+    // Prevent double submissions
+    if (submittingChores.has(choreId) || submittedChores.has(choreId)) {
+      return
+    }
+    
+    try {
+      setSubmittingChores(prev => new Set([...prev, choreId]))
+      
+      const response = await fetch('/api/chore-submissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          choreId: choreId,
+          completedAt: new Date().toISOString()
+        })
+      })
+      
+      const result = await response.json()
+      
+      if (response.ok && result.success) {
+        // Update local state based on submission status
+        setSubmittedChores(prev => new Set([...prev, choreId]))
+        
+        if (result.submission.status === 'AUTO_APPROVED') {
+          setApprovedChores(prev => new Set([...prev, choreId]))
+        } else {
+          setPendingChores(prev => new Set([...prev, choreId]))
+        }
+        
+        // Show success message
+        setMessage({
+          type: 'success',
+          text: result.message
+        })
+        
+        // Refresh submission status to get latest data
+        await fetchSubmissionStatus()
+        
       } else {
-        newSubmitted.add(choreId)
+        throw new Error(result.error || 'Failed to submit chore')
       }
-      return newSubmitted
-    })
+    } catch (error) {
+      console.error('Error submitting chore:', error)
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to submit chore. Please try again.'
+      })
+    } finally {
+      setSubmittingChores(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(choreId)
+        return newSet
+      })
+    }
   }
-
-  // Simulate parent approval after a delay (for demo purposes)
-  const simulateParentApproval = (choreId: string) => {
-    setTimeout(() => {
-      setApprovedChores(prev => new Set([...prev, choreId]))
-    }, 3000) // 3 second delay to simulate parent review
-  }
-
-  // Trigger approval simulation when chore is submitted
-  useEffect(() => {
-    submittedChores.forEach(choreId => {
-      if (!approvedChores.has(choreId)) {
-        simulateParentApproval(choreId)
-      }
-    })
-  }, [submittedChores, approvedChores])
 
   // Calculate earnings
   const submittedEarnings = todaysChores
@@ -369,24 +453,26 @@ export default function ChildDashboard() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
           <Card className="bg-white shadow-sm">
             <CardContent className="p-3 sm:p-4 text-center">
-              <div className="text-lg sm:text-2xl font-bold text-green-600">${user.weeklyEarnings}</div>
+              <div className="text-lg sm:text-2xl font-bold text-green-600">${weeklyProgress.earnings}</div>
               <div className="text-xs sm:text-sm text-gray-600">This Week</div>
             </CardContent>
           </Card>
           
           <Card className="bg-white shadow-sm">
             <CardContent className="p-3 sm:p-4 text-center">
-              <div className="text-lg sm:text-2xl font-bold text-blue-600">{user.completionRate}%</div>
+              <div className="text-lg sm:text-2xl font-bold text-blue-600">
+                {weeklyProgress.total > 0 ? Math.round((weeklyProgress.completed / weeklyProgress.total) * 100) : 0}%
+              </div>
               <div className="text-xs sm:text-sm text-gray-600">Complete</div>
             </CardContent>
           </Card>
 
-                     <Card className="bg-white shadow-sm col-span-2 sm:col-span-2">
-             <CardContent className="p-3 sm:p-4 text-center">
-               <div className="text-lg sm:text-2xl font-bold text-purple-600">Champion</div>
-               <div className="text-xs sm:text-sm text-gray-600">Current Level</div>
-             </CardContent>
-           </Card>
+          <Card className="bg-white shadow-sm col-span-2 sm:col-span-2">
+            <CardContent className="p-3 sm:p-4 text-center">
+              <div className="text-lg sm:text-2xl font-bold text-purple-600">Champion</div>
+              <div className="text-xs sm:text-sm text-gray-600">Current Level</div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Action Buttons - Mobile Friendly */}
@@ -435,6 +521,8 @@ export default function ChildDashboard() {
               {todaysChores.map((chore: any) => {
                 const isSubmitted = submittedChores.has(chore.id)
                 const isApproved = approvedChores.has(chore.id)
+                const isPending = pendingChores.has(chore.id)
+                const isSubmitting = submittingChores.has(chore.id)
                 
                 return (
                   <div 
@@ -442,19 +530,23 @@ export default function ChildDashboard() {
                     className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 touch-manipulation ${
                       isApproved 
                         ? 'bg-green-50 border-green-200' 
-                        : isSubmitted 
-                        ? 'bg-yellow-50 border-yellow-200' 
+                        : isPending
+                        ? 'bg-yellow-50 border-yellow-200'
+                        : isSubmitting
+                        ? 'bg-blue-50 border-blue-200'
                         : 'bg-white border-gray-200 hover:border-blue-300 active:border-blue-400'
                     }`}
-                    onClick={() => !isApproved && handleChoreSubmit(chore.id)}
+                    onClick={() => !isSubmitted && !isSubmitting && handleChoreSubmit(chore.id)}
                   >
                     <div className="flex items-center space-x-4">
                       <div 
                         className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 flex items-center justify-center transition-all ${
                           isApproved 
                             ? 'bg-green-500 border-green-500' 
-                            : isSubmitted 
-                            ? 'bg-yellow-400 border-yellow-400' 
+                            : isPending 
+                            ? 'bg-yellow-400 border-yellow-400'
+                            : isSubmitting
+                            ? 'bg-blue-400 border-blue-400'
                             : 'border-gray-300 hover:border-blue-500'
                         }`}
                       >
@@ -463,10 +555,13 @@ export default function ChildDashboard() {
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         )}
-                        {isSubmitted && !isApproved && (
+                        {isPending && (
                           <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                           </svg>
+                        )}
+                        {isSubmitting && (
+                          <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white"></div>
                         )}
                       </div>
                       <div className="flex-1">
@@ -483,10 +578,16 @@ export default function ChildDashboard() {
                               <span className="text-green-600 font-medium">✓ Approved!</span>
                             </>
                           )}
-                          {isSubmitted && !isApproved && (
+                          {isPending && (
                             <>
                               <span>•</span>
                               <span className="text-yellow-600 font-medium">⏳ Pending...</span>
+                            </>
+                          )}
+                          {isSubmitting && (
+                            <>
+                              <span>•</span>
+                              <span className="text-blue-600 font-medium">📤 Submitting...</span>
                             </>
                           )}
                         </div>
@@ -513,7 +614,7 @@ export default function ChildDashboard() {
                     <div className="text-xs sm:text-sm text-gray-600">Approved</div>
                   </div>
                   
-                  {submittedEarnings > approvedEarnings && (
+                  {(submittedChores.size > approvedChores.size) && (
                     <div>
                       <div className="text-xl sm:text-2xl font-bold text-yellow-600">
                         ${submittedEarnings - approvedEarnings}
@@ -522,10 +623,10 @@ export default function ChildDashboard() {
                     </div>
                   )}
                   
-                  {submittedEarnings === approvedEarnings && (
+                  {(submittedChores.size === approvedChores.size) && (
                     <div>
                       <div className="text-xl sm:text-2xl font-bold text-gray-400">
-                        ${todaysChores.reduce((sum: number, chore: any) => sum + (chore.reward || 0), 0) - approvedEarnings}
+                        ${weeklyProgress.potential - approvedEarnings}
                       </div>
                       <div className="text-xs sm:text-sm text-gray-600">Possible</div>
                     </div>
@@ -600,16 +701,16 @@ export default function ChildDashboard() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="h-64 sm:h-80">
-                             <ChorbieChat 
-                 userId={user.id}
-                 userRole={user.role}
-                 userName={user.name}
-                 currentChores={todaysChores}
-                 weeklyEarnings={user.weeklyEarnings}
-                 completionRate={user.completionRate}
-                 onScheduleGenerated={() => {}}
-                 onExportRequest={() => {}}
-               />
+              <ChorbieChat 
+                userId={user.id}
+                userRole={user.role}
+                userName={user.name}
+                currentChores={todaysChores}
+                weeklyEarnings={weeklyProgress.earnings}
+                completionRate={weeklyProgress.total > 0 ? Math.round((weeklyProgress.completed / weeklyProgress.total) * 100) : 0}
+                onScheduleGenerated={() => {}}
+                onExportRequest={() => {}}
+              />
             </div>
           </CardContent>
         </Card>
