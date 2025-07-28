@@ -505,7 +505,8 @@ export default function ParentDashboard() {
 
       const childChores = currentChores.filter(chore => 
         chore.assignments?.some((assignment: any) => assignment.userId === childId) &&
-        (chore.frequency === 'daily' || 
+        chore.isActive &&
+        ((chore.frequency === 'daily' && chore.scheduledDays?.includes(today.getDay())) ||
          (chore.frequency === 'weekly' && chore.scheduledDays?.includes(today.getDay())))
       )
 
@@ -538,7 +539,8 @@ export default function ParentDashboard() {
       dashboardData.children.forEach((child: any) => {
         const childChores = currentChores.filter(chore => 
           chore.assignments?.some((assignment: any) => assignment.userId === child.id) &&
-          (chore.frequency === 'daily' || 
+          chore.isActive &&
+          ((chore.frequency === 'daily' && chore.scheduledDays?.includes(today.getDay())) ||
            (chore.frequency === 'weekly' && chore.scheduledDays?.includes(today.getDay())))
         )
 
@@ -559,8 +561,9 @@ export default function ParentDashboard() {
 
       const totalPossible = currentChores
         .filter(chore => 
-          chore.frequency === 'daily' || 
-          (chore.frequency === 'weekly' && chore.scheduledDays?.includes(today.getDay()))
+          chore.isActive &&
+          ((chore.frequency === 'daily' && chore.scheduledDays?.includes(today.getDay())) ||
+           (chore.frequency === 'weekly' && chore.scheduledDays?.includes(today.getDay())))
         )
         .reduce((sum, chore) => sum + chore.reward, 0)
 

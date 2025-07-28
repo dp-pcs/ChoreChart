@@ -83,9 +83,22 @@ export default function ChildDashboard() {
           chore.assignments?.some((assignment: any) => assignment.userId === session?.user?.id)
         )
         
-        setTodaysChores(myChores)
+        // Filter for today's chores using the same logic as schedule-view
+        const today = new Date().getDay() // 0 = Sunday, 1 = Monday, etc.
+        const actualTodaysChores = myChores.filter((chore: any) => {
+          // Filter by active status
+          if (!chore.isActive) return false
+
+          // Check if chore is scheduled for this day
+          if (chore.frequency === 'daily' && chore.scheduledDays?.includes(today)) return true
+          if (chore.frequency === 'weekly' && chore.scheduledDays?.includes(today)) return true
+          
+          return false
+        })
         
-        // Calculate weekly progress
+        setTodaysChores(actualTodaysChores)
+        
+        // Calculate weekly progress based on all assigned chores
         const totalPotential = myChores.reduce((sum: number, chore: any) => sum + (chore.reward || 0), 0)
         setWeeklyProgress({
           completed: 0, // Will be updated based on submissions from backend
