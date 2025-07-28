@@ -498,6 +498,50 @@ export default function ParentDashboard() {
       year: 'numeric' 
     })
 
+    // Helper function to check if a chore is due today
+    const isChoreScheduledToday = (chore: any) => {
+      const todayIndex = today.getDay()
+      
+      // Daily chores: check if today is in scheduledDays
+      if (chore.frequency === 'DAILY') {
+        return chore.scheduledDays?.includes(todayIndex) || false
+      }
+      
+      // Weekly chores: check if today is in scheduledDays
+      if (chore.frequency === 'WEEKLY') {
+        return chore.scheduledDays?.includes(todayIndex) || false
+      }
+      
+      // One-time chores: always include (they need to be done)
+      if (chore.frequency === 'AS_NEEDED' || chore.type === 'ONE_TIME') {
+        return true
+      }
+      
+      // Monthly chores: for now, we'll include them if today is in scheduledDays
+      if (chore.frequency === 'MONTHLY') {
+        return chore.scheduledDays?.includes(todayIndex) || false
+      }
+      
+      return false
+    }
+
+    // Helper function to check if a chore has been completed today
+    const isChoreCompletedToday = (choreId: string, childId: string) => {
+      const todayStart = new Date(today)
+      todayStart.setHours(0, 0, 0, 0)
+      
+      return dashboardData.completedChores?.some((completion: any) => {
+        const completionDate = new Date(completion.completedAt || completion.submittedAt)
+        const assignment = currentChores.find(c => c.id === choreId)?.assignments?.find((a: any) => a.userId === childId)
+        
+        return assignment && 
+               completion.childName === dashboardData.children.find((c: any) => c.id === childId)?.name &&
+               completion.choreName === currentChores.find(c => c.id === choreId)?.title &&
+               completionDate >= todayStart &&
+               (completion.status === 'APPROVED' || completion.status === 'AUTO_APPROVED' || completion.status === 'PENDING')
+      }) || false
+    }
+
     if (childId) {
       // Format for specific child
       const child = dashboardData.children.find((c: any) => c.id === childId)
@@ -505,9 +549,7 @@ export default function ParentDashboard() {
 
       const childChores = currentChores.filter(chore => 
         chore.assignments?.some((assignment: any) => assignment.userId === childId) &&
-        chore.isActive &&
-        ((chore.frequency === 'daily' && chore.scheduledDays?.includes(today.getDay())) ||
-         (chore.frequency === 'weekly' && chore.scheduledDays?.includes(today.getDay())))
+        isChoreScheduledToday(chore)
       )
 
       if (childChores.length === 0) {
@@ -517,18 +559,41 @@ export default function ParentDashboard() {
       let message = `Hi ${child.name}! 🌟\n\nHere are your chores for today (${todayName}, ${dateStr}):\n\n`
       
       childChores.forEach((chore, index) => {
-        const emoji = chore.isRequired ? '⭐' : '💫'
-        message += `${emoji} ${chore.title}\n`
+        const isCompleted = isChoreCompletedToday(chore.id, childId)
+        const isOneTime = chore.frequency === 'AS_NEEDED' || chore.type === 'ONE_TIME'
+        
+        // Choose emoji based on status and type
+        let emoji = chore.isRequired ? '⭐' : '💫'
+        if (isCompleted) {
+          emoji = '✅'
+        }
+        
+        let choreText = `${emoji} ${chore.title}`
+        if (isCompleted) {
+          choreText += ' (DONE!)'
+        } else if (isOneTime) {
+          choreText += ' (One-time chore)'
+        }
+        
+        message += `${choreText}\n`
         if (chore.description) {
           message += `   ${chore.description}\n`
         }
-        message += `   ⏱️ ${chore.estimatedMinutes} min • 💰 $${chore.reward}\n`
+        message += `   ⏱️ ${chore.estimatedMinutes || 15} min • 💰 $${chore.reward}\n`
         if (index < childChores.length - 1) message += '\n'
       })
 
       const totalReward = childChores.reduce((sum, chore) => sum + chore.reward, 0)
+      const completedReward = childChores
+        .filter(chore => isChoreCompletedToday(chore.id, childId))
+        .reduce((sum, chore) => sum + chore.reward, 0)
+      
       message += `\n💰 Total possible earnings: $${totalReward}`
-      message += `\n\n⭐ = Required • 💫 = Optional`
+      if (completedReward > 0) {
+        message += `\n✅ Already earned today: $${completedReward}`
+        message += `\n🎯 Still available: $${totalReward - completedReward}`
+      }
+      message += `\n\n⭐ = Required • 💫 = Optional • ✅ = Completed`
       message += `\n\nYou've got this! 💪 Let me know when you're done! ❤️`
 
       return message
@@ -539,20 +604,47 @@ export default function ParentDashboard() {
       dashboardData.children.forEach((child: any) => {
         const childChores = currentChores.filter(chore => 
           chore.assignments?.some((assignment: any) => assignment.userId === child.id) &&
-          chore.isActive &&
-          ((chore.frequency === 'daily' && chore.scheduledDays?.includes(today.getDay())) ||
-           (chore.frequency === 'weekly' && chore.scheduledDays?.includes(today.getDay())))
+          isChoreScheduledToday(chore)
         )
 
-        message += `👤 ${child.name}: ${childChores.length} chore${childChores.length !== 1 ? 's' : ''}\n`
+        const completedCount = childChores.filter(chore => isChoreCompletedToday(chore.id, child.id)).length
+        const pendingCount = childChores.length - completedCount
+
+        message += `👤 ${child.name}: ${childChores.length} chore${childChores.length !== 1 ? 's' : ''}`
+        if (completedCount > 0) {
+          message += ` (${completedCount} done, ${pendingCount} pending)`
+        }
+        message += '\n'
         
         if (childChores.length > 0) {
           childChores.forEach(chore => {
-            const emoji = chore.isRequired ? '⭐' : '💫'
-            message += `   ${emoji} ${chore.title} ($${chore.reward})\n`
+            const isCompleted = isChoreCompletedToday(chore.id, child.id)
+            const isOneTime = chore.frequency === 'AS_NEEDED' || chore.type === 'ONE_TIME'
+            
+            let emoji = chore.isRequired ? '⭐' : '💫'
+            if (isCompleted) {
+              emoji = '✅'
+            }
+            
+            let choreText = `${emoji} ${chore.title}`
+            if (isCompleted) {
+              choreText += ' (DONE)'
+            } else if (isOneTime) {
+              choreText += ' (One-time)'
+            }
+            
+            message += `   ${choreText} ($${chore.reward})\n`
           })
           const childTotal = childChores.reduce((sum, chore) => sum + chore.reward, 0)
-          message += `   💰 Total: $${childTotal}\n`
+          const childCompleted = childChores
+            .filter(chore => isChoreCompletedToday(chore.id, child.id))
+            .reduce((sum, chore) => sum + chore.reward, 0)
+          
+          message += `   💰 Total: $${childTotal}`
+          if (childCompleted > 0) {
+            message += ` (✅ $${childCompleted} earned, 🎯 $${childTotal - childCompleted} pending)`
+          }
+          message += '\n'
         } else {
           message += `   🎉 Free day!\n`
         }
@@ -560,15 +652,11 @@ export default function ParentDashboard() {
       })
 
       const totalPossible = currentChores
-        .filter(chore => 
-          chore.isActive &&
-          ((chore.frequency === 'daily' && chore.scheduledDays?.includes(today.getDay())) ||
-           (chore.frequency === 'weekly' && chore.scheduledDays?.includes(today.getDay())))
-        )
+        .filter(chore => isChoreScheduledToday(chore))
         .reduce((sum, chore) => sum + chore.reward, 0)
 
       message += `💰 Family total possible: $${totalPossible}`
-      message += `\n⭐ = Required • 💫 = Optional`
+      message += `\n⭐ = Required • 💫 = Optional • ✅ = Completed`
 
       return message
     }
