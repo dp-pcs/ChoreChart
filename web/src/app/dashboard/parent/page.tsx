@@ -40,6 +40,8 @@ export default function ParentDashboard() {
     isOpen: false,
     submission: null
   })
+  const [showShareDialog, setShowShareDialog] = useState(false)
+  const [selectedChildForShare, setSelectedChildForShare] = useState<string>('')
 
   useEffect(() => {
     if (status === 'loading') return // Still loading
@@ -296,6 +298,8 @@ export default function ParentDashboard() {
       setIsAddChildDialogOpen(true)
     } else if (action === 'Manage Children') {
       setIsChildManagementOpen(true)
+    } else if (action === 'Share Daily Chores') {
+      setShowShareDialog(true)
     } else {
       setMessage({
         type: 'success',
@@ -484,6 +488,123 @@ export default function ParentDashboard() {
     setShowSettings(false)
   }
 
+  const formatChoresForSharing = (childId?: string) => {
+    const today = new Date()
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    const todayName = dayNames[today.getDay()]
+    const dateStr = today.toLocaleDateString('en-US', { 
+      month: 'long', 
+      day: 'numeric', 
+      year: 'numeric' 
+    })
+
+    if (childId) {
+      // Format for specific child
+      const child = dashboardData.children.find((c: any) => c.id === childId)
+      if (!child) return ''
+
+      const childChores = currentChores.filter(chore => 
+        chore.assignments?.some((assignment: any) => assignment.userId === childId) &&
+        (chore.frequency === 'daily' || 
+         (chore.frequency === 'weekly' && chore.scheduledDays?.includes(today.getDay())))
+      )
+
+      if (childChores.length === 0) {
+        return `Hi ${child.name}! 🌟\n\nNo chores scheduled for today (${todayName}, ${dateStr}). Enjoy your free day! 😊`
+      }
+
+      let message = `Hi ${child.name}! 🌟\n\nHere are your chores for today (${todayName}, ${dateStr}):\n\n`
+      
+      childChores.forEach((chore, index) => {
+        const emoji = chore.isRequired ? '⭐' : '💫'
+        message += `${emoji} ${chore.title}\n`
+        if (chore.description) {
+          message += `   ${chore.description}\n`
+        }
+        message += `   ⏱️ ${chore.estimatedMinutes} min • 💰 $${chore.reward}\n`
+        if (index < childChores.length - 1) message += '\n'
+      })
+
+      const totalReward = childChores.reduce((sum, chore) => sum + chore.reward, 0)
+      message += `\n💰 Total possible earnings: $${totalReward}`
+      message += `\n\n⭐ = Required • 💫 = Optional`
+      message += `\n\nYou've got this! 💪 Let me know when you're done! ❤️`
+
+      return message
+    } else {
+      // Format summary for all children
+      let message = `📋 Daily Chore Summary - ${todayName}, ${dateStr}\n\n`
+      
+      dashboardData.children.forEach((child: any) => {
+        const childChores = currentChores.filter(chore => 
+          chore.assignments?.some((assignment: any) => assignment.userId === child.id) &&
+          (chore.frequency === 'daily' || 
+           (chore.frequency === 'weekly' && chore.scheduledDays?.includes(today.getDay())))
+        )
+
+        message += `👤 ${child.name}: ${childChores.length} chore${childChores.length !== 1 ? 's' : ''}\n`
+        
+        if (childChores.length > 0) {
+          childChores.forEach(chore => {
+            const emoji = chore.isRequired ? '⭐' : '💫'
+            message += `   ${emoji} ${chore.title} ($${chore.reward})\n`
+          })
+          const childTotal = childChores.reduce((sum, chore) => sum + chore.reward, 0)
+          message += `   💰 Total: $${childTotal}\n`
+        } else {
+          message += `   🎉 Free day!\n`
+        }
+        message += '\n'
+      })
+
+      const totalPossible = currentChores
+        .filter(chore => 
+          chore.frequency === 'daily' || 
+          (chore.frequency === 'weekly' && chore.scheduledDays?.includes(today.getDay()))
+        )
+        .reduce((sum, chore) => sum + chore.reward, 0)
+
+      message += `💰 Family total possible: $${totalPossible}`
+      message += `\n⭐ = Required • 💫 = Optional`
+
+      return message
+    }
+  }
+
+  const handleShareChores = async (childId?: string) => {
+    const formattedText = formatChoresForSharing(childId)
+    
+    try {
+      // Try Web Share API first (works great on mobile)
+      if (navigator.share) {
+        await navigator.share({
+          title: childId ? `Daily Chores for ${dashboardData.children.find((c: any) => c.id === childId)?.name}` : 'Daily Chore Summary',
+          text: formattedText
+        })
+        setMessage({
+          type: 'success',
+          text: '📱 Chores shared successfully!'
+        })
+      } else {
+        // Fallback to clipboard
+        await navigator.clipboard.writeText(formattedText)
+        setMessage({
+          type: 'success',
+          text: '📋 Chores copied to clipboard! Paste into your messaging app.'
+        })
+      }
+    } catch (error) {
+      // Final fallback - show text in alert for manual copy
+      const child = childId ? dashboardData.children.find((c: any) => c.id === childId) : null
+      const childName = child ? ` for ${child.name}` : ''
+      
+      // Show the text in a modal/dialog for manual copying
+      alert(`Copy this text to send${childName}:\n\n${formattedText}`)
+    }
+    
+    setShowShareDialog(false)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -577,6 +698,14 @@ export default function ParentDashboard() {
                   onClick={() => handleQuickAction('Manage Children')}
                 >
                   👨‍👩‍👧‍👦 Manage Children
+                </Button>
+                <Button 
+                  size="sm" 
+                  className="w-full" 
+                  variant="outline"
+                  onClick={() => handleQuickAction('Share Daily Chores')}
+                >
+                  📱 Share Daily Chores
                 </Button>
                 <Button 
                   size="sm" 
@@ -1221,6 +1350,62 @@ export default function ParentDashboard() {
                   setShowInviteDialog(false)
                 }}>
                   Send Invite
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Share Chores Dialog */}
+      {showShareDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md bg-white shadow-2xl">
+            <CardHeader>
+              <CardTitle>📱 Share Daily Chores</CardTitle>
+              <CardDescription>Choose what to share via text message</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                <Button
+                  onClick={() => handleShareChores()}
+                  className="w-full h-12 text-left justify-start"
+                  variant="outline"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">👨‍👩‍👧‍👦</span>
+                    <div>
+                      <div className="font-medium">All Children Summary</div>
+                      <div className="text-sm text-gray-500">Overview of everyone's chores</div>
+                    </div>
+                  </div>
+                </Button>
+
+                {dashboardData.children.map((child: any) => (
+                  <Button
+                    key={child.id}
+                    onClick={() => handleShareChores(child.id)}
+                    className="w-full h-12 text-left justify-start"
+                    variant="outline"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">🧒</span>
+                      <div>
+                        <div className="font-medium">{child.name}'s Chores</div>
+                        <div className="text-sm text-gray-500">Personal chore list for texting</div>
+                      </div>
+                    </div>
+                  </Button>
+                ))}
+              </div>
+
+              <div className="border-t pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowShareDialog(false)}
+                  className="w-full"
+                >
+                  Cancel
                 </Button>
               </div>
             </CardContent>
