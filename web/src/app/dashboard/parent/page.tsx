@@ -437,7 +437,7 @@ export default function ParentDashboard() {
     }
   }
 
-  const handleSettingChange = (setting: string, value: boolean) => {
+  const handleSettingChange = (setting: string, value: boolean | number) => {
     setPendingSettings((prev: any) => ({
       ...prev,
       [setting]: value
@@ -1126,6 +1126,26 @@ export default function ParentDashboard() {
                       }`}
                     />
                   </button>
+                </div>
+
+                {/* Point Value Setting */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium">Point Value</label>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm">1 point = $</span>
+                    <input
+                      type="number"
+                      min="0.01"
+                      max="10.00"
+                      step="0.01"
+                      value={pendingSettings.pointsToMoneyRate ?? dashboardData.family.settings.pointsToMoneyRate ?? 1.00}
+                      onChange={(e) => handleSettingChange('pointsToMoneyRate', parseFloat(e.target.value) || 1.00)}
+                      className="w-20 px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Set how much each point is worth in dollars. Children earn points for chores and can see their dollar equivalent.
+                  </p>
                 </div>
               </div>
               

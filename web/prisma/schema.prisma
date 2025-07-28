@@ -88,7 +88,7 @@ model Family {
   allowMultipleParents Boolean            @default(true)
   shareReports         Boolean            @default(false)
   crossFamilyApproval  Boolean            @default(false)
-  pointsToMoneyRate    Float              @default(0.10)
+  pointsToMoneyRate    Float              @default(1.00)
   enablePointsSystem   Boolean            @default(true)
   achievements         Achievement[]
   choreAssignments     ChoreAssignment[]

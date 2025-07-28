@@ -21,7 +21,8 @@ export async function PATCH(request: NextRequest) {
       emailNotifications,
       shareReports,
       crossFamilyApproval,
-      weeklyAllowance
+      weeklyAllowance,
+      pointsToMoneyRate
     } = await request.json()
 
     // Verify parent has permission to edit family settings
@@ -60,6 +61,9 @@ export async function PATCH(request: NextRequest) {
     }
     if (typeof weeklyAllowance === 'number') {
       updateData.weeklyAllowance = weeklyAllowance
+    }
+    if (typeof pointsToMoneyRate === 'number') {
+      updateData.pointsToMoneyRate = pointsToMoneyRate
     }
 
     if (Object.keys(updateData).length === 0) {

@@ -42,7 +42,13 @@ export async function POST(request: NextRequest) {
               select: {
                 title: true,
                 reward: true,
+                points: true,
                 familyId: true
+              }
+            },
+            family: {
+              select: {
+                pointsToMoneyRate: true
               }
             }
           }
@@ -71,23 +77,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Calculate partial reward based on score
-    let partialReward = submission.assignment.chore.reward
+    // Calculate points awarded based on score (points are now primary)
+    const chorePoints = submission.assignment.chore.points || 0
+    const pointsToMoneyRate = submission.assignment.family.pointsToMoneyRate || 1.00
+    let pointsAwarded = chorePoints
     let finalScore = score
 
     if (score !== undefined && approved) {
-      // Calculate partial reward: score percentage of full reward
-      partialReward = Math.round((score / 100) * submission.assignment.chore.reward)
+      // Calculate partial points: score percentage of full points
+      pointsAwarded = Math.round((score / 100) * chorePoints)
       finalScore = score
     } else if (approved) {
-      // If approved without score, give full reward
-      partialReward = submission.assignment.chore.reward
+      // If approved without score, give full points
+      pointsAwarded = chorePoints
       finalScore = 100
     } else {
-      // If denied, no reward
-      partialReward = 0
+      // If denied, no points
+      pointsAwarded = 0
       finalScore = 0
     }
+
+    // Calculate dollar equivalent for legacy compatibility
+    const partialReward = Math.round(pointsAwarded * pointsToMoneyRate * 100) / 100
 
     // Update the submission status
     const updatedSubmission = await prisma.choreSubmission.update({
@@ -95,7 +106,8 @@ export async function POST(request: NextRequest) {
       data: {
         status: approved ? 'APPROVED' : 'DENIED',
         score: finalScore,
-        partialReward: partialReward
+        partialReward: partialReward,
+        pointsAwarded: pointsAwarded
       }
     })
 
@@ -108,17 +120,29 @@ export async function POST(request: NextRequest) {
         feedback: feedback || null,
         score: finalScore,
         partialReward: partialReward,
-        originalReward: submission.assignment.chore.reward
+        originalReward: submission.assignment.chore.reward,
+        pointsAwarded: pointsAwarded,
+        originalPoints: chorePoints
       }
     })
 
-    // If approved (even partially), create a reward record
-    if (approved && partialReward > 0) {
+    // If approved (even partially), award points to user and create reward record
+    if (approved && pointsAwarded > 0) {
+      // Update user's points balance
+      await prisma.user.update({
+        where: { id: submission.user.id },
+        data: {
+          availablePoints: { increment: pointsAwarded },
+          lifetimePoints: { increment: pointsAwarded }
+        }
+      })
+
+      // Create a reward record for tracking (dollar amount is now calculated from points)
       await prisma.reward.create({
         data: {
           userId: submission.user.id,
           title: `Completed: ${submission.assignment.chore.title}`,
-          amount: partialReward,
+          amount: partialReward, // Dollar equivalent
           type: 'MONEY',
           awardedBy: session.user.id
         }
@@ -128,11 +152,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: approved 
-        ? `Approved ${submission.assignment.chore.title} for ${submission.user.name} with ${finalScore}% quality score - $${partialReward} earned`
+        ? `Approved ${submission.assignment.chore.title} for ${submission.user.name} with ${finalScore}% quality score - ${pointsAwarded} points earned ($${partialReward})`
         : `Denied ${submission.assignment.chore.title} for ${submission.user.name}`,
       data: {
         score: finalScore,
+        pointsAwarded,
         partialReward,
+        originalPoints: chorePoints,
         originalReward: submission.assignment.chore.reward
       }
     })
