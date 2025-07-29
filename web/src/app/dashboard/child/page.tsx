@@ -86,12 +86,11 @@ export default function ChildDashboard() {
         // Filter for today's chores using the same logic as schedule-view
         const today = new Date().getDay() // 0 = Sunday, 1 = Monday, etc.
         const actualTodaysChores = myChores.filter((chore: any) => {
-          // Filter by active status
-          if (!chore.isActive) return false
-
           // Check if chore is scheduled for this day
-          if (chore.frequency === 'daily' && chore.scheduledDays?.includes(today)) return true
-          if (chore.frequency === 'weekly' && chore.scheduledDays?.includes(today)) return true
+          if (chore.frequency === 'DAILY' && chore.scheduledDays?.includes(today)) return true
+          if (chore.frequency === 'WEEKLY' && chore.scheduledDays?.includes(today)) return true
+          if (chore.frequency === 'AS_NEEDED' || chore.type === 'ONE_TIME') return true
+          if (chore.frequency === 'MONTHLY' && chore.scheduledDays?.includes(today)) return true
           
           return false
         })
