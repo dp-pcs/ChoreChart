@@ -49,6 +49,8 @@ model User {
   achievements         UserAchievement[]
   family               Family                @relation(fields: [familyId], references: [id], onDelete: Cascade)
   weeklyReports        WeeklyReport[]
+  parentalFeedbacks   ParentalFeedback[]    @relation("ChildFeedback")
+  feedbackLogs         ParentalFeedback[]    @relation("ParentFeedbackLogger")
 
   @@map("users")
 }
@@ -322,6 +324,26 @@ model CorrectiveBehavior {
   @@map("corrective_behaviors")
 }
 
+model ParentalFeedback {
+  id          String        @id @default(cuid())
+  childId     String
+  parentId    String
+  title       String
+  description String?
+  type        FeedbackType  @default(NEUTRAL)
+  occurredAt  DateTime
+  loggedAt    DateTime      @default(now())
+  points      Int?
+  child       User          @relation("ChildFeedback", fields: [childId], references: [id], onDelete: Cascade)
+  parent      User          @relation("ParentFeedbackLogger", fields: [parentId], references: [id], onDelete: Cascade)
+
+  @@index([childId])
+  @@index([occurredAt])
+  @@index([parentId])
+  @@index([type])
+  @@map("parental_feedback")
+}
+
 enum UserRole {
   PARENT
   CHILD
@@ -404,4 +426,10 @@ enum BehaviorStatus {
   NOTED
   ACTION_TAKEN
   RESOLVED
+}
+
+enum FeedbackType {
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
 }

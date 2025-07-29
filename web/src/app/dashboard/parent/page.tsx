@@ -11,6 +11,7 @@ import { AddChildDialog } from '@/components/ui/add-child-dialog'
 import { ChoreScoringDialog } from '@/components/ui/chore-scoring-dialog'
 import { ChildManagementDialog } from '@/components/ui/child-management-dialog'
 import { ImpromptuReviewDialog } from '@/components/ui/impromptu-review-dialog'
+import { ParentalFeedbackDialog } from '@/components/ui/parental-feedback-dialog'
 
 export default function ParentDashboard() {
   const { data: session, status } = useSession()
@@ -42,6 +43,9 @@ export default function ParentDashboard() {
   })
   const [showShareDialog, setShowShareDialog] = useState(false)
   const [selectedChildForShare, setSelectedChildForShare] = useState<string>('')
+  const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false)
+  const [parentalFeedback, setParentalFeedback] = useState<any[]>([])
+  const [feedbackSummary, setFeedbackSummary] = useState<any[]>([])
 
   useEffect(() => {
     if (status === 'loading') return // Still loading
@@ -60,6 +64,7 @@ export default function ParentDashboard() {
     fetchDashboardData()
     fetchCurrentChores()
     fetchImpromptuSubmissions()
+    fetchParentalFeedback()
   }, [session, status, router])
 
   const fetchCurrentChores = async () => {
@@ -84,6 +89,19 @@ export default function ParentDashboard() {
       }
     } catch (error) {
       console.error('Error fetching impromptu submissions:', error)
+    }
+  }
+
+  const fetchParentalFeedback = async () => {
+    try {
+      const response = await fetch('/api/parental-feedback?limit=10')
+      if (response.ok) {
+        const result = await response.json()
+        setParentalFeedback(result.feedback || [])
+        setFeedbackSummary(result.todaysSummary || [])
+      }
+    } catch (error) {
+      console.error('Error fetching parental feedback:', error)
     }
   }
 
@@ -391,6 +409,15 @@ export default function ParentDashboard() {
     })
     // Refresh impromptu submissions
     fetchImpromptuSubmissions()
+  }
+
+  const handleFeedbackSuccess = (successMessage: string) => {
+    setMessage({
+      type: 'success',
+      text: successMessage
+    })
+    // Refresh parental feedback data
+    fetchParentalFeedback()
   }
 
   const handleReviewCompleted = async (completion: any, action: 'approve' | 'reject') => {
@@ -731,7 +758,7 @@ export default function ParentDashboard() {
         )}
 
         {/* Family Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Family Overview</CardTitle>
@@ -756,6 +783,89 @@ export default function ParentDashboard() {
                 <p className="text-sm">✅ {dashboardData.weeklyStats.totalChoresCompleted} chores completed</p>
                 <p className="text-sm">💵 ${dashboardData.weeklyStats.totalEarningsApproved} approved</p>
                 <p className="text-sm">📊 {dashboardData.weeklyStats.childrenParticipation} participation</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Today</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {(() => {
+                  const today = new Date()
+                  const todayIndex = today.getDay()
+                  
+                  // Filter chores scheduled for today
+                  const todaysChores = currentChores.filter(chore => {
+                    if (chore.frequency === 'DAILY' || chore.frequency === 'WEEKLY') {
+                      return chore.scheduledDays?.includes(todayIndex) || false
+                    }
+                    if (chore.frequency === 'AS_NEEDED' || chore.type === 'ONE_TIME') {
+                      return true
+                    }
+                    if (chore.frequency === 'MONTHLY') {
+                      return chore.scheduledDays?.includes(todayIndex) || false
+                    }
+                    return false
+                  })
+
+                  // Helper function to check if a chore has been completed today
+                  const isChoreCompletedToday = (choreId: string) => {
+                    const todayStart = new Date(today)
+                    todayStart.setHours(0, 0, 0, 0)
+                    
+                    return dashboardData.completedChores?.some((completion: any) => {
+                      const completionDate = new Date(completion.completedAt || completion.submittedAt)
+                      const choreName = currentChores.find(c => c.id === choreId)?.title
+                      
+                      return completion.choreName === choreName &&
+                             completionDate >= todayStart &&
+                             (completion.status === 'APPROVED' || completion.status === 'AUTO_APPROVED' || completion.status === 'PENDING')
+                    }) || false
+                  }
+
+                  const completedCount = todaysChores.filter(chore => isChoreCompletedToday(chore.id)).length
+                  const totalCount = todaysChores.length
+
+                  if (totalCount === 0) {
+                    return (
+                      <div className="text-center py-2">
+                        <p className="text-sm text-gray-500">🎉 No chores today!</p>
+                        <p className="text-xs text-gray-400">Everyone gets a free day</p>
+                      </div>
+                    )
+                  }
+
+                  return (
+                    <>
+                      <p className="text-sm">📋 {totalCount} chores scheduled</p>
+                      <p className="text-sm">✅ {completedCount} completed</p>
+                      <p className="text-sm">⏳ {totalCount - completedCount} remaining</p>
+                      <div className="mt-2 space-y-1">
+                        {todaysChores.slice(0, 3).map((chore: any) => {
+                          const isCompleted = isChoreCompletedToday(chore.id)
+                          return (
+                            <div key={chore.id} className="flex items-center gap-2">
+                              <span className="text-xs">
+                                {isCompleted ? '✅' : (chore.isRequired ? '⭐' : '💫')}
+                              </span>
+                              <span className={`text-xs ${isCompleted ? 'line-through text-gray-500' : 'text-gray-700'}`}>
+                                {chore.title}
+                              </span>
+                            </div>
+                          )
+                        })}
+                        {todaysChores.length > 3 && (
+                          <p className="text-xs text-gray-400">
+                            +{todaysChores.length - 3} more...
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  )
+                })()}
               </div>
             </CardContent>
           </Card>
@@ -1187,6 +1297,128 @@ export default function ParentDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Parental Feedback */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              📝 Parental Feedback
+              {parentalFeedback.length > 0 && (
+                <Badge variant="secondary">
+                  {parentalFeedback.length}
+                </Badge>
+              )}
+            </CardTitle>
+            <CardDescription>
+              Track behavioral observations and provide feedback to your children
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Quick Add Feedback Button */}
+            <div className="mb-4">
+              <Button 
+                onClick={() => setIsFeedbackDialogOpen(true)}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                ➕ Add Feedback
+              </Button>
+            </div>
+
+            {/* Today's Summary */}
+            {feedbackSummary.length > 0 && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="font-medium text-sm mb-2">Today's Feedback Summary</h4>
+                <div className="space-y-1">
+                  {feedbackSummary.map((summary: any) => {
+                    const child = dashboardData.children.find((c: any) => c.id === summary.childId)
+                    const emoji = summary.type === 'POSITIVE' ? '👍' : summary.type === 'NEGATIVE' ? '👎' : '📝'
+                    const color = summary.type === 'POSITIVE' ? 'text-green-600' : summary.type === 'NEGATIVE' ? 'text-red-600' : 'text-gray-600'
+                    
+                    return (
+                      <div key={`${summary.childId}-${summary.type}`} className="flex items-center gap-2 text-xs">
+                        <span className="text-lg">{emoji}</span>
+                        <span className={color}>
+                          {child?.name}: {summary._count.id} {summary.type.toLowerCase()} note{summary._count.id !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Recent Feedback List */}
+            <div className="space-y-3">
+              {parentalFeedback.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <p>📝 No feedback recorded yet. Start tracking your children's behavior!</p>
+                  <Button 
+                    onClick={() => setIsFeedbackDialogOpen(true)}
+                    className="mt-4 bg-blue-600 hover:bg-blue-700"
+                  >
+                    Add First Feedback
+                  </Button>
+                </div>
+              ) : (
+                parentalFeedback.map((feedback: any) => (
+                  <div 
+                    key={feedback.id}
+                    className={`flex items-start justify-between p-4 border rounded-lg ${
+                      feedback.type === 'POSITIVE' ? 'bg-green-50 border-green-200' :
+                      feedback.type === 'NEGATIVE' ? 'bg-red-50 border-red-200' :
+                      'bg-gray-50 border-gray-200'
+                    }`}
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">
+                          {feedback.type === 'POSITIVE' ? '👍' : feedback.type === 'NEGATIVE' ? '👎' : '📝'}
+                        </span>
+                        <p className="font-medium text-sm">{feedback.child.name}</p>
+                        <span className="text-gray-400 text-xs">•</span>
+                        <p className="font-medium text-sm">{feedback.title}</p>
+                      </div>
+                      {feedback.description && (
+                        <p className="text-sm text-gray-600 mt-1 ml-7">{feedback.description}</p>
+                      )}
+                      <div className="flex items-center gap-4 mt-2 text-xs text-gray-500 ml-7">
+                        <span>{new Date(feedback.occurredAt).toLocaleDateString()}</span>
+                        <span>by {feedback.parent.name}</span>
+                        {feedback.points && feedback.points !== 0 && (
+                          <span className={feedback.points > 0 ? 'text-green-600' : 'text-red-600'}>
+                            {feedback.points > 0 ? '+' : ''}{feedback.points} points
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={async () => {
+                        if (confirm('Are you sure you want to delete this feedback?')) {
+                          try {
+                            const response = await fetch(`/api/parental-feedback?feedbackId=${feedback.id}`, {
+                              method: 'DELETE'
+                            })
+                            if (response.ok) {
+                              setMessage({ type: 'success', text: 'Feedback deleted successfully' })
+                              fetchParentalFeedback()
+                            }
+                          } catch (error) {
+                            setMessage({ type: 'error', text: 'Failed to delete feedback' })
+                          }
+                        }
+                      }}
+                      className="text-gray-400 hover:text-red-600"
+                    >
+                      🗑️
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
               {/* Add Chore Dialog */}
@@ -1243,6 +1475,14 @@ export default function ParentDashboard() {
           onClose={() => setImpromptuReviewDialog({ isOpen: false, submission: null })}
           submission={impromptuReviewDialog.submission}
           onSuccess={handleImpromptuResponse}
+        />
+
+        {/* Parental Feedback Dialog */}
+        <ParentalFeedbackDialog
+          isOpen={isFeedbackDialogOpen}
+          onClose={() => setIsFeedbackDialogOpen(false)}
+          onSuccess={handleFeedbackSuccess}
+          children={dashboardData?.children || []}
         />
 
       {/* Settings Dialog */}
