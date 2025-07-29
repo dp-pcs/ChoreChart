@@ -41,6 +41,7 @@ export default function ChildDashboard() {
     potential: 0
   })
   const [user, setUser] = useState<any>(null)
+  const [upcomingEvents, setUpcomingEvents] = useState<any[]>([])
 
   // Authentication and data loading
   useEffect(() => {
@@ -68,7 +69,20 @@ export default function ChildDashboard() {
     // Load dashboard data
     fetchChoresData()
     checkTodaysCheckInStatus()
+    fetchUpcomingEvents()
   }, [session, status, router])
+
+  const fetchUpcomingEvents = async () => {
+    try {
+      const response = await fetch('/api/important-events?upcoming=true&limit=3')
+      if (response.ok) {
+        const result = await response.json()
+        setUpcomingEvents(result.events || [])
+      }
+    } catch (error) {
+      console.error('Error fetching upcoming events:', error)
+    }
+  }
 
   const fetchChoresData = async () => {
     try {
@@ -953,6 +967,79 @@ export default function ChildDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Upcoming Events - Mobile Optimized */}
+        {upcomingEvents.length > 0 && (
+          <Card className="bg-white shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                📅 Upcoming Events
+                <Badge variant="secondary" className="text-xs">
+                  {upcomingEvents.length}
+                </Badge>
+              </CardTitle>
+              <CardDescription className="text-sm">
+                Important family dates coming up
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {upcomingEvents.map((event: any) => {
+                  const eventTypeEmojis: { [key: string]: string } = {
+                    'GENERAL': '📅',
+                    'BIRTHDAY': '🎂',
+                    'ANNIVERSARY': '💕',
+                    'MEETING': '👥',
+                    'REMINDER': '⏰',
+                    'OTHER': '📝'
+                  }
+
+                  return (
+                    <div 
+                      key={event.id}
+                      className={`p-3 rounded-lg border-2 ${
+                        event.daysUntil === 0 ? 'bg-red-50 border-red-300' :
+                        event.daysUntil === 1 ? 'bg-orange-50 border-orange-300' :
+                        event.daysUntil <= 7 ? 'bg-yellow-50 border-yellow-300' :
+                        'bg-blue-50 border-blue-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">{eventTypeEmojis[event.eventType] || '📅'}</span>
+                        <div className="flex-1">
+                          <h4 className="font-medium text-sm sm:text-base">{event.title}</h4>
+                          {event.description && (
+                            <p className="text-xs sm:text-sm text-gray-600 mt-1">{event.description}</p>
+                          )}
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-xs sm:text-sm text-gray-500">
+                              {new Date(event.eventDate).toLocaleDateString('en-US', { 
+                                weekday: 'short', 
+                                month: 'short', 
+                                day: 'numeric'
+                              })}
+                            </span>
+                            <span className="text-xs sm:text-sm text-gray-400">•</span>
+                            <span className={`text-xs sm:text-sm font-medium ${
+                              event.daysUntil === 0 ? 'text-red-600' :
+                              event.daysUntil === 1 ? 'text-orange-600' :
+                              event.daysUntil <= 7 ? 'text-yellow-600' :
+                              'text-blue-600'
+                            }`}>
+                              {event.daysUntil === 0 ? '🔥 Today!' :
+                               event.daysUntil === 1 ? '⏰ Tomorrow' :
+                               `⏳ ${event.daysUntil} days`}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Chorbit Chat - Mobile Optimized */}
         <Card className="bg-white shadow-sm">

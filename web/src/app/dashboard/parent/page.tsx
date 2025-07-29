@@ -12,6 +12,7 @@ import { ChoreScoringDialog } from '@/components/ui/chore-scoring-dialog'
 import { ChildManagementDialog } from '@/components/ui/child-management-dialog'
 import { ImpromptuReviewDialog } from '@/components/ui/impromptu-review-dialog'
 import { ParentalFeedbackDialog } from '@/components/ui/parental-feedback-dialog'
+import { ImportantEventDialog } from '@/components/ui/important-event-dialog'
 
 export default function ParentDashboard() {
   const { data: session, status } = useSession()
@@ -46,6 +47,9 @@ export default function ParentDashboard() {
   const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false)
   const [parentalFeedback, setParentalFeedback] = useState<any[]>([])
   const [feedbackSummary, setFeedbackSummary] = useState<any[]>([])
+  const [isEventDialogOpen, setIsEventDialogOpen] = useState(false)
+  const [importantEvents, setImportantEvents] = useState<any[]>([])
+  const [editingEvent, setEditingEvent] = useState<any>(null)
 
   useEffect(() => {
     if (status === 'loading') return // Still loading
@@ -65,6 +69,7 @@ export default function ParentDashboard() {
     fetchCurrentChores()
     fetchImpromptuSubmissions()
     fetchParentalFeedback()
+    fetchImportantEvents()
   }, [session, status, router])
 
   const fetchCurrentChores = async () => {
@@ -102,6 +107,18 @@ export default function ParentDashboard() {
       }
     } catch (error) {
       console.error('Error fetching parental feedback:', error)
+    }
+  }
+
+  const fetchImportantEvents = async () => {
+    try {
+      const response = await fetch('/api/important-events?upcoming=true&limit=5')
+      if (response.ok) {
+        const result = await response.json()
+        setImportantEvents(result.events || [])
+      }
+    } catch (error) {
+      console.error('Error fetching important events:', error)
     }
   }
 
@@ -418,6 +435,53 @@ export default function ParentDashboard() {
     })
     // Refresh parental feedback data
     fetchParentalFeedback()
+  }
+
+  const handleEventSuccess = (successMessage: string) => {
+    setMessage({
+      type: 'success',
+      text: successMessage
+    })
+    // Refresh important events data
+    fetchImportantEvents()
+  }
+
+  const handleEditEvent = (event: any) => {
+    setEditingEvent(event)
+    setIsEventDialogOpen(true)
+  }
+
+  const handleDeleteEvent = async (eventId: string, eventTitle: string) => {
+    if (!confirm(`Are you sure you want to delete "${eventTitle}"?`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/important-events?eventId=${eventId}`, {
+        method: 'DELETE'
+      })
+
+      const result = await response.json()
+
+      if (response.ok) {
+        setMessage({
+          type: 'success',
+          text: result.message || 'Event deleted successfully!'
+        })
+        fetchImportantEvents()
+      } else {
+        setMessage({
+          type: 'error',
+          text: result.error || 'Failed to delete event'
+        })
+      }
+    } catch (error) {
+      console.error('Error deleting event:', error)
+      setMessage({
+        type: 'error',
+        text: 'Failed to delete event. Please try again.'
+      })
+    }
   }
 
   const handleReviewCompleted = async (completion: any, action: 'approve' | 'reject') => {
@@ -1419,6 +1483,141 @@ export default function ParentDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Important Events */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              📅 Important Events
+              {importantEvents.length > 0 && (
+                <Badge variant="secondary">
+                  {importantEvents.length}
+                </Badge>
+              )}
+            </CardTitle>
+            <CardDescription>
+              Manage important family dates and events
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Quick Add Event Button */}
+            <div className="mb-4">
+              <Button 
+                onClick={() => {
+                  setEditingEvent(null)
+                  setIsEventDialogOpen(true)
+                }}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                ➕ Add Important Event
+              </Button>
+            </div>
+
+            {/* Upcoming Events List */}
+            <div className="space-y-3">
+              {importantEvents.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <p>📅 No upcoming events. Add important dates for your family!</p>
+                  <Button 
+                    onClick={() => {
+                      setEditingEvent(null)
+                      setIsEventDialogOpen(true)
+                    }}
+                    className="mt-4 bg-purple-600 hover:bg-purple-700"
+                  >
+                    Add First Event
+                  </Button>
+                </div>
+              ) : (
+                importantEvents.map((event: any) => {
+                  const eventTypeEmojis: { [key: string]: string } = {
+                    'GENERAL': '📅',
+                    'BIRTHDAY': '🎂',
+                    'ANNIVERSARY': '💕',
+                    'MEETING': '👥',
+                    'REMINDER': '⏰',
+                    'OTHER': '📝'
+                  }
+
+                  const priorityColors: { [key: string]: string } = {
+                    'LOW': 'bg-gray-100 text-gray-700 border-gray-200',
+                    'MEDIUM': 'bg-blue-100 text-blue-700 border-blue-200',
+                    'HIGH': 'bg-orange-100 text-orange-700 border-orange-200',
+                    'URGENT': 'bg-red-100 text-red-700 border-red-200'
+                  }
+
+                  return (
+                    <div 
+                      key={event.id}
+                      className={`flex items-start justify-between p-4 border rounded-lg ${
+                        event.daysUntil <= 1 ? 'bg-red-50 border-red-200' :
+                        event.daysUntil <= 7 ? 'bg-yellow-50 border-yellow-200' :
+                        'bg-gray-50 border-gray-200'
+                      }`}
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl">{eventTypeEmojis[event.eventType] || '📅'}</span>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-sm">{event.title}</p>
+                              <span className={`text-xs px-2 py-1 rounded border ${priorityColors[event.priority] || priorityColors.MEDIUM}`}>
+                                {event.priority}
+                              </span>
+                            </div>
+                            {event.description && (
+                              <p className="text-sm text-gray-600 mt-1">{event.description}</p>
+                            )}
+                            <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                              <span>{new Date(event.eventDate).toLocaleDateString('en-US', { 
+                                weekday: 'short', 
+                                month: 'short', 
+                                day: 'numeric',
+                                year: 'numeric'
+                              })}</span>
+                              <span>•</span>
+                              <span className={`font-medium ${
+                                event.daysUntil === 0 ? 'text-red-600' :
+                                event.daysUntil <= 3 ? 'text-orange-600' :
+                                event.daysUntil <= 7 ? 'text-yellow-600' :
+                                'text-blue-600'
+                              }`}>
+                                {event.daysUntil === 0 ? 'Today!' :
+                                 event.daysUntil === 1 ? 'Tomorrow' :
+                                 event.daysUntil < 0 ? `${Math.abs(event.daysUntil)} days ago` :
+                                 `in ${event.daysUntil} days`}
+                              </span>
+                              <span>•</span>
+                              <span>by {event.creator.name}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleEditEvent(event)}
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        >
+                          ✏️
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDeleteEvent(event.id, event.title)}
+                          className="text-gray-400 hover:text-red-600 hover:bg-red-50"
+                        >
+                          🗑️
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
               {/* Add Chore Dialog */}
@@ -1483,6 +1682,17 @@ export default function ParentDashboard() {
           onClose={() => setIsFeedbackDialogOpen(false)}
           onSuccess={handleFeedbackSuccess}
           children={dashboardData?.children || []}
+        />
+
+        {/* Important Event Dialog */}
+        <ImportantEventDialog
+          isOpen={isEventDialogOpen}
+          onClose={() => {
+            setIsEventDialogOpen(false)
+            setEditingEvent(null)
+          }}
+          onSuccess={handleEventSuccess}
+          editingEvent={editingEvent}
         />
 
       {/* Settings Dialog */}
