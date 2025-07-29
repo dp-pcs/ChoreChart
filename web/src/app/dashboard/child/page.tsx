@@ -32,6 +32,8 @@ export default function ChildDashboard() {
   // Real data state
   const [loading, setLoading] = useState(true)
   const [todaysChores, setTodaysChores] = useState<any[]>([])
+  const [allWeeklyChores, setAllWeeklyChores] = useState<any[]>([])
+  const [activeTab, setActiveTab] = useState<'today' | 'week'>('today')
   const [weeklyProgress, setWeeklyProgress] = useState({
     completed: 0,
     total: 0,
@@ -83,25 +85,62 @@ export default function ChildDashboard() {
           chore.assignments?.some((assignment: any) => assignment.userId === session?.user?.id)
         )
         
-        // Filter for today's chores using the same logic as schedule-view
+        // Get today's day index
         const today = new Date().getDay() // 0 = Sunday, 1 = Monday, etc.
-        const actualTodaysChores = myChores.filter((chore: any) => {
-          // Check if chore is scheduled for this day
-          if (chore.frequency === 'DAILY' && chore.scheduledDays?.includes(today)) return true
-          if (chore.frequency === 'WEEKLY' && chore.scheduledDays?.includes(today)) return true
-          if (chore.frequency === 'AS_NEEDED' || chore.type === 'ONE_TIME') return true
-          if (chore.frequency === 'MONTHLY' && chore.scheduledDays?.includes(today)) return true
-          
-          return false
+        
+        // Create a comprehensive list of weekly chores with day information
+        const weeklyChoresWithDays: any[] = []
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+        
+        myChores.forEach((chore: any) => {
+          if (chore.frequency === 'DAILY' && chore.scheduledDays?.length > 0) {
+            // Daily chores: add one entry for each scheduled day
+            chore.scheduledDays.forEach((dayIndex: number) => {
+              weeklyChoresWithDays.push({
+                ...chore,
+                scheduledDay: dayIndex,
+                scheduledDayName: dayNames[dayIndex],
+                isToday: dayIndex === today,
+                isOverdue: dayIndex < today,
+                dueDate: getDayDate(dayIndex)
+              })
+            })
+          } else if (chore.frequency === 'WEEKLY' && chore.scheduledDays?.length > 0) {
+            // Weekly chores: add one entry for each scheduled day
+            chore.scheduledDays.forEach((dayIndex: number) => {
+              weeklyChoresWithDays.push({
+                ...chore,
+                scheduledDay: dayIndex,
+                scheduledDayName: dayNames[dayIndex],
+                isToday: dayIndex === today,
+                isOverdue: dayIndex < today,
+                dueDate: getDayDate(dayIndex)
+              })
+            })
+          } else if (chore.frequency === 'AS_NEEDED' || chore.type === 'ONE_TIME') {
+            // One-time/as-needed chores: available any day
+            weeklyChoresWithDays.push({
+              ...chore,
+              scheduledDay: null,
+              scheduledDayName: 'Any time',
+              isToday: true,
+              isOverdue: false,
+              dueDate: null
+            })
+          }
         })
         
+        // Filter for today's chores (same logic as before)
+        const actualTodaysChores = weeklyChoresWithDays.filter((chore: any) => chore.isToday)
+        
         setTodaysChores(actualTodaysChores)
+        setAllWeeklyChores(weeklyChoresWithDays)
         
         // Calculate weekly progress based on all assigned chores
         const totalPotential = myChores.reduce((sum: number, chore: any) => sum + (chore.reward || 0), 0)
         setWeeklyProgress({
           completed: 0, // Will be updated based on submissions from backend
-          total: myChores.length,
+          total: weeklyChoresWithDays.length,
           earnings: 0,  // Will be updated based on approved submissions from backend
           potential: totalPotential
         })
@@ -118,6 +157,16 @@ export default function ChildDashboard() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Helper function to get the date for a given day of the week
+  const getDayDate = (dayIndex: number) => {
+    const today = new Date()
+    const currentDay = today.getDay()
+    const diff = dayIndex - currentDay
+    const targetDate = new Date(today)
+    targetDate.setDate(today.getDate() + diff)
+    return targetDate
   }
 
   const fetchSubmissionStatus = async () => {
@@ -233,7 +282,7 @@ export default function ChildDashboard() {
     }
   }
 
-  const handleChoreSubmit = async (choreId: string) => {
+  const handleChoreSubmit = async (choreId: string, customCompletedDate?: Date) => {
     // Prevent double submissions
     if (submittingChores.has(choreId) || submittedChores.has(choreId)) {
       return
@@ -247,7 +296,7 @@ export default function ChildDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           choreId: choreId,
-          completedAt: new Date().toISOString()
+          completedAt: customCompletedDate ? customCompletedDate.toISOString() : new Date().toISOString()
         })
       })
       
@@ -264,9 +313,11 @@ export default function ChildDashboard() {
         }
         
         // Show success message
+        const dateText = customCompletedDate ? 
+          ` (completed ${customCompletedDate.toLocaleDateString()})` : ''
         setMessage({
           type: 'success',
-          text: result.message
+          text: result.message + dateText
         })
         
         // Refresh submission status to get latest data
@@ -288,6 +339,51 @@ export default function ChildDashboard() {
         return newSet
       })
     }
+  }
+
+  const handleChoreSubmitWithDatePicker = async (choreId: string, choreName: string, dueDate?: Date) => {
+    const today = new Date()
+    const oneWeekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
+    
+    // Create date options for the last week
+    const dateOptions = []
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today)
+      date.setDate(today.getDate() - i)
+      dateOptions.push(date)
+    }
+    
+    let selectedDate = dueDate || today
+    
+    // If the chore is overdue, suggest the due date
+    if (dueDate && dueDate < today) {
+      const confirmBackdate = confirm(
+        `This chore was due on ${dueDate.toLocaleDateString()}. ` +
+        `When did you actually complete "${choreName}"?\n\n` +
+        `Click OK to select from recent dates, or Cancel to mark as completed today.`
+      )
+      
+      if (confirmBackdate) {
+        const dateChoice = prompt(
+          `Select completion date for "${choreName}":\n\n` +
+          dateOptions.map((date, index) => 
+            `${index + 1}. ${date.toLocaleDateString()} (${
+              date.toDateString() === today.toDateString() ? 'Today' :
+              date.toDateString() === new Date(today.getTime() - 24 * 60 * 60 * 1000).toDateString() ? 'Yesterday' :
+              date.toLocaleDateString('en-US', { weekday: 'long' })
+            })`
+          ).join('\n') +
+          `\n\nEnter a number (1-7):`
+        )
+        
+        const choiceIndex = parseInt(dateChoice || '') - 1
+        if (choiceIndex >= 0 && choiceIndex < dateOptions.length) {
+          selectedDate = dateOptions[choiceIndex]
+        }
+      }
+    }
+    
+    await handleChoreSubmit(choreId, selectedDate)
   }
 
   // Calculate earnings
@@ -505,159 +601,317 @@ export default function ChildDashboard() {
           </Button>
         </div>
 
-        {/* New section for additional actions */}
-        <div className="grid grid-cols-1 gap-3">
-          <Button 
-            variant="outline"
-            className="h-12 sm:h-14 text-base sm:text-lg border-2 hover:bg-gray-50"
+        {/* Tab Navigation */}
+        <div className="flex bg-gray-100 p-1 rounded-lg">
+          <Button
+            variant={activeTab === 'today' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('today')}
+            className="flex-1 h-10"
           >
-            📅 My Schedule
+            📅 Today ({todaysChores.length})
+          </Button>
+          <Button
+            variant={activeTab === 'week' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('week')}
+            className="flex-1 h-10"
+          >
+            📋 This Week ({allWeeklyChores.length})
           </Button>
         </div>
 
-        {/* Today's Chores - Touch Friendly */}
-        <Card className="bg-white shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-              Today's Chores
-              <Badge variant="secondary" className="text-xs">
-                {todaysChores.length} tasks
-              </Badge>
-            </CardTitle>
-            <CardDescription className="text-sm">
-              Tap to submit completed chores
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {todaysChores.map((chore: any) => {
-                const isSubmitted = submittedChores.has(chore.id)
-                const isApproved = approvedChores.has(chore.id)
-                const isPending = pendingChores.has(chore.id)
-                const isSubmitting = submittingChores.has(chore.id)
-                
-                return (
-                  <div 
-                    key={chore.id}
-                    className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 touch-manipulation ${
-                      isApproved 
-                        ? 'bg-green-50 border-green-200' 
-                        : isPending
-                        ? 'bg-yellow-50 border-yellow-200'
-                        : isSubmitting
-                        ? 'bg-blue-50 border-blue-200'
-                        : 'bg-white border-gray-200 hover:border-blue-300 active:border-blue-400'
-                    }`}
-                    onClick={() => !isSubmitted && !isSubmitting && handleChoreSubmit(chore.id)}
-                  >
-                    <div className="flex items-center space-x-4">
-                      <div 
-                        className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 flex items-center justify-center transition-all ${
-                          isApproved 
-                            ? 'bg-green-500 border-green-500' 
-                            : isPending 
-                            ? 'bg-yellow-400 border-yellow-400'
-                            : isSubmitting
-                            ? 'bg-blue-400 border-blue-400'
-                            : 'border-gray-300 hover:border-blue-500'
-                        }`}
-                      >
-                        {isApproved && (
-                          <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                        {isPending && (
-                          <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                        {isSubmitting && (
-                          <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white"></div>
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <p className={`font-medium text-sm sm:text-base ${isApproved ? 'line-through text-green-700' : 'text-gray-900'}`}>
-                          {chore.title}
-                        </p>
-                        <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-500 mt-1">
-                          <span>{chore.estimatedMinutes} minutes</span>
-                          <span>•</span>
-                          <span>{chore.isRequired ? 'Required' : 'Optional'}</span>
+        {/* Conditional Chore Sections */}
+        {activeTab === 'today' ? (
+          /* Today's Chores - Touch Friendly */
+          <Card className="bg-white shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                Today's Chores
+                <Badge variant="secondary" className="text-xs">
+                  {todaysChores.length} tasks
+                </Badge>
+              </CardTitle>
+              <CardDescription className="text-sm">
+                Tap to submit completed chores
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {todaysChores.map((chore: any) => {
+                  const isSubmitted = submittedChores.has(chore.id)
+                  const isApproved = approvedChores.has(chore.id)
+                  const isPending = pendingChores.has(chore.id)
+                  const isSubmitting = submittingChores.has(chore.id)
+                  
+                  return (
+                    <div 
+                      key={`${chore.id}-${chore.scheduledDay}`}
+                      className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 touch-manipulation ${
+                        isApproved 
+                          ? 'bg-green-50 border-green-200' 
+                          : isPending
+                          ? 'bg-yellow-50 border-yellow-200'
+                          : isSubmitting
+                          ? 'bg-blue-50 border-blue-200'
+                          : chore.isOverdue
+                          ? 'bg-red-50 border-red-200 hover:border-red-300 active:border-red-400'
+                          : 'bg-white border-gray-200 hover:border-blue-300 active:border-blue-400'
+                      }`}
+                      onClick={() => !isSubmitted && !isSubmitting && handleChoreSubmitWithDatePicker(chore.id, chore.title, chore.dueDate)}
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div 
+                          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 flex items-center justify-center transition-all ${
+                            isApproved 
+                              ? 'bg-green-500 border-green-500' 
+                              : isPending 
+                              ? 'bg-yellow-400 border-yellow-400'
+                              : isSubmitting
+                              ? 'bg-blue-400 border-blue-400'
+                              : chore.isOverdue
+                              ? 'border-red-400 hover:border-red-500'
+                              : 'border-gray-300 hover:border-blue-500'
+                          }`}
+                        >
                           {isApproved && (
-                            <>
-                              <span>•</span>
-                              <span className="text-green-600 font-medium">✓ Approved!</span>
-                            </>
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
                           )}
                           {isPending && (
-                            <>
-                              <span>•</span>
-                              <span className="text-yellow-600 font-medium">⏳ Pending...</span>
-                            </>
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                            </svg>
                           )}
                           {isSubmitting && (
-                            <>
-                              <span>•</span>
-                              <span className="text-blue-600 font-medium">📤 Submitting...</span>
-                            </>
+                            <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white"></div>
                           )}
+                          {chore.isOverdue && !isSubmitted && !isSubmitting && (
+                            <span className="text-red-500 text-xs">!</span>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <p className={`font-medium text-sm sm:text-base ${isApproved ? 'line-through text-green-700' : 'text-gray-900'}`}>
+                            {chore.title}
+                          </p>
+                          <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-500 mt-1">
+                            <span>{chore.estimatedMinutes} minutes</span>
+                            <span>•</span>
+                            <span>{chore.isRequired ? 'Required' : 'Optional'}</span>
+                            {chore.isOverdue && !isSubmitted && (
+                              <>
+                                <span>•</span>
+                                <span className="text-red-600 font-medium">⚠️ Overdue</span>
+                              </>
+                            )}
+                            {isApproved && (
+                              <>
+                                <span>•</span>
+                                <span className="text-green-600 font-medium">✓ Approved!</span>
+                              </>
+                            )}
+                            {isPending && (
+                              <>
+                                <span>•</span>
+                                <span className="text-yellow-600 font-medium">⏳ Pending...</span>
+                              </>
+                            )}
+                            {isSubmitting && (
+                              <>
+                                <span>•</span>
+                                <span className="text-blue-600 font-medium">📤 Submitting...</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-base sm:text-lg font-bold text-green-600">
+                          ${chore.reward}
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-base sm:text-lg font-bold text-green-600">
-                        ${chore.reward}
+                  )
+                })}
+              </div>
+
+              {/* Earnings Summary - Mobile Optimized */}
+              <div className="mt-6 pt-4 border-t">
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <div className="grid grid-cols-2 gap-4 text-center">
+                    <div>
+                      <div className="text-xl sm:text-2xl font-bold text-green-600">
+                        ${approvedEarnings}
                       </div>
+                      <div className="text-xs sm:text-sm text-gray-600">Approved</div>
                     </div>
+                    
+                    {(submittedChores.size > approvedChores.size) && (
+                      <div>
+                        <div className="text-xl sm:text-2xl font-bold text-yellow-600">
+                          ${submittedEarnings - approvedEarnings}
+                        </div>
+                        <div className="text-xs sm:text-sm text-gray-600">Pending</div>
+                      </div>
+                    )}
+                    
+                    {(submittedChores.size === approvedChores.size) && (
+                      <div>
+                        <div className="text-xl sm:text-2xl font-bold text-gray-400">
+                          ${weeklyProgress.potential - approvedEarnings}
+                        </div>
+                        <div className="text-xs sm:text-sm text-gray-600">Possible</div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <Button 
+                    className="w-full mt-4 h-12 text-base font-semibold bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                    disabled={submittedChores.size === 0}
+                  >
+                    {submittedChores.size === 0 ? 'Select chores to start! 🚀' : 
+                     approvedChores.size === todaysChores.length ? '🎉 All chores complete!' :
+                     submittedChores.size > 0 ? `${submittedChores.size} chores submitted! 💪` : 
+                     'Start working! 🚀'}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          /* Weekly Chores View */
+          <Card className="bg-white shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                This Week's Chores
+                <Badge variant="secondary" className="text-xs">
+                  {allWeeklyChores.length} total
+                </Badge>
+              </CardTitle>
+              <CardDescription className="text-sm">
+                All your chores for the week - tap to complete
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                // Group chores by day
+                const choresByDay = allWeeklyChores.reduce((acc: any, chore: any) => {
+                  const dayKey = chore.scheduledDayName || 'Any time'
+                  if (!acc[dayKey]) acc[dayKey] = []
+                  acc[dayKey].push(chore)
+                  return acc
+                }, {})
+
+                const dayOrder = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Any time']
+                
+                return (
+                  <div className="space-y-6">
+                    {dayOrder.map(dayName => {
+                      if (!choresByDay[dayName]) return null
+                      const dayChores = choresByDay[dayName]
+                      const today = new Date().getDay()
+                      const dayIndex = dayOrder.indexOf(dayName)
+                      const isToday = dayIndex === today
+                      const isPast = dayIndex < today && dayIndex !== 7 // 7 is "Any time"
+                      
+                      return (
+                        <div key={dayName} className="space-y-3">
+                          <div className={`flex items-center gap-2 text-sm font-medium p-2 rounded-lg ${
+                            isToday ? 'bg-blue-100 text-blue-800' :
+                            isPast ? 'bg-red-50 text-red-700' :
+                            'bg-gray-50 text-gray-700'
+                          }`}>
+                            <span className="text-lg">
+                              {isToday ? '📅' : isPast ? '⚠️' : '📋'}
+                            </span>
+                            <span>{dayName}</span>
+                            <Badge variant="outline" className="text-xs">
+                              {dayChores.length}
+                            </Badge>
+                            {isToday && <span className="text-xs">(Today)</span>}
+                            {isPast && <span className="text-xs">(Past due)</span>}
+                          </div>
+                          
+                          <div className="space-y-2 ml-4">
+                            {dayChores.map((chore: any) => {
+                              const isSubmitted = submittedChores.has(chore.id)
+                              const isApproved = approvedChores.has(chore.id)
+                              const isPending = pendingChores.has(chore.id)
+                              const isSubmitting = submittingChores.has(chore.id)
+                              
+                              return (
+                                <div
+                                  key={`${chore.id}-${chore.scheduledDay}`}
+                                  className={`flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer ${
+                                    isApproved 
+                                      ? 'bg-green-50 border-green-200' 
+                                      : isPending
+                                      ? 'bg-yellow-50 border-yellow-200'
+                                      : isSubmitting
+                                      ? 'bg-blue-50 border-blue-200'
+                                      : chore.isOverdue
+                                      ? 'bg-red-50 border-red-200 hover:border-red-300'
+                                      : 'bg-white border-gray-200 hover:border-blue-300'
+                                  }`}
+                                  onClick={() => !isSubmitted && !isSubmitting && handleChoreSubmitWithDatePicker(chore.id, chore.title, chore.dueDate)}
+                                >
+                                  <div className="flex items-center gap-3 flex-1">
+                                    <div 
+                                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                                        isApproved 
+                                          ? 'bg-green-500 border-green-500' 
+                                          : isPending 
+                                          ? 'bg-yellow-400 border-yellow-400'
+                                          : isSubmitting
+                                          ? 'bg-blue-400 border-blue-400'
+                                          : chore.isOverdue
+                                          ? 'border-red-400'
+                                          : 'border-gray-300'
+                                      }`}
+                                    >
+                                      {isApproved && (
+                                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                      )}
+                                      {isPending && (
+                                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                                        </svg>
+                                      )}
+                                      {isSubmitting && (
+                                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                      )}
+                                    </div>
+                                    <div className="flex-1">
+                                      <p className={`text-sm font-medium ${isApproved ? 'line-through text-green-700' : 'text-gray-900'}`}>
+                                        {chore.title}
+                                      </p>
+                                      <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                                        <span>{chore.estimatedMinutes}min</span>
+                                        <span>•</span>
+                                        <span>{chore.isRequired ? 'Required' : 'Optional'}</span>
+                                        {isApproved && <span className="text-green-600">• ✓ Done</span>}
+                                        {isPending && <span className="text-yellow-600">• ⏳ Pending</span>}
+                                        {chore.isOverdue && !isSubmitted && <span className="text-red-600">• ⚠️ Overdue</span>}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="text-sm font-bold text-green-600">
+                                    ${chore.reward}
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 )
-              })}
-            </div>
-
-            {/* Earnings Summary - Mobile Optimized */}
-            <div className="mt-6 pt-4 border-t">
-              <div className="bg-gray-50 rounded-xl p-4">
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div>
-                    <div className="text-xl sm:text-2xl font-bold text-green-600">
-                      ${approvedEarnings}
-                    </div>
-                    <div className="text-xs sm:text-sm text-gray-600">Approved</div>
-                  </div>
-                  
-                  {(submittedChores.size > approvedChores.size) && (
-                    <div>
-                      <div className="text-xl sm:text-2xl font-bold text-yellow-600">
-                        ${submittedEarnings - approvedEarnings}
-                      </div>
-                      <div className="text-xs sm:text-sm text-gray-600">Pending</div>
-                    </div>
-                  )}
-                  
-                  {(submittedChores.size === approvedChores.size) && (
-                    <div>
-                      <div className="text-xl sm:text-2xl font-bold text-gray-400">
-                        ${weeklyProgress.potential - approvedEarnings}
-                      </div>
-                      <div className="text-xs sm:text-sm text-gray-600">Possible</div>
-                    </div>
-                  )}
-                </div>
-                
-                <Button 
-                  className="w-full mt-4 h-12 text-base font-semibold bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-                  disabled={submittedChores.size === 0}
-                >
-                  {submittedChores.size === 0 ? 'Select chores to start! 🚀' : 
-                   approvedChores.size === todaysChores.length ? '🎉 All chores complete!' :
-                   submittedChores.size > 0 ? `${submittedChores.size} chores submitted! 💪` : 
-                   'Start working! 🚀'}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              })()}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Motivational Section - Mobile Optimized */}
         <Card className={`text-white ${
