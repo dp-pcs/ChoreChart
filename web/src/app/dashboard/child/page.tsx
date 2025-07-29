@@ -12,6 +12,7 @@ import { ImpromptuSubmissionDialog } from '@/components/ui/impromptu-submission-
 import type { DailyCheckIn as DailyCheckInType } from '@/lib/behavior-tracking'
 import React from 'react'
 import { Badge } from '@/components/ui/badge'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 export default function ChildDashboard() {
   const { data: session, status } = useSession()
@@ -484,11 +485,11 @@ export default function ChildDashboard() {
   // Show loading state while authenticating or fetching data
   if (status === 'loading' || loading || isCheckingToday || !user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">👋</div>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">
             {!user ? 'Loading your dashboard...' : `Getting ready for ${user.name}...`}
           </p>
         </div>
@@ -500,7 +501,7 @@ export default function ChildDashboard() {
   if (showCheckInReminder) {
     return (
       <>
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-background">
           {/* Main dashboard content (blurred) */}
           <div className="filter blur-sm pointer-events-none">
             <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
@@ -528,7 +529,7 @@ export default function ChildDashboard() {
 
   if (showCheckIn) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-background">
         <DailyCheckIn 
           userId={user.id}
           userName={user.name}
@@ -540,7 +541,7 @@ export default function ChildDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Success/Error Message */}
       {message && (
         <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
@@ -558,14 +559,17 @@ export default function ChildDashboard() {
               <h1 className="text-2xl sm:text-3xl font-bold">Hey {user.name}! 👋</h1>
               <p className="text-blue-100 text-sm sm:text-base">Ready to crush today's goals?</p>
             </div>
-            <Button 
-              onClick={() => signOut({ callbackUrl: '/auth/signin' })}
-              variant="outline"
-              size="sm"
-              className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
-            >
-              Sign Out
-            </Button>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <Button 
+                onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+                variant="outline"
+                size="sm"
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
+              >
+                Sign Out
+              </Button>
+            </div>
           </div>
         </div>
       </div>

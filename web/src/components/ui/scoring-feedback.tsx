@@ -21,10 +21,10 @@ export function ScoringFeedback({
   submittedAt 
 }: ScoringFeedbackProps) {
   const getScoreColor = (score: number) => {
-    if (score >= 90) return 'text-green-600 bg-green-100'
-    if (score >= 70) return 'text-yellow-600 bg-yellow-100'
-    if (score >= 50) return 'text-orange-600 bg-orange-100'
-    return 'text-red-600 bg-red-100'
+    if (score >= 90) return 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/20'
+    if (score >= 70) return 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/20'
+    if (score >= 50) return 'text-orange-600 bg-orange-100 dark:text-orange-400 dark:bg-orange-900/20'
+    return 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/20'
   }
 
   const getScoreLabel = (score: number) => {
@@ -59,7 +59,7 @@ export function ScoringFeedback({
       </CardHeader>
       <CardContent className="space-y-3">
         {/* Score Summary */}
-        <div className="bg-gray-50 p-3 rounded-lg">
+        <div className="bg-muted p-3 rounded-lg">
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm font-medium">Quality Score:</span>
             <span className={`text-sm font-bold ${getScoreColor(score)}`}>
@@ -78,14 +78,14 @@ export function ScoringFeedback({
             </div>
             <div className="flex justify-between font-medium">
               <span>Final Reward:</span>
-              <span className={isPartialReward ? 'text-orange-600' : 'text-green-600'}>
+              <span className={isPartialReward ? 'text-orange-600 dark:text-orange-400' : 'text-green-600 dark:text-green-400'}>
                 ${partialReward}
               </span>
             </div>
             {isPartialReward && (
-              <div className="flex justify-between text-xs text-gray-500">
+              <div className="flex justify-between text-xs text-muted-foreground">
                 <span>Deduction:</span>
-                <span className="text-red-600">-${deduction}</span>
+                <span className="text-red-600 dark:text-red-400">-${deduction}</span>
               </div>
             )}
           </div>
@@ -93,17 +93,17 @@ export function ScoringFeedback({
 
         {/* Feedback */}
         {feedback && (
-          <div className="bg-blue-50 p-3 rounded-lg">
-            <p className="text-sm font-medium text-blue-800 mb-1">Parent's Feedback:</p>
-            <p className="text-sm text-blue-700">{feedback}</p>
+          <div className="bg-blue-100 dark:bg-blue-900/20 p-3 rounded-lg">
+            <p className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-1">Parent's Feedback:</p>
+            <p className="text-sm text-blue-700 dark:text-blue-400">{feedback}</p>
           </div>
         )}
 
         {/* Tips for improvement */}
         {score < 100 && (
-          <div className="bg-yellow-50 p-3 rounded-lg">
-            <p className="text-sm font-medium text-yellow-800 mb-1">💡 Tips for next time:</p>
-            <ul className="text-sm text-yellow-700 space-y-1">
+          <div className="bg-yellow-100 dark:bg-yellow-900/20 p-3 rounded-lg">
+            <p className="text-sm font-medium text-yellow-800 dark:text-yellow-300 mb-1">💡 Tips for next time:</p>
+            <ul className="text-sm text-yellow-700 dark:text-yellow-400 space-y-1">
               {score < 70 && (
                 <li>• Take your time and do the job thoroughly</li>
               )}
@@ -120,8 +120,8 @@ export function ScoringFeedback({
 
         {/* Positive reinforcement */}
         {score >= 70 && (
-          <div className="bg-green-50 p-3 rounded-lg">
-            <p className="text-sm font-medium text-green-800">
+          <div className="bg-green-100 dark:bg-green-900/20 p-3 rounded-lg">
+            <p className="text-sm font-medium text-green-800 dark:text-green-300">
               🎉 Great work! Keep up the good quality!
             </p>
           </div>

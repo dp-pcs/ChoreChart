@@ -28,13 +28,13 @@ export function DailyCheckInReminder({ userName, onStartCheckIn, onSkip }: Daily
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-md bg-white shadow-2xl animate-in fade-in-50 scale-in-95 duration-300">
+      <Card className="w-full max-w-md bg-card shadow-2xl animate-in fade-in-50 scale-in-95 duration-300">
         <CardHeader className="text-center pb-4">
           <div className="text-6xl mb-4 animate-bounce">📝</div>
-          <CardTitle className="text-2xl text-gray-900">
+          <CardTitle className="text-2xl text-foreground">
             Good morning, {userName}! 🌅
           </CardTitle>
-          <CardDescription className="text-lg text-gray-600">
+          <CardDescription className="text-lg text-muted-foreground">
             {today}
           </CardDescription>
         </CardHeader>

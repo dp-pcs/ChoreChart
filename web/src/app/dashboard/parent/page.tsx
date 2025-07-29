@@ -13,6 +13,7 @@ import { ChildManagementDialog } from '@/components/ui/child-management-dialog'
 import { ImpromptuReviewDialog } from '@/components/ui/impromptu-review-dialog'
 import { ParentalFeedbackDialog } from '@/components/ui/parental-feedback-dialog'
 import { ImportantEventDialog } from '@/components/ui/important-event-dialog'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 export default function ParentDashboard() {
   const { data: session, status } = useSession()
@@ -788,23 +789,26 @@ export default function ParentDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-card shadow-sm border-b">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-foreground">
                 Parent Dashboard
               </h1>
-              <p className="text-gray-600">Welcome, {session.user.name}! 👋</p>
+              <p className="text-muted-foreground">Welcome, {session.user.name}! 👋</p>
             </div>
-            <Button 
-              onClick={() => signOut({ callbackUrl: '/auth/signin' })}
-              variant="outline"
-            >
-              Sign Out
-            </Button>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <Button 
+                onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+                variant="outline"
+              >
+                Sign Out
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -814,8 +818,8 @@ export default function ParentDashboard() {
         {message && (
           <div className={`p-4 rounded-lg border ${
             message.type === 'success' 
-              ? 'bg-green-50 border-green-200 text-green-800' 
-              : 'bg-red-50 border-red-200 text-red-800'
+              ? 'bg-green-100 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400' 
+              : 'bg-red-100 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400'
           }`}>
             <p>{message.text}</p>
           </div>
