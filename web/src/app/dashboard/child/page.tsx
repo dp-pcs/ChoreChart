@@ -83,18 +83,50 @@ export default function ChildDashboard() {
           chore.assignments?.some((assignment: any) => assignment.userId === session?.user?.id)
         )
         
+        // Debug logging
+        console.log(`📊 Debug: Total chores from API: ${chores.length}`)
+        console.log(`📊 Debug: My assigned chores: ${myChores.length}`)
+        console.log('📊 Debug: All chores:', chores.map(c => ({ 
+          title: c.title, 
+          isActive: c.isActive, 
+          frequency: c.frequency, 
+          scheduledDays: c.scheduledDays,
+          assignments: c.assignments?.length || 0
+        })))
+        console.log('📊 Debug: My chores:', myChores.map(c => ({ 
+          title: c.title, 
+          isActive: c.isActive, 
+          frequency: c.frequency, 
+          scheduledDays: c.scheduledDays
+        })))
+        
         // Filter for today's chores using the same logic as schedule-view
         const today = new Date().getDay() // 0 = Sunday, 1 = Monday, etc.
         const actualTodaysChores = myChores.filter((chore: any) => {
-          // Filter by active status
-          if (!chore.isActive) return false
+          // Filter by active status (default to true if not set)
+          if (chore.isActive === false) return false
 
           // Check if chore is scheduled for this day
           if (chore.frequency === 'daily' && chore.scheduledDays?.includes(today)) return true
           if (chore.frequency === 'weekly' && chore.scheduledDays?.includes(today)) return true
           
+          // For backward compatibility: show chores that don't have scheduling set up yet
+          if (!chore.scheduledDays || chore.scheduledDays.length === 0) {
+            console.log(`⚠️ Chore "${chore.title}" has no scheduled days, showing anyway for debugging`)
+            return true
+          }
+          
           return false
         })
+        
+        console.log(`📊 Debug: Today is day ${today} (0=Sunday, 1=Monday, etc.)`)
+        console.log(`📊 Debug: Chores for today after filtering: ${actualTodaysChores.length}`)
+        console.log('📊 Debug: Today\'s chores:', actualTodaysChores.map(c => ({ 
+          title: c.title, 
+          isActive: c.isActive, 
+          frequency: c.frequency, 
+          scheduledDays: c.scheduledDays
+        })))
         
         setTodaysChores(actualTodaysChores)
         
