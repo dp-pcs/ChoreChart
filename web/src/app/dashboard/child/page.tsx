@@ -75,7 +75,14 @@ export default function ChildDashboard() {
 
   const fetchUpcomingEvents = async () => {
     try {
-      const response = await fetch('/api/important-events?upcoming=true&limit=3')
+      const response = await fetch('/api/important-events?upcoming=true&limit=3', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      })
       if (response.ok) {
         const result = await response.json()
         setUpcomingEvents(result.events || [])
