@@ -69,10 +69,17 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       events: eventsWithCountdown
     })
+    
+    // Prevent PWA caching
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+    
+    return response
 
   } catch (error) {
     console.error('Important events fetch error:', error)
