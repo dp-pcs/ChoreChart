@@ -290,8 +290,8 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Reverse points if any were awarded/deducted
-    if (feedback.points && feedback.points !== 0) {
-      if (feedback.points > 0) {
+    if (feedback.points && feedback.points.toNumber() !== 0) {
+      if (feedback.points.toNumber() > 0) {
         // Remove awarded points
         await prisma.user.update({
           where: { id: feedback.childId },
@@ -305,7 +305,7 @@ export async function DELETE(request: NextRequest) {
         await prisma.user.update({
           where: { id: feedback.childId },
           data: {
-            availablePoints: { increment: Math.abs(feedback.points) }
+            availablePoints: { increment: Math.abs(feedback.points.toNumber()) }
           }
         })
       }

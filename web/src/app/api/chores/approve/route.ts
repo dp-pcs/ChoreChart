@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { prisma, Decimal } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {
@@ -78,14 +78,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate points awarded based on score (points are now primary)
-    const chorePoints = submission.assignment.chore.points || 0
+    const chorePoints = submission.assignment.chore.points || new Decimal(0)
     const pointsToMoneyRate = submission.assignment.family.pointsToMoneyRate || 1.00
     let pointsAwarded = chorePoints
     let finalScore = score
 
     if (score !== undefined && approved) {
       // Calculate partial points: score percentage of full points
-      pointsAwarded = Math.round((score / 100) * chorePoints)
+      pointsAwarded = new Decimal(Math.round((score / 100) * chorePoints.toNumber()))
       finalScore = score
     } else if (approved) {
       // If approved without score, give full points
@@ -93,12 +93,12 @@ export async function POST(request: NextRequest) {
       finalScore = 100
     } else {
       // If denied, no points
-      pointsAwarded = 0
+      pointsAwarded = new Decimal(0)
       finalScore = 0
     }
 
     // Calculate dollar equivalent for legacy compatibility
-    const partialReward = Math.round(pointsAwarded * pointsToMoneyRate * 100) / 100
+    const partialReward = Math.round(pointsAwarded.toNumber() * pointsToMoneyRate * 100) / 100
 
     // Update the submission status
     const updatedSubmission = await prisma.choreSubmission.update({
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
       data: {
         status: approved ? 'APPROVED' : 'DENIED',
         score: finalScore,
-        partialReward: partialReward,
+        partialReward: new Decimal(partialReward),
         pointsAwarded: pointsAwarded
       }
     })
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
         approved: approved,
         feedback: feedback || null,
         score: finalScore,
-        partialReward: partialReward,
+        partialReward: new Decimal(partialReward),
         originalReward: submission.assignment.chore.reward,
         pointsAwarded: pointsAwarded,
         originalPoints: chorePoints
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
     })
 
     // If approved (even partially), award points to user and create reward record
-    if (approved && pointsAwarded > 0) {
+    if (approved && pointsAwarded.toNumber() > 0) {
       // Update user's points balance
       await prisma.user.update({
         where: { id: submission.user.id },
@@ -152,13 +152,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: approved 
-        ? `Approved ${submission.assignment.chore.title} for ${submission.user.name} with ${finalScore}% quality score - ${pointsAwarded} points earned ($${partialReward})`
+        ? `Approved ${submission.assignment.chore.title} for ${submission.user.name} with ${finalScore}% quality score - ${pointsAwarded.toNumber()} points earned ($${partialReward})`
         : `Denied ${submission.assignment.chore.title} for ${submission.user.name}`,
       data: {
         score: finalScore,
-        pointsAwarded,
+        pointsAwarded: pointsAwarded.toNumber(),
         partialReward,
-        originalPoints: chorePoints,
+        originalPoints: chorePoints.toNumber(),
         originalReward: submission.assignment.chore.reward
       }
     })
