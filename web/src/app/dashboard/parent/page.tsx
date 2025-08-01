@@ -29,6 +29,7 @@ export default function ParentDashboard() {
   const [isChildManagementOpen, setIsChildManagementOpen] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showInviteDialog, setShowInviteDialog] = useState(false)
+  const [inviteLoading, setInviteLoading] = useState(false)
   const [settingsChanged, setSettingsChanged] = useState(false)
   const [pendingSettings, setPendingSettings] = useState<any>({})
   const [scoringDialog, setScoringDialog] = useState<{ isOpen: boolean; submission: any }>({
@@ -51,6 +52,7 @@ export default function ParentDashboard() {
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false)
   const [importantEvents, setImportantEvents] = useState<any[]>([])
   const [editingEvent, setEditingEvent] = useState<any>(null)
+  const [bankingRequests, setBankingRequests] = useState<any[]>([])
 
   useEffect(() => {
     if (status === 'loading') return // Still loading
@@ -71,6 +73,7 @@ export default function ParentDashboard() {
     fetchImpromptuSubmissions()
     fetchParentalFeedback()
     fetchImportantEvents()
+    fetchBankingRequests()
   }, [session, status, router])
 
   const fetchCurrentChores = async () => {
@@ -83,6 +86,88 @@ export default function ParentDashboard() {
       setCurrentChores(result.chores || [])
     } catch (error) {
       console.error('Error fetching chores:', error)
+    }
+  }
+
+  // Handle switching between email and SMS input methods
+  const handleInviteMethodChange = (method: string) => {
+    const emailInput = document.getElementById('emailInput')
+    const phoneInput = document.getElementById('phoneInput')
+    
+    if (method === 'EMAIL') {
+      emailInput?.classList.remove('hidden')
+      phoneInput?.classList.add('hidden')
+    } else {
+      emailInput?.classList.add('hidden')
+      phoneInput?.classList.remove('hidden')
+    }
+  }
+
+  const handleSendInvite = async () => {
+    setInviteLoading(true)
+    try {
+      const inviteMethod = (document.querySelector('input[name="inviteMethod"]:checked') as HTMLInputElement)?.value || 'EMAIL'
+      const inviteEmail = (document.getElementById('inviteEmail') as HTMLInputElement)?.value
+      const invitePhone = (document.getElementById('invitePhone') as HTMLInputElement)?.value
+      const canInvite = (document.getElementById('canInvite') as HTMLInputElement)?.checked
+      const canManage = (document.getElementById('canManage') as HTMLInputElement)?.checked
+
+      // Validation based on method
+      if (inviteMethod === 'EMAIL' && !inviteEmail) {
+        setMessage({ type: 'error', text: 'Please enter an email address' })
+        return
+      }
+
+      if (inviteMethod === 'SMS' && !invitePhone) {
+        setMessage({ type: 'error', text: 'Please enter a phone number' })
+        return
+      }
+
+      const response = await fetch('/api/auth/invite-parent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: inviteEmail || null,
+          phoneNumber: invitePhone || null,
+          inviteMethod,
+          canInvite,
+          canManage
+        }),
+      })
+
+      const result = await response.json()
+
+      if (response.ok) {
+        setMessage({ type: 'success', text: result.message })
+        setShowInviteDialog(false)
+        // Clear the form
+        if (document.getElementById('inviteEmail')) {
+          (document.getElementById('inviteEmail') as HTMLInputElement).value = ''
+        }
+        if (document.getElementById('invitePhone')) {
+          (document.getElementById('invitePhone') as HTMLInputElement).value = ''
+        }
+        if (document.getElementById('canInvite')) {
+          (document.getElementById('canInvite') as HTMLInputElement).checked = false
+        }
+        if (document.getElementById('canManage')) {
+          (document.getElementById('canManage') as HTMLInputElement).checked = false
+        }
+        // Reset to email method
+        const emailRadio = document.getElementById('inviteMethodEmail') as HTMLInputElement
+        if (emailRadio) emailRadio.checked = true
+        // Reset form visibility
+        handleInviteMethodChange('EMAIL')
+      } else {
+        setMessage({ type: 'error', text: result.error || 'Failed to send invitation' })
+      }
+    } catch (error) {
+      console.error('Error sending invitation:', error)
+      setMessage({ type: 'error', text: 'Failed to send invitation. Please try again.' })
+    } finally {
+      setInviteLoading(false)
     }
   }
 
@@ -120,6 +205,18 @@ export default function ParentDashboard() {
       }
     } catch (error) {
       console.error('Error fetching important events:', error)
+    }
+  }
+
+  const fetchBankingRequests = async () => {
+    try {
+      const response = await fetch('/api/banking/pending')
+      if (response.ok) {
+        const result = await response.json()
+        setBankingRequests(result.requests || [])
+      }
+    } catch (error) {
+      console.error('Error fetching banking requests:', error)
     }
   }
 
@@ -211,11 +308,13 @@ export default function ParentDashboard() {
         throw new Error('Failed to approve chore')
       }
       
-      // Find the approval to show success message
+                            // Find the approval to show success message
       const approval = dashboardData.pendingApprovals.find((a: any) => a.id === id)
+      const pointsAwarded = approval?.pointsAwarded || approval?.points || 0
+      const moneyValue = pointsAwarded * (dashboardData?.family?.settings?.pointsToMoneyRate || 1)
       setMessage({
         type: 'success',
-        text: `✅ Approved ${approval?.choreName} for ${approval?.childName} - $${approval?.reward} earned!`
+        text: `✅ Approved ${approval?.choreName} for ${approval?.childName} - ${pointsAwarded} points (${moneyValue.toFixed(2)}) earned!`
       })
       
       // Refresh dashboard data
@@ -267,9 +366,12 @@ export default function ParentDashboard() {
       const partialReward = result.data.partialReward
       const originalReward = result.data.originalReward
       
+      const pointsAwarded = result.data.pointsAwarded || 0
+      const originalPoints = result.data.originalPoints || 0
+      const moneyValue = pointsAwarded * (dashboardData?.family?.settings?.pointsToMoneyRate || 1)
       setMessage({
         type: 'success',
-        text: `✅ Scored ${scoringDialog.submission.choreName} for ${scoringDialog.submission.childName} - ${score}% quality = $${partialReward} earned (${originalReward - partialReward > 0 ? `$${originalReward - partialReward} deducted` : 'full reward'})`
+        text: `✅ Scored ${scoringDialog.submission.choreName} for ${scoringDialog.submission.childName} - ${score}% quality = ${pointsAwarded} points (${moneyValue.toFixed(2)}) earned (${originalPoints - pointsAwarded > 0 ? `${originalPoints - pointsAwarded} points deducted` : 'full points'})`
       })
       
       // Refresh dashboard data
@@ -1004,23 +1106,96 @@ export default function ParentDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               Pending Reviews 
-              {(dashboardData.pendingApprovals.length + impromptuSubmissions.length) > 0 && (
+              {(dashboardData.pendingApprovals.length + impromptuSubmissions.length + bankingRequests.length) > 0 && (
                 <Badge variant="destructive">
-                  {dashboardData.pendingApprovals.length + impromptuSubmissions.length}
+                  {dashboardData.pendingApprovals.length + impromptuSubmissions.length + bankingRequests.length}
                 </Badge>
               )}
             </CardTitle>
             <CardDescription>
-              Review chores and special submissions from your children
+              Review chores, banking requests, and special submissions from your children
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {(dashboardData.pendingApprovals.length === 0 && impromptuSubmissions.length === 0) ? (
+            {(dashboardData.pendingApprovals.length === 0 && impromptuSubmissions.length === 0 && bankingRequests.length === 0) ? (
               <div className="text-center py-8 text-gray-500">
                 <p>🎉 All caught up! No pending reviews.</p>
               </div>
             ) : (
               <div className="space-y-4">
+                {/* Banking Requests */}
+                {bankingRequests.map((request: any) => (
+                  <div 
+                    key={`banking-${request.id}`}
+                    className="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">🏦</span>
+                        <div>
+                          <p className="font-medium">{request.user.name} wants to bank points!</p>
+                          <p className="text-sm font-semibold text-yellow-800">
+                            {request.amount} points → ${Number(request.moneyValue).toFixed(2)}
+                          </p>
+                          {request.reason && (
+                            <p className="text-sm text-gray-600 mt-1">"{request.reason}"</p>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Requested {new Date(request.submittedAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          try {
+                            const response = await fetch('/api/banking/approve', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ transactionId: request.id, approved: false })
+                            })
+                            if (response.ok) {
+                              const result = await response.json()
+                              setMessage({ type: 'success', text: result.message })
+                              fetchBankingRequests()
+                            }
+                          } catch (error) {
+                            setMessage({ type: 'error', text: 'Failed to deny banking request' })
+                          }
+                        }}
+                        className="text-red-600 border-red-200 hover:bg-red-50"
+                      >
+                        Deny
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={async () => {
+                          try {
+                            const response = await fetch('/api/banking/approve', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ transactionId: request.id, approved: true })
+                            })
+                            if (response.ok) {
+                              const result = await response.json()
+                              setMessage({ type: 'success', text: result.message })
+                              fetchBankingRequests()
+                            }
+                          } catch (error) {
+                            setMessage({ type: 'error', text: 'Failed to approve banking request' })
+                          }
+                        }}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        Approve ${Number(request.moneyValue).toFixed(2)}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+
                 {/* Impromptu Submissions */}
                 {impromptuSubmissions.map((submission: any) => (
                   <div 
@@ -1164,7 +1339,7 @@ export default function ParentDashboard() {
                           <p className="text-sm text-gray-600 mt-1">{chore.description}</p>
                           <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
                             <span className="flex items-center gap-1">
-                              💰 ${chore.reward}
+                              💰 {chore.points || 0} pts
                             </span>
                             <span className="flex items-center gap-1">
                               ⏱️ {chore.estimatedMinutes}min
@@ -1286,12 +1461,15 @@ export default function ParentDashboard() {
                     <div className="flex items-center gap-3">
                       <div className="text-right">
                         <p className="text-sm font-medium text-green-600">
-                          ${completion.approval?.partialReward || completion.reward}
+                          {completion.approval?.pointsAwarded || completion.points || 0} pts
                           {completion.approval?.score && completion.approval.score < 100 && (
                             <span className="text-xs text-gray-500 block">
                               {completion.approval.score}% quality
                             </span>
                           )}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          ${((completion.approval?.pointsAwarded || completion.points || 0) * (dashboardData?.family?.settings?.pointsToMoneyRate || 1)).toFixed(2)}
                         </p>
                       </div>
                       {completion.approval?.isAutoApproved && (
@@ -1862,7 +2040,38 @@ export default function ParentDashboard() {
               <CardDescription>Send an invitation to join your family</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Invitation Method Selection */}
               <div className="space-y-2">
+                <label className="text-sm font-medium">How would you like to send the invitation?</label>
+                <div className="flex space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      type="radio" 
+                      id="inviteMethodEmail" 
+                      name="inviteMethod" 
+                      value="EMAIL"
+                      defaultChecked
+                      onChange={(e) => handleInviteMethodChange(e.target.value)}
+                      className="h-4 w-4" 
+                    />
+                    <label htmlFor="inviteMethodEmail" className="text-sm">📧 Email</label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      type="radio" 
+                      id="inviteMethodSMS" 
+                      name="inviteMethod" 
+                      value="SMS"
+                      onChange={(e) => handleInviteMethodChange(e.target.value)}
+                      className="h-4 w-4" 
+                    />
+                    <label htmlFor="inviteMethodSMS" className="text-sm">📱 Text Message</label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Email Input */}
+              <div className="space-y-2" id="emailInput">
                 <label htmlFor="inviteEmail" className="text-sm font-medium">
                   Email Address
                 </label>
@@ -1873,6 +2082,21 @@ export default function ParentDashboard() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+
+              {/* Phone Input (Initially Hidden) */}
+              <div className="space-y-2 hidden" id="phoneInput">
+                <label htmlFor="invitePhone" className="text-sm font-medium">
+                  Phone Number
+                </label>
+                <input
+                  id="invitePhone"
+                  type="tel"
+                  placeholder="(555) 123-4567"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-gray-500">US phone numbers only. Standard messaging rates may apply.</p>
+              </div>
+
               <div className="space-y-2">
                 <label className="text-sm font-medium">Permissions</label>
                 <div className="space-y-2">
@@ -1890,11 +2114,8 @@ export default function ParentDashboard() {
                 <Button variant="outline" onClick={() => setShowInviteDialog(false)}>
                   Cancel
                 </Button>
-                <Button onClick={() => {
-                  setMessage({ type: 'success', text: 'Invite functionality coming soon!' })
-                  setShowInviteDialog(false)
-                }}>
-                  Send Invite
+                <Button onClick={handleSendInvite} disabled={inviteLoading}>
+                  {inviteLoading ? 'Sending...' : 'Send Invite'}
                 </Button>
               </div>
             </CardContent>

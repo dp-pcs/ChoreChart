@@ -22,6 +22,9 @@ export default function ChildDashboard() {
   const [showCheckIn, setShowCheckIn] = useState(false)
   const [showCheckInReminder, setShowCheckInReminder] = useState(false)
   const [showImpromptuDialog, setShowImpromptuDialog] = useState(false)
+  const [showBankingDialog, setShowBankingDialog] = useState(false)
+  const [feedbackFilter, setFeedbackFilter] = useState<'day' | 'week' | 'month' | 'all'>('day')
+  const [feedback, setFeedback] = useState<any[]>([])
   const [todaysCheckIn, setTodaysCheckIn] = useState<Partial<DailyCheckInType> | null>(null)
   const [submittedChores, setSubmittedChores] = useState<Set<string>>(new Set())
   const [approvedChores, setApprovedChores] = useState<Set<string>>(new Set())
@@ -39,7 +42,9 @@ export default function ChildDashboard() {
     completed: 0,
     total: 0,
     earnings: 0,
-    potential: 0
+    potential: 0,
+    pointsEarned: 0,
+    pointsPotential: 0
   })
   const [user, setUser] = useState<any>(null)
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([])
@@ -64,13 +69,18 @@ export default function ChildDashboard() {
       name: session.user.name,
       role: session.user.role,
       weeklyEarnings: 0, // Will be calculated from chores
-      completionRate: 0  // Will be calculated from submissions
+      completionRate: 0,  // Will be calculated from submissions
+      availablePoints: 0, // Will be loaded from API
+      bankedMoney: 0, // Will be loaded from API
+      pointRate: 1.00 // Will be loaded from family settings
     })
 
     // Load dashboard data
     fetchChoresData()
     checkTodaysCheckInStatus()
     fetchUpcomingEvents()
+    fetchUserData()
+    fetchFeedback()
   }, [session, status, router])
 
   const fetchUpcomingEvents = async () => {
@@ -82,6 +92,56 @@ export default function ChildDashboard() {
       }
     } catch (error) {
       console.error('Error fetching upcoming events:', error)
+    }
+  }
+
+  const fetchUserData = async () => {
+    try {
+      const response = await fetch('/api/dashboard/child')
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success && result.data) {
+          setUser(prev => ({
+            ...prev,
+            availablePoints: result.data.user.availablePoints || 0,
+            bankedMoney: result.data.user.bankedMoney || 0,
+            pointRate: result.data.family.pointsToMoneyRate || 1.00
+          }))
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error)
+    }
+  }
+
+  const fetchFeedback = async () => {
+    try {
+      const today = new Date()
+      let startDate: Date
+      
+      switch (feedbackFilter) {
+        case 'day':
+          startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+          break
+        case 'week':
+          startDate = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
+          break
+        case 'month':
+          startDate = new Date(today.getFullYear(), today.getMonth(), 1)
+          break
+        default:
+          startDate = new Date(0) // All time
+      }
+
+      const response = await fetch(
+        `/api/parental-feedback?startDate=${startDate.toISOString()}&endDate=${today.toISOString()}`
+      )
+      if (response.ok) {
+        const result = await response.json()
+        setFeedback(result.feedback || [])
+      }
+    } catch (error) {
+      console.error('Error fetching feedback:', error)
     }
   }
 
@@ -153,11 +213,14 @@ export default function ChildDashboard() {
         
         // Calculate weekly progress based on all assigned chores
         const totalPotential = myChores.reduce((sum: number, chore: any) => sum + (chore.reward || 0), 0)
+        const totalPointsPotential = myChores.reduce((sum: number, chore: any) => sum + (chore.points || 0), 0)
         setWeeklyProgress({
           completed: 0, // Will be updated based on submissions from backend
           total: weeklyChoresWithDays.length,
           earnings: 0,  // Will be updated based on approved submissions from backend
-          potential: totalPotential
+          potential: totalPotential,
+          pointsEarned: 0, // Will be updated based on approved submissions from backend
+          pointsPotential: totalPointsPotential
         })
       }
 
@@ -218,10 +281,15 @@ export default function ChildDashboard() {
             .filter((s: any) => s.status === 'APPROVED' || s.status === 'AUTO_APPROVED')
             .reduce((sum: number, s: any) => sum + (s.reward || 0), 0)
           
+          const approvedPoints = submissions
+            .filter((s: any) => s.status === 'APPROVED' || s.status === 'AUTO_APPROVED')
+            .reduce((sum: number, s: any) => sum + (s.pointsAwarded || 0), 0)
+          
           setWeeklyProgress(prev => ({
             ...prev,
             completed: newApproved.size,
-            earnings: approvedEarnings
+            earnings: approvedEarnings,
+            pointsEarned: approvedPoints
           }))
         }
       }
@@ -478,6 +546,13 @@ export default function ChildDashboard() {
     }
   }, [message])
 
+  // Refresh feedback when filter changes
+  useEffect(() => {
+    if (user?.id) {
+      fetchFeedback()
+    }
+  }, [feedbackFilter, user?.id])
+
   // Check if today's check-in is complete
   const isCheckInComplete = todaysCheckIn && 
     new Date(todaysCheckIn.date!).toDateString() === new Date().toDateString()
@@ -575,12 +650,28 @@ export default function ChildDashboard() {
       </div>
 
       <div className="px-4 py-4 sm:px-6 space-y-4 sm:space-y-6 max-w-4xl mx-auto">
+        {/* Points Balance & Conversion Display */}
+        <Card className="bg-gradient-to-r from-green-400 to-blue-500 text-white shadow-lg">
+          <CardContent className="p-4 sm:p-6">
+            <div className="text-center">
+              <div className="text-sm sm:text-base opacity-90 mb-2">Your Point Balance</div>
+              <div className="text-3xl sm:text-4xl font-bold mb-3">{weeklyProgress.pointsEarned || 0} Points</div>
+              <div className="text-lg sm:text-xl opacity-90">
+                = ${((weeklyProgress.pointsEarned || 0) * (user?.pointRate || 1)).toFixed(2)} Value
+              </div>
+              <div className="text-xs sm:text-sm opacity-75 mt-2">
+                1 point = ${(user?.pointRate || 1).toFixed(2)}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Quick Stats - Mobile Optimized Cards */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
           <Card className="bg-white shadow-sm">
             <CardContent className="p-3 sm:p-4 text-center">
-              <div className="text-lg sm:text-2xl font-bold text-green-600">${weeklyProgress.earnings}</div>
-              <div className="text-xs sm:text-sm text-gray-600">This Week</div>
+              <div className="text-lg sm:text-2xl font-bold text-green-600">{weeklyProgress.pointsEarned || 0}</div>
+              <div className="text-xs sm:text-sm text-gray-600">Points This Week</div>
             </CardContent>
           </Card>
           
@@ -593,16 +684,23 @@ export default function ChildDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-sm col-span-2 sm:col-span-2">
+          <Card className="bg-white shadow-sm">
             <CardContent className="p-3 sm:p-4 text-center">
-              <div className="text-lg sm:text-2xl font-bold text-purple-600">Champion</div>
-              <div className="text-xs sm:text-sm text-gray-600">Current Level</div>
+              <div className="text-lg sm:text-2xl font-bold text-purple-600">{user?.availablePoints || 0}</div>
+              <div className="text-xs sm:text-sm text-gray-600">Available Points</div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white shadow-sm">
+            <CardContent className="p-3 sm:p-4 text-center">
+              <div className="text-lg sm:text-2xl font-bold text-orange-600">{user?.bankedMoney || 0}</div>
+              <div className="text-xs sm:text-sm text-gray-600">Banked Money</div>
             </CardContent>
           </Card>
         </div>
 
         {/* Action Buttons - Mobile Friendly */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Button 
             onClick={() => setShowCheckIn(true)}
             className="h-12 sm:h-14 text-base sm:text-lg bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
@@ -616,6 +714,15 @@ export default function ChildDashboard() {
             className="h-12 sm:h-14 text-base sm:text-lg border-2 hover:bg-purple-50 border-purple-200 text-purple-700"
           >
             ✨ Tell Parents!
+          </Button>
+
+          <Button 
+            onClick={() => setShowBankingDialog(true)}
+            variant="outline"
+            className="h-12 sm:h-14 text-base sm:text-lg border-2 hover:bg-yellow-50 border-yellow-300 text-yellow-700"
+            disabled={(user?.availablePoints || 0) === 0}
+          >
+            🏦 Bank Points
           </Button>
         </div>
 
@@ -744,7 +851,10 @@ export default function ChildDashboard() {
                       </div>
                       <div className="text-right">
                         <div className="text-base sm:text-lg font-bold text-green-600">
-                          ${chore.reward}
+                          {chore.points || 0} pts
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          ${((chore.points || 0) * (user?.pointRate || 1)).toFixed(2)}
                         </div>
                       </div>
                     </div>
@@ -758,26 +868,29 @@ export default function ChildDashboard() {
                   <div className="grid grid-cols-2 gap-4 text-center">
                     <div>
                       <div className="text-xl sm:text-2xl font-bold text-green-600">
-                        ${approvedEarnings}
+                        {weeklyProgress.pointsEarned || 0} pts
                       </div>
-                      <div className="text-xs sm:text-sm text-gray-600">Approved</div>
+                      <div className="text-xs sm:text-sm text-gray-600">Points Earned</div>
+                      <div className="text-xs text-gray-500">
+                        ${((weeklyProgress.pointsEarned || 0) * (user?.pointRate || 1)).toFixed(2)}
+                      </div>
                     </div>
                     
                     {(submittedChores.size > approvedChores.size) && (
                       <div>
                         <div className="text-xl sm:text-2xl font-bold text-yellow-600">
-                          ${submittedEarnings - approvedEarnings}
+                          {(weeklyProgress.pointsPotential || 0) - (weeklyProgress.pointsEarned || 0)} pts
                         </div>
-                        <div className="text-xs sm:text-sm text-gray-600">Pending</div>
+                        <div className="text-xs sm:text-sm text-gray-600">Pending Review</div>
                       </div>
                     )}
                     
                     {(submittedChores.size === approvedChores.size) && (
                       <div>
                         <div className="text-xl sm:text-2xl font-bold text-gray-400">
-                          ${weeklyProgress.potential - approvedEarnings}
+                          {(weeklyProgress.pointsPotential || 0) - (weeklyProgress.pointsEarned || 0)} pts
                         </div>
-                        <div className="text-xs sm:text-sm text-gray-600">Possible</div>
+                        <div className="text-xs sm:text-sm text-gray-600">Still Possible</div>
                       </div>
                     )}
                   </div>
@@ -914,9 +1027,9 @@ export default function ChildDashboard() {
                                       </div>
                                     </div>
                                   </div>
-                                  <div className="text-sm font-bold text-green-600">
-                                    ${chore.reward}
-                                  </div>
+                                                                      <div className="text-sm font-bold text-green-600">
+                                      {chore.points || 0} pts
+                                    </div>
                                 </div>
                               )
                             })}
@@ -931,6 +1044,92 @@ export default function ChildDashboard() {
           </Card>
         )}
 
+        {/* Feedback Section */}
+        <Card className="bg-white shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+              💬 Feedback from Parents
+              {feedback.length > 0 && (
+                <Badge variant="secondary" className="text-xs">
+                  {feedback.length}
+                </Badge>
+              )}
+            </CardTitle>
+            <CardDescription className="text-sm">
+              See what your parents have noticed about your behavior
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Filter Buttons */}
+            <div className="flex gap-2 mb-4 overflow-x-auto">
+              {(['day', 'week', 'month', 'all'] as const).map((filter) => (
+                <Button
+                  key={filter}
+                  size="sm"
+                  variant={feedbackFilter === filter ? 'default' : 'outline'}
+                  onClick={() => {
+                    setFeedbackFilter(filter)
+                    fetchFeedback()
+                  }}
+                  className="whitespace-nowrap"
+                >
+                  {filter === 'day' ? 'Today' : 
+                   filter === 'week' ? 'This Week' :
+                   filter === 'month' ? 'This Month' : 'All Time'}
+                </Button>
+              ))}
+            </div>
+
+            {/* Feedback List */}
+            <div className="space-y-3">
+              {feedback.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <p>📝 No feedback yet for this period.</p>
+                  <p className="text-sm mt-2">Keep up the great work!</p>
+                </div>
+              ) : (
+                feedback.map((item: any) => (
+                  <div 
+                    key={item.id}
+                    className={`p-3 rounded-lg border-2 ${
+                      item.type === 'POSITIVE' ? 'bg-green-50 border-green-200' :
+                      item.type === 'NEGATIVE' ? 'bg-red-50 border-red-200' :
+                      'bg-blue-50 border-blue-200'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="text-xl">
+                        {item.type === 'POSITIVE' ? '👍' : item.type === 'NEGATIVE' ? '👎' : '📝'}
+                      </span>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-sm">{item.title}</p>
+                          {item.points && item.points !== 0 && (
+                            <Badge 
+                              variant={item.points > 0 ? 'default' : 'destructive'}
+                              className="text-xs"
+                            >
+                              {item.points > 0 ? '+' : ''}{item.points} pts
+                            </Badge>
+                          )}
+                        </div>
+                        {item.description && (
+                          <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+                        )}
+                        <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                          <span>{new Date(item.occurredAt).toLocaleDateString()}</span>
+                          <span>•</span>
+                          <span>from {item.parent.name}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Motivational Section - Mobile Optimized */}
         <Card className={`text-white ${
           approvedChores.size === todaysChores.length 
@@ -943,20 +1142,20 @@ export default function ChildDashboard() {
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 {approvedChores.size === todaysChores.length ? (
-                  <>
-                    <h3 className="text-lg sm:text-xl font-bold mb-2">Amazing work! All chores approved! 🎉</h3>
-                    <p className="text-green-100 text-sm sm:text-base">
-                      You've earned ${approvedEarnings} today! Your parents will be so proud of you!
-                    </p>
-                  </>
-                ) : submittedChores.size > 0 ? (
-                  <>
-                    <h3 className="text-lg sm:text-xl font-bold mb-2">Great progress! Keep it up! 💪</h3>
-                    <p className="text-blue-100 text-sm sm:text-base">
-                      You've submitted {submittedChores.size} out of {todaysChores.length} chores. You're doing awesome!
-                    </p>
-                  </>
-                ) : (
+                                  <>
+                  <h3 className="text-lg sm:text-xl font-bold mb-2">Amazing work! All chores approved! 🎉</h3>
+                  <p className="text-green-100 text-sm sm:text-base">
+                    You've earned {weeklyProgress.pointsEarned || 0} points today! That's worth ${((weeklyProgress.pointsEarned || 0) * (user?.pointRate || 1)).toFixed(2)}! Your parents will be so proud of you!
+                  </p>
+                </>
+              ) : submittedChores.size > 0 ? (
+                <>
+                  <h3 className="text-lg sm:text-xl font-bold mb-2">Great progress! Keep it up! 💪</h3>
+                  <p className="text-blue-100 text-sm sm:text-base">
+                    You've submitted {submittedChores.size} out of {todaysChores.length} chores. You're doing awesome!
+                  </p>
+                </>
+              ) : (
                   <>
                     <h3 className="text-lg sm:text-xl font-bold mb-2">You're doing great! 🌟</h3>
                     <p className="text-yellow-100 text-sm sm:text-base">
@@ -1078,6 +1277,88 @@ export default function ChildDashboard() {
           onClose={() => setShowImpromptuDialog(false)}
           onSuccess={handleImpromptuSuccess}
         />
+
+        {/* Banking Dialog */}
+        {showBankingDialog && (
+          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-md bg-white shadow-2xl">
+              <CardHeader>
+                <CardTitle>🏦 Bank Your Points</CardTitle>
+                <CardDescription>Request to convert your points to money</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-blue-800">
+                      Available: {user?.availablePoints || 0} points
+                    </div>
+                    <div className="text-sm text-blue-600">
+                      Worth: ${((user?.availablePoints || 0) * (user?.pointRate || 1)).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Points to Bank:</label>
+                  <input
+                    type="number"
+                    min="0.01"
+                    max={user?.availablePoints || 0}
+                    step="0.01"
+                    placeholder="Enter points amount"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    id="bankingAmount"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Reason (optional):</label>
+                  <textarea
+                    placeholder="What do you want to save for?"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={3}
+                    id="bankingReason"
+                  />
+                </div>
+
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={() => setShowBankingDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={async () => {
+                      const amount = parseFloat((document.getElementById('bankingAmount') as HTMLInputElement)?.value || '0')
+                      const reason = (document.getElementById('bankingReason') as HTMLTextAreaElement)?.value || ''
+                      
+                      if (amount > 0 && amount <= (user?.availablePoints || 0)) {
+                        try {
+                          const response = await fetch('/api/banking/request', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ amount, reason })
+                          })
+                          
+                          if (response.ok) {
+                            setMessage({ type: 'success', text: `Banking request sent! ${amount} points (${((amount) * (user?.pointRate || 1)).toFixed(2)}) pending approval.` })
+                            setShowBankingDialog(false)
+                            fetchUserData()
+                          } else {
+                            throw new Error('Failed to submit banking request')
+                          }
+                        } catch (error) {
+                          setMessage({ type: 'error', text: 'Failed to submit banking request. Please try again.' })
+                        }
+                      }
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    Request Banking
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   )

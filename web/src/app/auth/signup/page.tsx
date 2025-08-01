@@ -1,13 +1,13 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
 
-export default function SignUp() {
+function SignUpContent() {
   const [familyName, setFamilyName] = useState('')
   const [parentName, setParentName] = useState('')
   const [email, setEmail] = useState('')
@@ -16,7 +16,38 @@ export default function SignUp() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [invitation, setInvitation] = useState<any>(null)
+  const [loadingInvitation, setLoadingInvitation] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  
+  const inviteToken = searchParams.get('invite')
+
+  useEffect(() => {
+    if (inviteToken) {
+      fetchInvitationDetails()
+    }
+  }, [inviteToken])
+
+  const fetchInvitationDetails = async () => {
+    setLoadingInvitation(true)
+    try {
+      const response = await fetch(`/api/auth/accept-invitation?token=${inviteToken}`)
+      const result = await response.json()
+
+      if (response.ok) {
+        setInvitation(result.invitation)
+        setEmail(result.invitation.email) // Pre-fill email from invitation
+      } else {
+        setError(result.error || 'Invalid invitation')
+      }
+    } catch (error) {
+      console.error('Error fetching invitation:', error)
+      setError('Failed to load invitation')
+    } finally {
+      setLoadingInvitation(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,28 +67,61 @@ export default function SignUp() {
       return
     }
 
+    // If invitation, validate email matches
+    if (invitation && email !== invitation.email) {
+      setError('Email must match the invitation email address')
+      setIsLoading(false)
+      return
+    }
+
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          familyName,
-          parentName,
-          email,
-          password,
-        }),
-      })
+      if (invitation) {
+        // Register with invitation
+        const response = await fetch('/api/auth/register-with-invitation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            parentName,
+            email,
+            password,
+            inviteToken,
+          }),
+        })
 
-      const data = await response.json()
+        const data = await response.json()
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Registration failed')
+        if (!response.ok) {
+          throw new Error(data.error || 'Registration failed')
+        }
+
+        setSuccess(true)
+        setTimeout(() => {
+          router.push('/auth/signin')
+        }, 2000)
+      } else {
+        // Regular registration (create new family)
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            familyName,
+            parentName,
+            email,
+            password,
+          }),
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Registration failed')
+        }
+
+        setSuccess(true)
+        setTimeout(() => {
+          router.push('/auth/signin')
+        }, 2000)
       }
-
-      setSuccess(true)
-      setTimeout(() => {
-        router.push('/auth/signin')
-      }, 2000)
 
     } catch (error: any) {
       setError(error.message || 'Something went wrong. Please try again.')
@@ -128,34 +192,60 @@ export default function SignUp() {
         {/* Sign Up Form */}
         <Card className="bg-white shadow-lg">
           <CardHeader className="space-y-1 pb-4">
-            <CardTitle className="text-xl sm:text-2xl font-bold text-center">Start Your Journey</CardTitle>
+            <CardTitle className="text-xl sm:text-2xl font-bold text-center">
+              {invitation ? 'Join Family' : 'Start Your Journey'}
+            </CardTitle>
             <CardDescription className="text-center text-sm sm:text-base">
-              Set up your family's Chorbie account
+              {invitation 
+                ? `Create your account to join the ${invitation.familyName} family`
+                : "Set up your family's Chorbie account"
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-red-600 text-sm">{error}</p>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <label htmlFor="familyName" className="text-sm font-medium text-gray-700">
-                  Family Name
-                </label>
-                <Input
-                  id="familyName"
-                  type="text"
-                  value={familyName}
-                  onChange={(e) => setFamilyName(e.target.value)}
-                  placeholder="The Smith Family"
-                  required
-                  className="h-12 text-base"
-                  autoComplete="organization"
-                />
+            {loadingInvitation ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Loading invitation...</p>
               </div>
+            ) : (
+              <>
+                {invitation && (
+                  <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h3 className="font-medium text-blue-900 mb-2">🏡 Family Invitation</h3>
+                    <p className="text-blue-800 text-sm">
+                      <strong>{invitation.inviterName}</strong> has invited you to join the <strong>{invitation.familyName}</strong> family.
+                    </p>
+                    <p className="text-blue-700 text-xs mt-1">
+                      Invitation email: {invitation.email}
+                    </p>
+                  </div>
+                )}
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {error && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-red-600 text-sm">{error}</p>
+                    </div>
+                  )}
+
+                  {!invitation && (
+                    <div className="space-y-2">
+                      <label htmlFor="familyName" className="text-sm font-medium text-gray-700">
+                        Family Name
+                      </label>
+                      <Input
+                        id="familyName"
+                        type="text"
+                        value={familyName}
+                        onChange={(e) => setFamilyName(e.target.value)}
+                        placeholder="The Smith Family"
+                        required
+                        className="h-12 text-base"
+                        autoComplete="organization"
+                      />
+                    </div>
+                  )}
 
               <div className="space-y-2">
                 <label htmlFor="parentName" className="text-sm font-medium text-gray-700">
@@ -173,21 +263,27 @@ export default function SignUp() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium text-gray-700">
-                  Email Address
-                </label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="john@example.com"
-                  required
-                  className="h-12 text-base"
-                  autoComplete="email"
-                />
-              </div>
+                  <div className="space-y-2">
+                    <label htmlFor="email" className="text-sm font-medium text-gray-700">
+                      Email Address
+                    </label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="john@example.com"
+                      required
+                      disabled={!!invitation} // Disable if invitation (email is fixed)
+                      className="h-12 text-base"
+                      autoComplete="email"
+                    />
+                    {invitation && (
+                      <p className="text-xs text-gray-500">
+                        This email address is set by the invitation
+                      </p>
+                    )}
+                  </div>
 
               <div className="space-y-2">
                 <label htmlFor="password" className="text-sm font-medium text-gray-700">
@@ -222,21 +318,25 @@ export default function SignUp() {
                 />
               </div>
 
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="w-full h-12 text-base font-semibold bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700"
-              >
-                {isLoading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Creating your account...
-                  </div>
-                ) : (
-                  'Create Family Account'
-                )}
-              </Button>
-            </form>
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full h-12 text-base font-semibold bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700"
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Creating your account...
+                      </div>
+                    ) : invitation ? (
+                      'Create Account & Join Family'
+                    ) : (
+                      'Create Family Account'
+                    )}
+                  </Button>
+                </form>
+              </>
+            )}
 
             <div className="mt-6 pt-4 border-t border-gray-200">
               <p className="text-center text-sm text-gray-600">
@@ -266,5 +366,24 @@ export default function SignUp() {
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function SignUp() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md bg-white shadow-lg">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-4 text-gray-600">Loading...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <SignUpContent />
+    </Suspense>
   )
 } 

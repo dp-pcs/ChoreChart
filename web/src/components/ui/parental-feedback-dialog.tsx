@@ -18,7 +18,7 @@ export function ParentalFeedbackDialog({ isOpen, onClose, onSuccess, children }:
   const [feedbackType, setFeedbackType] = useState<'POSITIVE' | 'NEGATIVE' | 'NEUTRAL'>('POSITIVE')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [points, setPoints] = useState(0)
+  const [points, setPoints] = useState<number>(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -40,7 +40,7 @@ export function ParentalFeedbackDialog({ isOpen, onClose, onSuccess, children }:
           description: description.trim() || null,
           type: feedbackType,
           occurredAt: new Date().toISOString(),
-          points: points || null
+          points: points !== 0 ? points : null
         })
       })
 
@@ -51,9 +51,9 @@ export function ParentalFeedbackDialog({ isOpen, onClose, onSuccess, children }:
         let message = `✅ Feedback logged for ${childName}`
         
         if (points > 0) {
-          message += ` (+${points} points awarded)`
+          message += ` (+${points.toFixed(2)} points awarded)`
         } else if (points < 0) {
-          message += ` (${points} points deducted)`
+          message += ` (${points.toFixed(2)} points deducted)`
         }
         
         if (result.patternWarning) {
@@ -87,10 +87,10 @@ export function ParentalFeedbackDialog({ isOpen, onClose, onSuccess, children }:
     // Auto-set common titles and point values based on type
     if (type === 'POSITIVE') {
       if (!title) setTitle('Great behavior!')
-      if (points <= 0) setPoints(1)
+      if (points <= 0) setPoints(1.0)
     } else if (type === 'NEGATIVE') {
       if (!title) setTitle('Needs improvement')
-      if (points >= 0) setPoints(-1)
+      if (points >= 0) setPoints(-1.0)
     } else {
       if (!title) setTitle('General note')
       setPoints(0)
@@ -201,10 +201,13 @@ export function ParentalFeedbackDialog({ isOpen, onClose, onSuccess, children }:
                 <Input
                   id="points"
                   type="number"
+                  step="0.01"
+                  min="-100"
+                  max="100"
                   value={points || ''}
-                  onChange={(e) => setPoints(parseInt(e.target.value) || 0)}
-                  placeholder="0"
-                  className="w-20"
+                  onChange={(e) => setPoints(parseFloat(e.target.value) || 0)}
+                  placeholder="0.00"
+                  className="w-24"
                 />
                 <span className="text-sm text-gray-500">
                   {points > 0 ? 'points awarded' : points < 0 ? 'points deducted' : 'no point change'}

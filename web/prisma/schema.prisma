@@ -33,8 +33,10 @@ model User {
   lastStreakFreezeUsed DateTime?
   resetToken           String?
   resetTokenExpiry     DateTime?             @db.Timestamp(6)
-  availablePoints      Int                   @default(0)
-  lifetimePoints       Int                   @default(0)
+  availablePoints      Decimal               @default(0) @db.Decimal(10,2)
+  lifetimePoints       Decimal               @default(0) @db.Decimal(10,2)
+  bankedPoints         Decimal               @default(0) @db.Decimal(10,2)
+  bankedMoney          Decimal               @default(0) @db.Decimal(10,2)
   choreApprovals       ChoreApproval[]
   choreAssignments     ChoreAssignment[]
   choreSubmissions     ChoreSubmission[]
@@ -52,6 +54,11 @@ model User {
   parentalFeedbacks   ParentalFeedback[]    @relation("ChildFeedback")
   feedbackLogs         ParentalFeedback[]    @relation("ParentFeedbackLogger")
   importantEvents      ImportantEvent[]
+  sentInvitations      FamilyInvitation[]
+  pointTransactions    PointTransaction[]
+  processedTransactions PointTransaction[] @relation("TransactionProcessor")
+  choreCompletions     ChoreCompletion[]
+  completionActions    ChoreCompletion[]  @relation("CompletionActions")
 
   @@map("users")
 }
@@ -97,6 +104,7 @@ model Family {
   choreAssignments     ChoreAssignment[]
   chores               Chore[]
   familyMemberships    FamilyMembership[]
+  familyInvitations    FamilyInvitation[]
   messages             Message[]
   users                User[]
   weeklyReports        WeeklyReport[]
@@ -113,13 +121,13 @@ model Chore {
   type             ChoreType
   frequency        ChoreFrequency
   isRequired       Boolean           @default(false)
-  reward           Float             @default(0)
+  reward           Decimal           @default(0) @db.Decimal(10,2)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   scheduledDays    Int[]
   scheduledTime    String?
   estimatedMinutes Int?
-  points           Int               @default(0)
+  points           Decimal           @default(0) @db.Decimal(10,2)
   assignments      ChoreAssignment[]
   family           Family            @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
@@ -152,8 +160,8 @@ model ChoreSubmission {
   imageUrl      String?
   status        SubmissionStatus @default(PENDING)
   score         Int?
-  partialReward Int?
-  pointsAwarded Int?
+  partialReward Decimal?          @db.Decimal(10,2)
+  pointsAwarded Decimal?          @db.Decimal(10,2)
   approval      ChoreApproval?
   assignment    ChoreAssignment  @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
   user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -169,10 +177,10 @@ model ChoreApproval {
   approved       Boolean
   feedback       String?
   score          Int?
-  partialReward  Int?
-  originalReward Int?
-  pointsAwarded  Int?
-  originalPoints Int?
+  partialReward  Decimal?          @db.Decimal(10,2)
+  originalReward Decimal?          @db.Decimal(10,2)
+  pointsAwarded  Decimal?          @db.Decimal(10,2)
+  originalPoints Decimal?          @db.Decimal(10,2)
   approver       User            @relation(fields: [approvedBy], references: [id], onDelete: Cascade)
   submission     ChoreSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
 
@@ -278,7 +286,7 @@ model ImpromptuSubmission {
   status        ImpromptuSubmissionStatus @default(PENDING)
   responseAt    DateTime?
   parentNote    String?
-  pointsAwarded Int?
+  pointsAwarded Decimal?          @db.Decimal(10,2)
   child         User                      @relation(fields: [childId], references: [id], onDelete: Cascade)
 
   @@index([childId])
@@ -335,7 +343,7 @@ model ParentalFeedback {
   type        FeedbackType  @default(NEUTRAL)
   occurredAt  DateTime
   loggedAt    DateTime      @default(now())
-  points      Int?
+  points      Decimal?             @db.Decimal(10,2)
   child       User          @relation("ChildFeedback", fields: [childId], references: [id], onDelete: Cascade)
   parent      User          @relation("ParentFeedbackLogger", fields: [parentId], references: [id], onDelete: Cascade)
 
@@ -366,6 +374,82 @@ model ImportantEvent {
   @@index([eventDate])
   @@index([createdBy])
   @@map("important_events")
+}
+
+model FamilyInvitation {
+  id                String           @id @default(cuid())
+  email             String?          // Made optional since we can invite by phone
+  phoneNumber       String?          // Added phone number field
+  familyId          String
+  invitedBy         String
+  inviteToken       String           @unique
+  inviteTokenExpiry DateTime
+  role              UserRole         @default(PARENT)
+  canInvite         Boolean          @default(false)
+  canManage         Boolean          @default(false)
+  isForExistingUser Boolean          @default(false)
+  inviteMethod      InviteMethod     @default(EMAIL)
+  acceptedAt        DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  family            Family           @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  inviter           User             @relation(fields: [invitedBy], references: [id], onDelete: Cascade)
+
+  @@index([familyId])
+  @@index([inviteToken])
+  @@index([email])
+  @@index([phoneNumber])
+  @@map("family_invitations")
+}
+
+model PointTransaction {
+  id            String                @id @default(cuid())
+  userId        String
+  familyId      String
+  amount        Decimal               @db.Decimal(10,2)
+  type          PointTransactionType
+  status        TransactionStatus     @default(PENDING)
+  reason        String?
+  submittedAt   DateTime              @default(now())
+  processedAt   DateTime?
+  processedBy   String?
+  description   String
+  moneyValue    Decimal?              @db.Decimal(10,2)
+  pointRate     Decimal?              @db.Decimal(10,2)
+  user          User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  processor     User?                 @relation("TransactionProcessor", fields: [processedBy], references: [id])
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([status])
+  @@index([type])
+  @@map("point_transactions")
+}
+
+model ChoreCompletion {
+  id            String                @id @default(cuid())
+  userId        String
+  choreId       String
+  familyId      String
+  scheduledDate DateTime
+  status        ChoreCompletionStatus @default(ASSIGNED)
+  submittedAt   DateTime?
+  completedAt   DateTime?
+  reason        String?
+  parentAction  ParentAction?
+  actionBy      String?
+  actionAt      DateTime?
+  deferredTo    DateTime?
+  points        Decimal?              @db.Decimal(10,2)
+  user          User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actionUser    User?                 @relation("CompletionActions", fields: [actionBy], references: [id])
+
+  @@unique([userId, choreId, scheduledDate])
+  @@index([userId])
+  @@index([choreId])
+  @@index([status])
+  @@index([scheduledDate])
+  @@map("chore_completions")
 }
 
 enum UserRole {
@@ -472,4 +556,44 @@ enum EventPriority {
   MEDIUM
   HIGH
   URGENT
+}
+
+enum InviteMethod {
+  EMAIL
+  SMS
+}
+
+enum PointTransactionType {
+  EARNED          // Points earned from chores/feedback
+  BANKING_REQUEST // Child requesting to bank points for money
+  BANKING_APPROVED// Parent approved banking request
+  BANKING_DENIED  // Parent denied banking request
+  DEDUCTION       // Points deducted for behavior/poor performance
+  BONUS           // Extra points awarded
+  TRANSFER        // Points transferred between siblings
+  ADJUSTMENT      // Manual adjustment by parent
+}
+
+enum TransactionStatus {
+  PENDING
+  APPROVED
+  DENIED
+  COMPLETED
+  CANCELLED
+}
+
+enum ChoreCompletionStatus {
+  ASSIGNED
+  COMPLETED
+  NOT_COMPLETED
+  EXCUSED
+  DEFERRED
+  OVERDUE
+}
+
+enum ParentAction {
+  EXCUSE
+  DENY_INCOMPLETE
+  DEFER
+  APPROVE_INCOMPLETE
 }
