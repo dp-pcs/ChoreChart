@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,11 +9,14 @@ import {
   Alert,
   Modal,
   TextInput,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'expo-router';
 import { DailyCheckIn } from '../../components/DailyCheckIn';
 import { ChoreManagement } from '../../components/ChoreManagement';
+import { useDashboard, useChores, useBanking, useCheckIn, useImpromptu } from '../../hooks/useDashboard';
 
 export default function DashboardScreen() {
   const { user } = useAuth();
@@ -47,17 +50,29 @@ export default function DashboardScreen() {
 }
 
 function ChildDashboard({ router }: { router: any }) {
-  const [chores, setChores] = React.useState([
-    { id: 1, title: "Make your bed", points: 2.00, reward: "$2.00", status: "pending" as const },
-    { id: 2, title: "Feed the dog", points: 3.00, reward: "$3.00", status: "completed" as const },
-    { id: 3, title: "Take out trash", points: 5.00, reward: "$5.00", status: "pending" as const },
-  ]);
-  const [pointRate, setPointRate] = React.useState(1.00); // 1 point = $1.00 default
-  const [availablePoints, setAvailablePoints] = React.useState(12.50);
-  const [bankedMoney, setBankedMoney] = React.useState(5.00);
+  const { user } = useAuth();
+  const { dashboardData, isLoading: dashboardLoading, refreshData } = useDashboard();
+  const { chores, isLoading: choresLoading, submitChore } = useChores();
+  const { requestBanking } = useBanking();
+  const { submitCheckIn, checkTodaysStatus } = useCheckIn();
+  const { submitTask } = useImpromptu();
+  
   const [showBankingModal, setShowBankingModal] = React.useState(false);
   const [showCheckIn, setShowCheckIn] = React.useState(false);
   const [showSubmitTask, setShowSubmitTask] = React.useState(false);
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+
+  // Extract data from API responses
+  const availablePoints = dashboardData?.user?.availablePoints || user?.availablePoints || 0;
+  const bankedMoney = dashboardData?.user?.bankedMoney || user?.bankedMoney || 0;
+  const pointRate = dashboardData?.user?.pointRate || user?.pointRate || 1.00;
+  const todaysChores = dashboardData?.todaysChores || chores || [];
+  const weeklyProgress = dashboardData?.weeklyProgress || {
+    completed: 0,
+    total: todaysChores.length,
+    pointsEarned: 0,
+    pointsPotential: todaysChores.reduce((sum: number, chore: any) => sum + (chore.points || 0), 0)
+  };
 
   const handleChatPress = () => {
     router.push('/chat');
@@ -71,35 +86,64 @@ function ChildDashboard({ router }: { router: any }) {
     setShowSubmitTask(true);
   };
 
-  const handleCheckInSubmit = (data: any) => {
-    console.log('📊 Daily Check-in submitted:', data);
-    
-    // Show success message
-    Alert.alert(
-      "Check-in Complete! 🎉",
-      "Thanks for sharing about your day! This helps us understand you better.",
-      [{ text: "Awesome!", onPress: () => setShowCheckIn(false) }]
-    );
-    
-    // Here you would typically save the data to the backend
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await refreshData();
+    setIsRefreshing(false);
+  };
+
+  const handleCheckInSubmit = async (data: any) => {
+    try {
+      await submitCheckIn(data);
+      
+      Alert.alert(
+        "Check-in Complete! 🎉",
+        "Thanks for sharing about your day! This helps us understand you better.",
+        [{ text: "Awesome!", onPress: () => setShowCheckIn(false) }]
+      );
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to submit check-in");
+    }
   };
 
   const handleCheckInClose = () => {
     setShowCheckIn(false);
   };
 
-  const handleChoreComplete = (choreId: number) => {
-    setChores(prevChores => 
-      prevChores.map(chore => 
-        chore.id === choreId 
-          ? { ...chore, status: 'completed' as const }
-          : chore
-      )
-    );
+  const handleChoreComplete = async (choreId: string) => {
+    try {
+      const success = await submitChore(choreId, "Completed via mobile app");
+      if (success) {
+        Alert.alert("Chore Submitted! 🎉", "Your chore has been submitted for approval.");
+        await refreshData(); // Refresh dashboard data
+      } else {
+        Alert.alert("Error", "Failed to submit chore. Please try again.");
+      }
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to submit chore");
+    }
   };
 
+  if (dashboardLoading && !dashboardData) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#3b82f6" />
+        <Text style={styles.loadingText}>Loading your dashboard...</Text>
+      </View>
+    );
+  }
+
   return (
-    <>
+    <ScrollView 
+      style={styles.scrollContainer}
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={handleRefresh}
+          colors={['#3b82f6']}
+        />
+      }
+    >
       {/* Points-to-Currency Conversion Header */}
       <View style={styles.section}>
         <View style={styles.pointsConversionCard}>
@@ -119,36 +163,52 @@ function ChildDashboard({ router }: { router: any }) {
         <Text style={styles.sectionTitle}>📊 My Progress</Text>
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{availablePoints.toFixed(1)} pts</Text>
-            <Text style={styles.statLabel}>Available</Text>
+            <Text style={styles.statValue}>{weeklyProgress.pointsEarned.toFixed(1)} pts</Text>
+            <Text style={styles.statLabel}>This Week</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>85%</Text>
+            <Text style={styles.statValue}>
+              {weeklyProgress.total > 0 ? Math.round((weeklyProgress.completed / weeklyProgress.total) * 100) : 0}%
+            </Text>
             <Text style={styles.statLabel}>Completion</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>7</Text>
-            <Text style={styles.statLabel}>Day Streak</Text>
+            <Text style={styles.statValue}>{availablePoints.toFixed(0)}</Text>
+            <Text style={styles.statLabel}>Available</Text>
           </View>
         </View>
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>📝 Today's Chores</Text>
-        <View style={styles.choresList}>
-          {chores.map(chore => (
-            <ChoreCard 
-              key={chore.id}
-              id={chore.id}
-              title={chore.title} 
-              points={chore.points}
-              reward={chore.reward} 
-              pointRate={pointRate}
-              status={chore.status}
-              onComplete={handleChoreComplete}
-            />
-          ))}
-        </View>
+        {choresLoading ? (
+          <View style={styles.centerContainer}>
+            <ActivityIndicator color="#3b82f6" />
+            <Text style={styles.loadingText}>Loading chores...</Text>
+          </View>
+        ) : (
+          <View style={styles.choresList}>
+            {todaysChores.length > 0 ? (
+              todaysChores.map((chore: any) => (
+                <ChoreCard 
+                  key={chore.id}
+                  id={chore.id}
+                  title={chore.title} 
+                  points={chore.points || 0}
+                  reward={chore.reward || "$0.00"} 
+                  pointRate={pointRate}
+                  status={chore.status || "pending"}
+                  onComplete={handleChoreComplete}
+                />
+              ))
+            ) : (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyText}>🎉 No chores for today!</Text>
+                <Text style={styles.emptySubtext}>Enjoy your free time!</Text>
+              </View>
+            )}
+          </View>
+        )}
       </View>
 
       <View style={styles.section}>
@@ -202,15 +262,20 @@ function ChildDashboard({ router }: { router: any }) {
         <BankingModal
           availablePoints={availablePoints}
           pointRate={pointRate}
-          onSubmit={(amount) => {
-            console.log('Banking request:', amount);
-            setShowBankingModal(false);
-            // In real app, this would make API call
+          onSubmit={async (amount) => {
+            try {
+              await requestBanking(amount, "Mobile app banking request");
+              setShowBankingModal(false);
+              Alert.alert("Banking Request Submitted! 🏦", "Your parents will review your request.");
+              await refreshData(); // Refresh to show updated points
+            } catch (error: any) {
+              Alert.alert("Error", error.message || "Failed to submit banking request");
+            }
           }}
           onClose={() => setShowBankingModal(false)}
         />
       )}
-    </>
+    </ScrollView>
   );
 }
 
@@ -218,25 +283,40 @@ function SubmitTaskModal({ onSubmit, onClose }: {
   onSubmit: () => void; 
   onClose: () => void; 
 }) {
+  const { submitTask } = useImpromptu();
   const [taskData, setTaskData] = useState({
     title: '',
     description: '',
     suggestedPoints: '',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!taskData.title.trim()) {
       Alert.alert('Missing Info', 'Please tell us what you did!');
       return;
     }
 
-    console.log('🌟 Spontaneous task submitted:', taskData);
-    
-    Alert.alert(
-      'Task Submitted! 🎉',
-      'Your parents will review your task and decide if you should be rewarded. Great job taking initiative!',
-      [{ text: 'Awesome!', onPress: onSubmit }]
-    );
+    try {
+      setIsSubmitting(true);
+      
+      await submitTask({
+        title: taskData.title,
+        description: taskData.description,
+        suggestedPoints: parseFloat(taskData.suggestedPoints) || 0,
+        submittedAt: new Date().toISOString(),
+      });
+      
+      Alert.alert(
+        'Task Submitted! 🎉',
+        'Your parents will review your task and decide if you should be rewarded. Great job taking initiative!',
+        [{ text: 'Awesome!', onPress: onSubmit }]
+      );
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to submit task');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const QUICK_TASKS = [
@@ -350,9 +430,17 @@ function SubmitTaskModal({ onSubmit, onClose }: {
               <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+                          <TouchableOpacity 
+              style={[styles.submitButton, isSubmitting && styles.disabledButton]} 
+              onPress={handleSubmit}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator color="white" />
+              ) : (
                 <Text style={styles.submitButtonText}>Submit Task</Text>
-              </TouchableOpacity>
+              )}
+            </TouchableOpacity>
             </View>
           </ScrollView>
         </View>
@@ -573,7 +661,7 @@ function TaskSubmissionCard({ child, task, description, time, suggestedPoints, s
   );
 }
 
-function ChoreCard({ id, title, points, reward, pointRate, status, onComplete }: { id: number; title: string; points: number; reward: string; pointRate: number; status: 'pending' | 'completed'; onComplete: (choreId: number) => void }) {
+function ChoreCard({ id, title, points, reward, pointRate, status, onComplete }: { id: string; title: string; points: number; reward: string; pointRate: number; status: 'pending' | 'completed'; onComplete: (choreId: string) => void }) {
   const handleChorePress = () => {
     if (status === 'pending') {
       Alert.alert(
@@ -1232,5 +1320,42 @@ const styles = StyleSheet.create({
     color: '#374151',
     marginBottom: 4,
     textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6b7280',
+    marginTop: 12,
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  centerContainer: {
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyState: {
+    alignItems: 'center',
+    padding: 40,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#6b7280',
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#9ca3af',
+    textAlign: 'center',
+  },
+  disabledButton: {
+    backgroundColor: '#9ca3af',
+    opacity: 0.6,
   },
 }); 
