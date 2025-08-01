@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
           data: {
             userId: session.user.id,
             title: `Completed: ${assignment.chore.title}`,
-            amount: assignment.chore.reward,
+            amount: assignment.chore.reward.toNumber(),
             type: 'MONEY',
             awardedBy: parentInFamily.userId
           }
