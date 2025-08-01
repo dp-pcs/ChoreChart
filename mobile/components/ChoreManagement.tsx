@@ -23,6 +23,7 @@ interface Chore {
   description?: string;
   assignedTo: string[];
   frequency: 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'custom' | 'once';
+  points: number;
   reward: number;
   estimatedMinutes: number;
   category: string;
@@ -89,6 +90,7 @@ export function ChoreManagement({ children, onClose }: ChoreManagementProps) {
       description: 'Make your bed neatly every morning',
       assignedTo: ['child-1'],
       frequency: 'daily',
+      points: 2.00,
       reward: 2.00,
       estimatedMinutes: 5,
       category: 'bedroom',
@@ -104,6 +106,7 @@ export function ChoreManagement({ children, onClose }: ChoreManagementProps) {
       description: 'Tidy up bedroom and put clothes away',
       assignedTo: ['child-1'],
       frequency: 'weekly',
+      points: 5.00,
       reward: 5.00,
       estimatedMinutes: 30,
       category: 'bedroom',

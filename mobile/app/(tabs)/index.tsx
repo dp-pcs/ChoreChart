@@ -48,10 +48,14 @@ export default function DashboardScreen() {
 
 function ChildDashboard({ router }: { router: any }) {
   const [chores, setChores] = React.useState([
-    { id: 1, title: "Make your bed", reward: "$2.00", status: "pending" as const },
-    { id: 2, title: "Feed the dog", reward: "$3.00", status: "completed" as const },
-    { id: 3, title: "Take out trash", reward: "$5.00", status: "pending" as const },
+    { id: 1, title: "Make your bed", points: 2.00, reward: "$2.00", status: "pending" as const },
+    { id: 2, title: "Feed the dog", points: 3.00, reward: "$3.00", status: "completed" as const },
+    { id: 3, title: "Take out trash", points: 5.00, reward: "$5.00", status: "pending" as const },
   ]);
+  const [pointRate, setPointRate] = React.useState(1.00); // 1 point = $1.00 default
+  const [availablePoints, setAvailablePoints] = React.useState(12.50);
+  const [bankedMoney, setBankedMoney] = React.useState(5.00);
+  const [showBankingModal, setShowBankingModal] = React.useState(false);
   const [showCheckIn, setShowCheckIn] = React.useState(false);
   const [showSubmitTask, setShowSubmitTask] = React.useState(false);
 
@@ -96,12 +100,27 @@ function ChildDashboard({ router }: { router: any }) {
 
   return (
     <>
+      {/* Points-to-Currency Conversion Header */}
+      <View style={styles.section}>
+        <View style={styles.pointsConversionCard}>
+          <Text style={styles.conversionTitle}>🏦 Your Points Value</Text>
+          <Text style={styles.conversionSubtitle}>
+            {availablePoints.toFixed(2)} Points = ${(availablePoints * pointRate).toFixed(2)} Value
+          </Text>
+          {bankedMoney > 0 && (
+            <Text style={styles.bankedAmount}>
+              💰 ${bankedMoney.toFixed(2)} Banked
+            </Text>
+          )}
+        </View>
+      </View>
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>📊 My Progress</Text>
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>$12.50</Text>
-            <Text style={styles.statLabel}>This Week</Text>
+            <Text style={styles.statValue}>{availablePoints.toFixed(1)} pts</Text>
+            <Text style={styles.statLabel}>Available</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>85%</Text>
@@ -122,7 +141,9 @@ function ChildDashboard({ router }: { router: any }) {
               key={chore.id}
               id={chore.id}
               title={chore.title} 
+              points={chore.points}
               reward={chore.reward} 
+              pointRate={pointRate}
               status={chore.status}
               onComplete={handleChoreComplete}
             />
@@ -144,6 +165,12 @@ function ChildDashboard({ router }: { router: any }) {
             subtitle="How are you feeling?"
             emoji="💭"
             onPress={handleCheckInPress}
+          />
+          <ActionButton 
+            title="Bank Points" 
+            subtitle="Convert points to money"
+            emoji="🏦"
+            onPress={() => setShowBankingModal(true)}
           />
           <ActionButton 
             title="Submit Task" 
@@ -169,6 +196,20 @@ function ChildDashboard({ router }: { router: any }) {
           onClose={() => setShowSubmitTask(false)} 
         />
       )}
+
+      {/* Banking Modal */}
+      {showBankingModal && (
+        <BankingModal
+          availablePoints={availablePoints}
+          pointRate={pointRate}
+          onSubmit={(amount) => {
+            console.log('Banking request:', amount);
+            setShowBankingModal(false);
+            // In real app, this would make API call
+          }}
+          onClose={() => setShowBankingModal(false)}
+        />
+      )}
     </>
   );
 }
@@ -180,7 +221,7 @@ function SubmitTaskModal({ onSubmit, onClose }: {
   const [taskData, setTaskData] = useState({
     title: '',
     description: '',
-    suggestedReward: '',
+    suggestedPoints: '',
   });
 
   const handleSubmit = () => {
@@ -199,12 +240,12 @@ function SubmitTaskModal({ onSubmit, onClose }: {
   };
 
   const QUICK_TASKS = [
-    { title: 'Cleaned my room thoroughly', reward: '$5' },
-    { title: 'Helped with groceries', reward: '$3' },
-    { title: 'Organized my backpack', reward: '$2' },
-    { title: 'Helped with laundry', reward: '$4' },
-    { title: 'Cleaned up common area', reward: '$3' },
-    { title: 'Helped sibling with something', reward: '$2' },
+    { title: 'Cleaned my room thoroughly', points: 5.0 },
+    { title: 'Helped with groceries', points: 3.0 },
+    { title: 'Organized my backpack', points: 2.0 },
+    { title: 'Helped with laundry', points: 4.0 },
+    { title: 'Cleaned up common area', points: 3.0 },
+    { title: 'Helped sibling with something', points: 2.0 },
   ];
 
   return (
@@ -239,11 +280,11 @@ function SubmitTaskModal({ onSubmit, onClose }: {
                       onPress={() => setTaskData({
                         title: task.title,
                         description: '',
-                        suggestedReward: task.reward
+                        suggestedPoints: task.points.toString()
                       })}
                     >
                       <Text style={styles.quickTaskText}>{task.title}</Text>
-                      <Text style={styles.quickTaskReward}>{task.reward}</Text>
+                      <Text style={styles.quickTaskReward}>{task.points} pts</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -288,18 +329,18 @@ function SubmitTaskModal({ onSubmit, onClose }: {
               </View>
 
               <View style={styles.formSection}>
-                <Text style={styles.formLabel}>What do you think it's worth?</Text>
+                <Text style={styles.formLabel}>How many points do you think it's worth?</Text>
                 <TextInput
                   style={styles.formInput}
-                  value={taskData.suggestedReward}
-                  onChangeText={(text) => setTaskData(prev => ({ ...prev, suggestedReward: text }))}
-                  placeholder="e.g., $3"
+                  value={taskData.suggestedPoints}
+                  onChangeText={(text) => setTaskData(prev => ({ ...prev, suggestedPoints: text }))}
+                  placeholder="e.g., 3.0"
                   keyboardType="decimal-pad"
                   autoCorrect={false}
                   returnKeyType="done"
                 />
                 <Text style={styles.helpText}>
-                  Your parents will decide the final amount
+                  Your parents will decide the final points amount
                 </Text>
               </View>
             </View>
@@ -343,8 +384,8 @@ function ParentDashboard() {
             <Text style={styles.statLabel}>Pending Approvals</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>$47.50</Text>
-            <Text style={styles.statLabel}>Weekly Earnings</Text>
+            <Text style={styles.statValue}>47.5 pts</Text>
+            <Text style={styles.statLabel}>Weekly Points</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>92%</Text>
@@ -360,12 +401,14 @@ function ParentDashboard() {
             child="Noah" 
             chore="Made bed" 
             time="8:30 AM" 
+            points={2.0}
             reward="$2.00" 
           />
           <ApprovalCard 
             child="Noah" 
             chore="Fed the dog" 
             time="7:45 AM" 
+            points={3.0}
             reward="$3.00" 
           />
         </View>
@@ -380,6 +423,7 @@ function ParentDashboard() {
             task="Organized my closet" 
             description="I sorted all my clothes and put everything away neatly"
             time="2 hours ago" 
+            suggestedPoints={5.0}
             suggestedReward="$5.00" 
           />
           <TaskSubmissionCard 
@@ -387,6 +431,7 @@ function ParentDashboard() {
             task="Helped with groceries" 
             description="I carried bags and put things away in the kitchen"
             time="4 hours ago" 
+            suggestedPoints={3.0}
             suggestedReward="$3.00" 
           />
         </View>
@@ -444,23 +489,24 @@ function ParentDashboard() {
   );
 }
 
-function TaskSubmissionCard({ child, task, description, time, suggestedReward }: { 
+function TaskSubmissionCard({ child, task, description, time, suggestedPoints, suggestedReward }: { 
   child: string; 
   task: string; 
   description: string;
   time: string; 
+  suggestedPoints: number;
   suggestedReward: string; 
 }) {
   const handleApprove = () => {
     Alert.alert(
-      "Set Reward Amount",
-      `How much should ${child} earn for "${task}"?`,
+      "Set Points Amount",
+      `How many points should ${child} earn for "${task}"?`,
       [
         { 
-          text: "Use Suggested ($" + suggestedReward.replace('$', '') + ")", 
+          text: `Use Suggested (${suggestedPoints} pts)`, 
           onPress: () => {
-            console.log(`Approved: ${child} - ${task} - ${suggestedReward}`);
-            Alert.alert('Task Approved! 🎉', `${child} will earn ${suggestedReward} for "${task}"`);
+            console.log(`Approved: ${child} - ${task} - ${suggestedPoints} points`);
+            Alert.alert('Task Approved! 🎉', `${child} will earn ${suggestedPoints} points for "${task}"`);
           }
         },
         { 
@@ -474,19 +520,19 @@ function TaskSubmissionCard({ child, task, description, time, suggestedReward }:
 
   const showCustomAmountInput = () => {
     Alert.prompt(
-      "Enter Custom Amount",
-      `How much should ${child} earn for "${task}"?`,
+      "Enter Custom Points",
+      `How many points should ${child} earn for "${task}"?`,
       (customAmount) => {
         if (customAmount && !isNaN(parseFloat(customAmount))) {
           const amount = parseFloat(customAmount).toFixed(2);
-          console.log(`Approved: ${child} - ${task} - $${amount}`);
-          Alert.alert('Task Approved! 🎉', `${child} will earn $${amount} for "${task}"`);
+          console.log(`Approved: ${child} - ${task} - ${amount} points`);
+          Alert.alert('Task Approved! 🎉', `${child} will earn ${amount} points for "${task}"`);
         } else {
           Alert.alert('Invalid Amount', 'Please enter a valid number');
         }
       },
       'plain-text',
-      suggestedReward.replace('$', ''),
+      suggestedPoints.toString(),
       'numeric'
     );
   };
@@ -513,7 +559,7 @@ function TaskSubmissionCard({ child, task, description, time, suggestedReward }:
         <Text style={styles.taskSubmissionTime}>{time}</Text>
       </View>
       <View style={styles.taskSubmissionActions}>
-        <Text style={styles.taskSubmissionReward}>Suggested: {suggestedReward}</Text>
+        <Text style={styles.taskSubmissionReward}>Suggested: {suggestedPoints} pts</Text>
         <View style={styles.taskSubmissionButtons}>
           <TouchableOpacity style={styles.taskDenyButton} onPress={handleDeny}>
             <Text style={styles.taskDenyButtonText}>❌</Text>
@@ -527,7 +573,7 @@ function TaskSubmissionCard({ child, task, description, time, suggestedReward }:
   );
 }
 
-function ChoreCard({ id, title, reward, status, onComplete }: { id: number; title: string; reward: string; status: 'pending' | 'completed'; onComplete: (choreId: number) => void }) {
+function ChoreCard({ id, title, points, reward, pointRate, status, onComplete }: { id: number; title: string; points: number; reward: string; pointRate: number; status: 'pending' | 'completed'; onComplete: (choreId: number) => void }) {
   const handleChorePress = () => {
     if (status === 'pending') {
       Alert.alert(
@@ -547,7 +593,8 @@ function ChoreCard({ id, title, reward, status, onComplete }: { id: number; titl
     <TouchableOpacity style={styles.choreCard} onPress={handleChorePress}>
       <View style={styles.choreInfo}>
         <Text style={styles.choreTitle}>{title}</Text>
-        <Text style={styles.choreReward}>{reward}</Text>
+        <Text style={styles.choreReward}>{points} pts</Text>
+        <Text style={styles.choreRewardDollar}>${(points * pointRate).toFixed(2)}</Text>
       </View>
       <View style={[styles.statusBadge, status === 'completed' && styles.completedBadge]}>
         <Text style={[styles.statusText, status === 'completed' && styles.completedText]}>
@@ -558,13 +605,13 @@ function ChoreCard({ id, title, reward, status, onComplete }: { id: number; titl
   );
 }
 
-function ApprovalCard({ child, chore, time, reward }: { child: string; chore: string; time: string; reward: string }) {
+function ApprovalCard({ child, chore, time, points, reward }: { child: string; chore: string; time: string; points: number; reward: string }) {
   const handleApprove = () => {
     Alert.alert(
       "Approve Chore",
-      `Approve ${child}'s completion of "${chore}" for ${reward}?`,
+      `Approve ${child}'s completion of "${chore}" for ${points} points?`,
       [
-        { text: "Yes, approve!", onPress: () => console.log(`Approved: ${child} - ${chore}`) },
+        { text: "Yes, approve!", onPress: () => console.log(`Approved: ${child} - ${chore} - ${points} points`) },
         { text: "Cancel", style: "cancel" }
       ]
     );
@@ -589,7 +636,7 @@ function ApprovalCard({ child, chore, time, reward }: { child: string; chore: st
         <Text style={styles.approvalTime}>{time}</Text>
       </View>
       <View style={styles.approvalActions}>
-        <Text style={styles.approvalReward}>{reward}</Text>
+        <Text style={styles.approvalReward}>{points} pts</Text>
         <View style={styles.approvalButtons}>
           <TouchableOpacity style={styles.approveButton} onPress={handleApprove}>
             <Text style={styles.approveButtonText}>✅</Text>
@@ -600,6 +647,84 @@ function ApprovalCard({ child, chore, time, reward }: { child: string; chore: st
         </View>
       </View>
     </View>
+  );
+}
+
+function BankingModal({ availablePoints, pointRate, onSubmit, onClose }: {
+  availablePoints: number;
+  pointRate: number;
+  onSubmit: (amount: number) => void;
+  onClose: () => void;
+}) {
+  const [requestAmount, setRequestAmount] = useState('');
+  const maxValue = (availablePoints * pointRate).toFixed(2);
+
+  const handleSubmit = () => {
+    const amount = parseFloat(requestAmount);
+    if (!amount || amount <= 0) {
+      Alert.alert('Invalid Amount', 'Please enter a valid amount');
+      return;
+    }
+    if (amount > parseFloat(maxValue)) {
+      Alert.alert('Too Much!', `You can only request up to $${maxValue} (${availablePoints} points)`);
+      return;
+    }
+    
+    const pointsToBank = amount / pointRate;
+    Alert.alert(
+      'Banking Request Submitted! 🏦',
+      `You've requested to bank ${pointsToBank.toFixed(2)} points for $${amount.toFixed(2)}. Your parents will review this request.`,
+      [{ text: 'Great!', onPress: () => onSubmit(amount) }]
+    );
+  };
+
+  return (
+    <Modal visible transparent animationType="slide">
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>🏦 Bank Your Points</Text>
+            <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
+              <Text style={styles.modalCloseText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.modalDescription}>
+            Convert your points to money that your parents can give you!
+          </Text>
+
+          <View style={styles.bankingInfo}>
+            <Text style={styles.bankingInfoText}>
+              💰 Available: {availablePoints.toFixed(2)} points (${maxValue})
+            </Text>
+            <Text style={styles.bankingInfoText}>
+              📊 Rate: 1 point = ${pointRate.toFixed(2)}
+            </Text>
+          </View>
+
+          <View style={styles.formSection}>
+            <Text style={styles.formLabel}>How much money do you want?</Text>
+            <TextInput
+              style={styles.formInput}
+              value={requestAmount}
+              onChangeText={setRequestAmount}
+              placeholder={`$0.00 (max $${maxValue})`}
+              keyboardType="decimal-pad"
+              autoCorrect={false}
+            />
+          </View>
+
+          <View style={styles.modalActions}>
+            <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+              <Text style={styles.submitButtonText}>Request Banking</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -1062,5 +1187,50 @@ const styles = StyleSheet.create({
   taskDenyButtonText: {
     color: 'white',
     fontSize: 14,
+  },
+  pointsConversionCard: {
+    backgroundColor: '#3b82f6',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  conversionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 4,
+  },
+  conversionSubtitle: {
+    fontSize: 14,
+    color: '#e0e7ff',
+    textAlign: 'center',
+  },
+  bankedAmount: {
+    fontSize: 12,
+    color: '#fbbf24',
+    marginTop: 4,
+    fontWeight: '600',
+  },
+  choreRewardDollar: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontStyle: 'italic',
+  },
+  bankingInfo: {
+    backgroundColor: '#f3f4f6',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  bankingInfoText: {
+    fontSize: 14,
+    color: '#374151',
+    marginBottom: 4,
+    textAlign: 'center',
   },
 }); 
