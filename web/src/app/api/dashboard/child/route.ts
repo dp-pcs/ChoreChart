@@ -133,7 +133,7 @@ export async function GET(request: NextRequest) {
       s.status === 'APPROVED' || s.status === 'AUTO_APPROVED'
     )
     const totalEarnings = approvedSubmissions.reduce((sum, s) => 
-      sum + (s.approval?.partialReward || s.assignment.chore.reward || 0), 0
+      sum + (s.approval?.partialReward?.toNumber() || s.assignment.chore.reward?.toNumber() || 0), 0
     )
     const completedCount = approvedSubmissions.length
     const totalAssigned = assignments.length

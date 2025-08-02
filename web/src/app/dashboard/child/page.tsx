@@ -101,7 +101,7 @@ export default function ChildDashboard() {
       if (response.ok) {
         const result = await response.json()
         if (result.success && result.data) {
-          setUser(prev => ({
+          setUser((prev: any) => ({
             ...prev,
             availablePoints: result.data.user.availablePoints || 0,
             bankedMoney: result.data.user.bankedMoney || 0,
