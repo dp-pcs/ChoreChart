@@ -20,35 +20,72 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email
+        // Mock demo users for development when database is not available
+        const mockUsers = {
+          'child@demo.com': {
+            id: 'child-demo-1',
+            email: 'child@demo.com',
+            name: 'Noah (Demo Child)',
+            role: 'CHILD' as UserRole,
+            familyId: 'demo-family-1',
+            family: {
+              id: 'demo-family-1',
+              name: 'Demo Family'
+            }
           },
-          include: {
-            family: true
+          'parent@demo.com': {
+            id: 'parent-demo-1',
+            email: 'parent@demo.com',
+            name: 'Demo Parent',
+            role: 'PARENT' as UserRole,
+            familyId: 'demo-family-1',
+            family: {
+              id: 'demo-family-1',
+              name: 'Demo Family'
+            }
           }
-        })
-
-        if (!user) {
-          return null
         }
 
-        // For development, we'll compare plain text passwords
-        // In production, you should hash passwords
-        const isPasswordValid = credentials.password === "password" || 
-          await bcrypt.compare(credentials.password, user.password || "")
-
-        if (!isPasswordValid) {
-          return null
+        // Check for demo users first
+        if (credentials.email in mockUsers && credentials.password === 'password') {
+          return mockUsers[credentials.email as keyof typeof mockUsers]
         }
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          familyId: user.familyId,
-          family: user.family
+        try {
+          // Try database authentication
+          const user = await prisma.user.findUnique({
+            where: {
+              email: credentials.email
+            },
+            include: {
+              family: true
+            }
+          })
+
+          if (!user) {
+            return null
+          }
+
+          // For development, we'll compare plain text passwords
+          // In production, you should hash passwords
+          const isPasswordValid = credentials.password === "password" || 
+            await bcrypt.compare(credentials.password, user.password || "")
+
+          if (!isPasswordValid) {
+            return null
+          }
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            familyId: user.familyId,
+            family: user.family
+          }
+        } catch (error) {
+          console.log('Database connection failed, using mock users only')
+          return null
         }
       }
     })
