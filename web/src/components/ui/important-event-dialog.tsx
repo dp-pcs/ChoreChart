@@ -270,14 +270,14 @@ export function ImportantEventDialog({ isOpen, onClose, onSuccess, editingEvent 
                     </span>
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    {new Date(eventDate).toLocaleDateString('en-US', { 
+                    {new Date(eventDate + 'T12:00:00').toLocaleDateString('en-US', { 
                       weekday: 'long', 
                       year: 'numeric', 
                       month: 'long', 
                       day: 'numeric' 
                     })}
                     {(() => {
-                      const daysUntil = Math.ceil((new Date(eventDate).getTime() - new Date().getTime()) / (1000 * 3600 * 24))
+                      const daysUntil = Math.ceil((new Date(eventDate + 'T12:00:00').getTime() - new Date().getTime()) / (1000 * 3600 * 24))
                       return daysUntil >= 0 ? ` (in ${daysUntil} day${daysUntil !== 1 ? 's' : ''})` : ` (${Math.abs(daysUntil)} day${Math.abs(daysUntil) !== 1 ? 's' : ''} ago)`
                     })()}
                   </div>
