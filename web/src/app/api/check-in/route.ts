@@ -30,10 +30,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(response)
     }
     
+    // Debug: Log the received data to see what's wrong
+    console.log('📥 Received check-in data:', {
+      userId: checkInData.userId,
+      date: checkInData.date,
+      allKeys: Object.keys(checkInData)
+    })
+    
     // Validate required fields for regular check-in
     if (!checkInData.userId || !checkInData.date) {
+      console.error('❌ Validation failed:', {
+        hasUserId: !!checkInData.userId,
+        hasDate: !!checkInData.date,
+        receivedData: checkInData
+      })
       return NextResponse.json(
-        { error: 'Missing required fields: userId and date' },
+        { 
+          error: 'Missing required fields: userId and date',
+          received: {
+            userId: checkInData.userId,
+            date: checkInData.date,
+            allKeys: Object.keys(checkInData)
+          }
+        },
         { status: 400 }
       )
     }
