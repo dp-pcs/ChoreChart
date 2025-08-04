@@ -86,39 +86,58 @@ export function DailyCheckIn({ userId, userName, onSubmit, existingCheckIn }: Qu
 
   const steps = [
     {
-      title: "How are you feeling? 😊",
+      title: "Welcome to your daily check-in! ✨",
+      component: (
+        <div className="space-y-6 text-center">
+          <div className="space-y-4">
+            <div className="text-6xl">🌟</div>
+            <h2 className="text-2xl font-bold text-gray-800">Quick Daily Check-in</h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Just a few quick questions to help you reflect on your day and see if Chorbie can help you with anything! 
+              This takes less than 2 minutes.
+            </p>
+            <div className="bg-blue-50 p-4 rounded-lg max-w-md mx-auto">
+              <p className="text-sm text-blue-700">
+                <strong>What this does:</strong> Helps track your sleep, mood, and plans so Chorbie can give you 
+                personalized study help, sports tips, or just celebrate your wins! 🎉
+              </p>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: "How are you feeling today? 😊",
       component: (
         <div className="space-y-6">
-          {/* Morning Energy */}
           <div>
-            <h3 className="text-lg font-medium mb-3">Morning Energy Level</h3>
+            <h3 className="text-lg font-medium mb-3 text-center">Pick the emoji that matches your energy right now</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {energyLevels.map((level) => (
                 <Button
                   key={level.value}
                   variant={checkInData.morningEnergy === level.value ? "default" : "outline"}
                   onClick={() => setCheckInData(prev => ({ ...prev, morningEnergy: level.value as any }))}
-                  className="h-16 flex flex-col"
+                  className="h-20 flex flex-col"
                 >
-                  <span className="text-2xl">{level.emoji}</span>
-                  <span className="text-xs">{level.label}</span>
+                  <span className="text-3xl">{level.emoji}</span>
+                  <span className="text-sm font-medium">{level.label}</span>
                 </Button>
               ))}
             </div>
           </div>
 
-          {/* Overall Mood */}
           <div>
-            <h3 className="text-lg font-medium mb-3">How's your day going overall?</h3>
+            <h3 className="text-lg font-medium mb-3 text-center">How's your day going overall?</h3>
             <div className="grid grid-cols-5 gap-2">
               {moodLevels.map((mood) => (
                 <Button
                   key={mood.value}
                   variant={checkInData.overallMood === mood.value ? "default" : "outline"}
                   onClick={() => setCheckInData(prev => ({ ...prev, overallMood: mood.value as any }))}
-                  className="h-16 flex flex-col"
+                  className="h-20 flex flex-col"
                 >
-                  <span className="text-xl">{mood.emoji}</span>
+                  <span className="text-2xl">{mood.emoji}</span>
                   <span className="text-xs">{mood.label}</span>
                 </Button>
               ))}
@@ -128,261 +147,185 @@ export function DailyCheckIn({ userId, userName, onSubmit, existingCheckIn }: Qu
       )
     },
     {
-      title: "What did you do today? 📅",
+      title: "What time did you go to bed last night? 🌙",
       component: (
-        <div className="space-y-6">
-          {/* Calendar Import */}
-          <Card className="bg-blue-50">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Import from Calendar</p>
-                  <p className="text-sm text-gray-600">Speed up check-in with your daily schedule</p>
-                </div>
-                <Button onClick={requestCalendarAccess} size="sm">
-                  📅 Import
-                </Button>
-              </div>
-              {calendarEvents.length > 0 && (
-                <div className="mt-3 space-y-2">
-                  {calendarEvents.map((event, i) => (
-                    <div key={i} className="flex items-center justify-between text-sm">
-                      <span>{event.title} at {event.time}</span>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => toggleActivity(event.title.toLowerCase().replace(' ', '_'))}
-                      >
-                        Add
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-                     {/* Activity Categories */}
-           <div className="space-y-4">
-             {commonActivities.map((category) => (
-               <div key={category.category} className="space-y-2">
-                 <h3 className="text-base font-medium capitalize">{category.category}</h3>
-                 <div className="flex flex-wrap gap-2">
-                   {category.items.map((activity) => (
-                     <Badge
-                       key={activity}
-                       variant={checkInData.physicalActivity?.includes(activity) ? "default" : "outline"}
-                       className="cursor-pointer hover:bg-blue-100 text-xs"
-                       onClick={() => toggleActivity(activity)}
-                     >
-                       {activity.replace('_', ' ')}
-                     </Badge>
-                   ))}
-                 </div>
-               </div>
-             ))}
-           </div>
-
-          {/* Custom Activity */}
+        <div className="space-y-6 text-center">
           <div>
-            <h3 className="text-lg font-medium mb-3">Anything else?</h3>
-            <Input 
-              placeholder="Type other activities..." 
-              onKeyPress={(e) => {
-                if (e.key === 'Enter' && e.currentTarget.value) {
-                  toggleActivity(e.currentTarget.value.toLowerCase().replace(' ', '_'))
-                  e.currentTarget.value = ''
-                }
-              }}
-            />
+            <div className="text-4xl mb-4">😴</div>
+            <h3 className="text-xl font-medium mb-6">When did you go to sleep?</h3>
+            <div className="max-w-xs mx-auto">
+              <Input 
+                type="time"
+                value={checkInData.bedtimeLastNight || ''}
+                onChange={(e) => setCheckInData(prev => ({ 
+                  ...prev, 
+                  bedtimeLastNight: e.target.value 
+                }))}
+                className="text-center text-lg h-12"
+              />
+            </div>
+            <p className="text-sm text-gray-500 mt-3">
+              Don't worry if it's not exact - just your best guess! 💤
+            </p>
           </div>
         </div>
       )
     },
     {
-      title: "To-dos & Projects 📝",
+      title: "Do you have anything to do today? 📝",
       component: (
         <div className="space-y-6">
-          <div>
-            <h3 className="text-lg font-medium mb-3">What's on your to-do list?</h3>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {commonTodos.map((todo) => (
-                <Badge
-                  key={todo}
-                  variant={checkInData.specialEvents?.includes(todo) ? "default" : "outline"}
-                  className="cursor-pointer hover:bg-green-100"
-                  onClick={() => toggleTag('specialEvents', todo)}
-                >
-                  {todo.replace('_', ' ')}
-                </Badge>
-              ))}
-            </div>
+          <div className="text-center mb-6">
+            <div className="text-4xl mb-3">🎯</div>
+            <h3 className="text-xl font-medium">What's on your agenda?</h3>
+            <p className="text-gray-600">Tell me about homework, sports, or anything else you're planning!</p>
           </div>
-
-          {/* Homework/Project Progress */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Homework Status</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {['Math', 'English', 'Science', 'History'].map((subject) => (
-                    <div key={subject} className="flex items-center justify-between">
-                      <span className="text-sm">{subject}</span>
-                      <div className="flex gap-1">
-                        {['❌', '⏳', '✅'].map((status, i) => (
-                          <button
-                            key={i}
-                            className="text-lg hover:scale-110 transition-transform"
-                            onClick={() => {
-                              const hwKey = `homework_${subject.toLowerCase()}_${['incomplete', 'in_progress', 'complete'][i]}`
-                              toggleTag('specialEvents', hwKey)
-                            }}
-                          >
-                            {status}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Social Plans</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-sm font-medium">Who did you hang out with?</label>
-                    <Input 
-                      placeholder="Friends, family members..."
-                      onChange={(e) => setCheckInData(prev => ({ 
-                        ...prev, 
-                        parentNotes: e.target.value 
-                      }))}
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    {['friends', 'family', 'solo', 'mixed'].map((social) => (
-                      <Button
-                        key={social}
-                        size="sm"
-                        variant={checkInData.socialTime === social ? "default" : "outline"}
-                        onClick={() => setCheckInData(prev => ({ ...prev, socialTime: social as any }))}
-                      >
-                        {social}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      )
-    },
-    {
-      title: "Any challenges today? 🤔",
-      component: (
-        <div className="space-y-6">
+          
           <div>
-            <h3 className="text-lg font-medium mb-3">What made things tough today?</h3>
-            <div className="flex flex-wrap gap-2">
-              {stressors.map((stressor) => (
-                <Badge
-                  key={stressor}
-                  variant={checkInData.stressors?.includes(stressor) ? "destructive" : "outline"}
-                  className="cursor-pointer"
-                  onClick={() => toggleStressor(stressor)}
-                >
-                  {stressor.replace('_', ' ')}
-                </Badge>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-lg font-medium mb-3">Screen time today (rough estimate)</h3>
-            <div className="flex gap-2">
-              {[30, 60, 120, 240, 360].map((minutes) => (
-                <Button
-                  key={minutes}
-                  size="sm"
-                  variant={checkInData.screenTime === minutes ? "default" : "outline"}
-                  onClick={() => setCheckInData(prev => ({ ...prev, screenTime: minutes }))}
-                >
-                  {minutes < 60 ? `${minutes}m` : `${minutes/60}h`}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-lg font-medium mb-3">When did you go to bed last night?</h3>
             <Input 
-              type="time"
-              value={checkInData.bedtimeLastNight || ''}
+              placeholder="E.g., 'Math homework', 'Basketball practice', 'Study for science test'..."
+              value={checkInData.todaysPlan || ''}
               onChange={(e) => setCheckInData(prev => ({ 
                 ...prev, 
-                bedtimeLastNight: e.target.value 
+                todaysPlan: e.target.value 
               }))}
+              className="text-center text-lg h-12"
             />
+          </div>
+
+          <div className="text-center">
+            <p className="text-sm text-gray-500">
+              💡 Based on what you tell me, Chorbie might offer to help with study plans, practice tips, or other useful stuff!
+            </p>
           </div>
         </div>
       )
     },
     {
-      title: "Quick reflection with Chorbie 🤖",
+      title: "Let me help you with that! 🤖",
       component: (
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div className="text-center">
-            <p className="text-lg text-gray-600 mb-4">
-              Hi, I'm Chorbie! 👋 I'd love to hear about your day to help you build better habits and give personalized advice.
-            </p>
-            <div className="flex justify-center gap-3 mb-4">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowChorbieHelper(true)}
-                className="bg-blue-50 border-blue-200 hover:bg-blue-100"
-              >
-                💬 Chat with Chorbie
-              </Button>
+            <div className="text-4xl mb-3">🚀</div>
+            <h3 className="text-xl font-medium mb-4">Chorbie's here to help!</h3>
+            {checkInData.todaysPlan ? (
+              <div className="space-y-4">
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <p className="font-medium text-blue-800">You said: "{checkInData.todaysPlan}"</p>
+                </div>
+                
+                {/* Smart suggestions based on what they said */}
+                <div className="space-y-3">
+                  {checkInData.todaysPlan.toLowerCase().includes('homework') || 
+                   checkInData.todaysPlan.toLowerCase().includes('study') || 
+                   checkInData.todaysPlan.toLowerCase().includes('test') ? (
+                    <div className="space-y-3">
+                      <p className="text-lg">I can help you study! Want me to:</p>
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setShowChorbieHelper(true)}
+                          className="bg-green-50 border-green-200 hover:bg-green-100"
+                        >
+                          📚 Create a Study Plan
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setShowChorbieHelper(true)}
+                          className="bg-purple-50 border-purple-200 hover:bg-purple-100"
+                        >
+                          🃏 Make Flashcards
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setShowChorbieHelper(true)}
+                          className="bg-blue-50 border-blue-200 hover:bg-blue-100"
+                        >
+                          📝 Create Practice Test
+                        </Button>
+                      </div>
+                    </div>
+                  ) : checkInData.todaysPlan.toLowerCase().includes('basketball') ||
+                        checkInData.todaysPlan.toLowerCase().includes('soccer') ||
+                        checkInData.todaysPlan.toLowerCase().includes('sports') ||
+                        checkInData.todaysPlan.toLowerCase().includes('practice') ? (
+                    <div className="space-y-3">
+                      <p className="text-lg">Sports practice! Want me to:</p>
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setShowChorbieHelper(true)}
+                          className="bg-orange-50 border-orange-200 hover:bg-orange-100"
+                        >
+                          🏀 Find Coaching Tips
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setShowChorbieHelper(true)}
+                          className="bg-red-50 border-red-200 hover:bg-red-100"
+                        >
+                          💪 Suggest Drills
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-lg">Sounds interesting! Want to:</p>
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setShowChorbieHelper(true)}
+                          className="bg-blue-50 border-blue-200 hover:bg-blue-100"
+                        >
+                          💬 Chat with Chorbie
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-lg text-gray-600">No plans today? That's totally fine!</p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowChorbieHelper(true)}
+                  className="bg-blue-50 border-blue-200 hover:bg-blue-100"
+                >
+                  💬 Chat with Chorbie anyway
+                </Button>
+              </div>
+            )}
+            
+            <div className="mt-6">
               <Button 
                 variant="outline"
                 onClick={() => handleNext()}
                 className="bg-gray-50 border-gray-200 hover:bg-gray-100"
               >
-                ⏭️ Skip for now
+                ✅ No thanks, finish check-in
               </Button>
             </div>
           </div>
           
-          <Card>
-            <CardContent className="p-4">
-              <div className="h-80 overflow-hidden">
-                <ChorbieChat
-                  userId={userId}
-                  userRole="CHILD"
-                  userName={userName}
-                  currentChores={[]}
-                  weeklyEarnings={0}
-                  completionRate={0}
-                  onScheduleGenerated={() => {}}
-                  onExportRequest={() => {}}
-                />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <div className="text-center">
-            <p className="text-sm text-gray-500">
-              💡 You can always chat with Chorbie later from your dashboard!
-            </p>
-          </div>
+          {showChorbieHelper && (
+            <Card className="mt-4">
+              <CardContent className="p-4">
+                <div className="h-80 overflow-hidden">
+                  <ChorbieChat
+                    userId={userId}
+                    userRole="CHILD"
+                    userName={userName}
+                    currentChores={[]}
+                    weeklyEarnings={0}
+                    completionRate={0}
+                    onScheduleGenerated={() => {}}
+                    onExportRequest={() => {}}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )
     }
@@ -397,7 +340,8 @@ export function DailyCheckIn({ userId, userName, onSubmit, existingCheckIn }: Qu
         ...checkInData,
         id: `checkin-${Date.now()}`,
         userId,
-        date: new Date()
+        date: new Date(),
+        todaysPlan: checkInData.todaysPlan || '' // Include the new field
       })
     }
   }
@@ -410,11 +354,11 @@ export function DailyCheckIn({ userId, userName, onSubmit, existingCheckIn }: Qu
 
   const isStepComplete = () => {
     switch (currentStep) {
-      case 0: return checkInData.morningEnergy && checkInData.overallMood
-      case 1: return checkInData.physicalActivity && checkInData.physicalActivity.length > 0
-      case 2: return checkInData.socialTime
-      case 3: return checkInData.screenTime !== undefined && checkInData.bedtimeLastNight
-      case 4: return true // Chorbie chat step - always considered complete
+      case 0: return true // Welcome step - no requirements
+      case 1: return checkInData.morningEnergy && checkInData.overallMood // How are you feeling
+      case 2: return checkInData.bedtimeLastNight // Bedtime is required
+      case 3: return true // Plans step - optional, they can skip
+      case 4: return true // Chorbie help step - always complete
       default: return false
     }
   }
