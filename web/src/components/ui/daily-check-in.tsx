@@ -332,6 +332,7 @@ export function DailyCheckIn({ userId, userName, onSubmit, existingCheckIn }: Qu
   ]
 
   const handleNext = () => {
+    console.log('🎯 handleNext called, currentStep:', currentStep, 'total steps:', steps.length)
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1)
     } else {
@@ -343,7 +344,10 @@ export function DailyCheckIn({ userId, userName, onSubmit, existingCheckIn }: Qu
         date: new Date(), // Keep as Date object for type compatibility
         todaysPlan: checkInData.todaysPlan || '' // Include the new field
       }
-      console.log('🎯 Submitting final check-in data:', finalCheckInData)
+      console.log('🎯 Final check-in data being submitted:', finalCheckInData)
+      console.log('🎯 userId value:', userId)
+      console.log('🎯 checkInData state:', checkInData)
+      alert(`About to submit check-in for user: ${userId}`)
       onSubmit(finalCheckInData)
     }
   }

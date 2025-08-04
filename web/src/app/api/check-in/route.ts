@@ -4,8 +4,11 @@ import type { DailyCheckIn } from '@/lib/behavior-tracking'
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('🚀 CHECK-IN API CALLED')
     const body = await request.json()
+    console.log('📦 Raw request body:', JSON.stringify(body, null, 2))
     const { action, userId, ...checkInData } = body
+    console.log('🔍 Extracted data:', { action, userId, checkInDataKeys: Object.keys(checkInData) })
     
     // Handle "skip" action separately
     if (action === 'skip') {
