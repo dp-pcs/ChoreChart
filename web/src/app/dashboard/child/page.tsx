@@ -515,11 +515,14 @@ export default function ChildDashboard() {
     try {
       console.log('🚀 Submitting check-in data:', checkIn)
       
-      // Convert Date objects to strings for JSON serialization
+      // Convert Date objects to strings for JSON serialization and ensure userId is included
       const serializedCheckIn = {
         ...checkIn,
+        userId: checkIn.userId || session?.user?.id, // Ensure userId is always present
         date: checkIn.date instanceof Date ? checkIn.date.toISOString() : checkIn.date
       }
+      
+      console.log('🎯 Final serialized data being sent to API:', serializedCheckIn)
       
       const response = await fetch('/api/check-in', {
         method: 'POST',

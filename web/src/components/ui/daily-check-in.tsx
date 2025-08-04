@@ -347,7 +347,7 @@ export function DailyCheckIn({ userId, userName, onSubmit, existingCheckIn }: Qu
       console.log('🎯 Final check-in data being submitted:', finalCheckInData)
       console.log('🎯 userId value:', userId)
       console.log('🎯 checkInData state:', checkInData)
-      alert(`About to submit check-in for user: ${userId}`)
+      alert(`About to submit check-in for ${userName || 'user'}! 🎉`)
       onSubmit(finalCheckInData)
     }
   }
