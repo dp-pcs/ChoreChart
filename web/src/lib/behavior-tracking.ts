@@ -16,6 +16,9 @@ export interface DailyCheckIn {
   overallMood: 1 | 2 | 3 | 4 | 5 // 😤 😐 😊 😇 🤩
   eveningReflection: string // Free text with Chorbit
   
+  // Today's Plans & Activities
+  todaysPlan: string // What they plan to do today (homework, sports, etc.)
+  
   // Activities & Context
   socialTime: 'friends' | 'family' | 'solo' | 'mixed'
   physicalActivity: string[] // ['soccer', 'bike', 'walk']
