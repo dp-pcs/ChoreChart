@@ -340,7 +340,7 @@ export function DailyCheckIn({ userId, userName, onSubmit, existingCheckIn }: Qu
         ...checkInData,
         id: `checkin-${Date.now()}`,
         userId,
-        date: new Date().toISOString(), // Ensure date is properly serialized
+        date: new Date(), // Keep as Date object for type compatibility
         todaysPlan: checkInData.todaysPlan || '' // Include the new field
       }
       console.log('🎯 Submitting final check-in data:', finalCheckInData)

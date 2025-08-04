@@ -515,10 +515,16 @@ export default function ChildDashboard() {
     try {
       console.log('🚀 Submitting check-in data:', checkIn)
       
+      // Convert Date objects to strings for JSON serialization
+      const serializedCheckIn = {
+        ...checkIn,
+        date: checkIn.date instanceof Date ? checkIn.date.toISOString() : checkIn.date
+      }
+      
       const response = await fetch('/api/check-in', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(checkIn)
+        body: JSON.stringify(serializedCheckIn)
       })
       
       console.log('📡 API Response status:', response.status)
