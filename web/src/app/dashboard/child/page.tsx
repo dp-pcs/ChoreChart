@@ -105,7 +105,7 @@ export default function ChildDashboard() {
             ...prev,
             availablePoints: result.data.user.availablePoints || 0,
             bankedMoney: result.data.user.bankedMoney || 0,
-            pointRate: result.data.family.pointsToMoneyRate || 1.00
+            pointRate: result.data.family?.pointsToMoneyRate || 1.00
           }))
         }
       }

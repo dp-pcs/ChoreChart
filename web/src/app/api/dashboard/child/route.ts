@@ -18,7 +18,14 @@ export async function GET(request: NextRequest) {
     // Get user's family
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { familyId: true }
+      include: {
+        family: {
+          select: {
+            id: true,
+            pointsToMoneyRate: true
+          }
+        }
+      }
     })
 
     if (!user?.familyId) {
@@ -144,6 +151,10 @@ export async function GET(request: NextRequest) {
         id: session.user.id,
         name: session.user.name,
         role: session.user.role
+      },
+      family: {
+        id: user.familyId,
+        pointsToMoneyRate: user.family?.pointsToMoneyRate || 1.00
       },
       submissions: formattedSubmissions,
       assignedChores: formattedChores,
