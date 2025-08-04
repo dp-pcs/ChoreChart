@@ -341,26 +341,48 @@ export function DailyCheckIn({ userId, userName, onSubmit, existingCheckIn }: Qu
         <div className="space-y-4">
           <div className="text-center">
             <p className="text-lg text-gray-600 mb-4">
-              Chorbie wants to hear about your day! This helps us understand patterns and give you better advice.
+              Hi, I'm Chorbie! 👋 I'd love to hear about your day to help you build better habits and give personalized advice.
             </p>
+            <div className="flex justify-center gap-3 mb-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowChorbieHelper(true)}
+                className="bg-blue-50 border-blue-200 hover:bg-blue-100"
+              >
+                💬 Chat with Chorbie
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => handleNext()}
+                className="bg-gray-50 border-gray-200 hover:bg-gray-100"
+              >
+                ⏭️ Skip for now
+              </Button>
+            </div>
           </div>
           
-                     <Card>
-             <CardContent className="p-4">
-               <div className="h-80 overflow-hidden">
-                 <ChorbieChat
-                   userId={userId}
-                   userRole="CHILD"
-                   userName={userName}
-                   currentChores={[]}
-                   weeklyEarnings={0}
-                   completionRate={0}
-                   onScheduleGenerated={() => {}}
-                   onExportRequest={() => {}}
-                 />
-               </div>
-             </CardContent>
-           </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="h-80 overflow-hidden">
+                <ChorbieChat
+                  userId={userId}
+                  userRole="CHILD"
+                  userName={userName}
+                  currentChores={[]}
+                  weeklyEarnings={0}
+                  completionRate={0}
+                  onScheduleGenerated={() => {}}
+                  onExportRequest={() => {}}
+                />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <div className="text-center">
+            <p className="text-sm text-gray-500">
+              💡 You can always chat with Chorbie later from your dashboard!
+            </p>
+          </div>
         </div>
       )
     }
@@ -392,7 +414,7 @@ export function DailyCheckIn({ userId, userName, onSubmit, existingCheckIn }: Qu
       case 1: return checkInData.physicalActivity && checkInData.physicalActivity.length > 0
       case 2: return checkInData.socialTime
       case 3: return checkInData.screenTime !== undefined && checkInData.bedtimeLastNight
-      case 4: return true // Chorbie chat is optional
+      case 4: return true // Chorbie chat step - always considered complete
       default: return false
     }
   }
