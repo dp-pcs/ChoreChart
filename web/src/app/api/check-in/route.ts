@@ -7,12 +7,12 @@ export async function POST(request: NextRequest) {
     console.log('🚀 CHECK-IN API CALLED')
     const body = await request.json()
     console.log('📦 Raw request body:', JSON.stringify(body, null, 2))
-    const { action, userId, ...checkInData } = body
-    console.log('🔍 Extracted data:', { action, userId, checkInDataKeys: Object.keys(checkInData) })
+    const { action, ...checkInData } = body
+    console.log('🔍 Extracted data:', { action, checkInDataKeys: Object.keys(checkInData) })
     
     // Handle "skip" action separately
     if (action === 'skip') {
-      if (!userId) {
+      if (!checkInData.userId) {
         return NextResponse.json(
           { error: 'Missing required field: userId' },
           { status: 400 }
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       // For now, just return success response
       const response = {
         id: `skip-${Date.now()}`,
-        userId,
+        userId: checkInData.userId,
         date: new Date().toISOString(),
         action: 'skipped',
         success: true,
