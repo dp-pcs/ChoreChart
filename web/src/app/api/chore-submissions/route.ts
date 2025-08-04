@@ -40,7 +40,8 @@ export async function POST(request: NextRequest) {
             family: {
               select: {
                 id: true,
-                autoApproveChores: true
+                autoApproveChores: true,
+                pointsToMoneyRate: true
               }
             }
           }
