@@ -336,13 +336,15 @@ export function DailyCheckIn({ userId, userName, onSubmit, existingCheckIn }: Qu
       setCurrentStep(currentStep + 1)
     } else {
       // Submit the check-in
-      onSubmit({
+      const finalCheckInData = {
         ...checkInData,
         id: `checkin-${Date.now()}`,
         userId,
         date: new Date(),
         todaysPlan: checkInData.todaysPlan || '' // Include the new field
-      })
+      }
+      console.log('🎯 Submitting final check-in data:', finalCheckInData)
+      onSubmit(finalCheckInData)
     }
   }
 

@@ -513,21 +513,33 @@ export default function ChildDashboard() {
 
   const handleCheckInSubmit = async (checkIn: Partial<DailyCheckInType>) => {
     try {
+      console.log('🚀 Submitting check-in data:', checkIn)
+      
       const response = await fetch('/api/check-in', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(checkIn)
       })
       
+      console.log('📡 API Response status:', response.status)
+      
       if (response.ok) {
         const result = await response.json()
+        console.log('✅ Check-in saved successfully:', result)
         setTodaysCheckIn(result)
         setShowCheckIn(false)
         setShowCheckInReminder(false) // Hide reminder after completing check-in
-        console.log('✅ Check-in saved:', result)
+        
+        // Show success message
+        alert('Daily check-in completed! 🎉')
+      } else {
+        const errorData = await response.json()
+        console.error('❌ API Error:', errorData)
+        alert(`Check-in failed: ${errorData.error || 'Unknown error'}`)
       }
     } catch (error) {
-      console.error('❌ Check-in failed:', error)
+      console.error('❌ Check-in network error:', error)
+      alert(`Check-in failed: ${error instanceof Error ? error.message : 'Network error'}`)
     }
   }
 
