@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     description: 'AI-powered family chore management with Chorbie AI assistant for kids',
     images: [
       {
-        url: '/og-image.png',
+        url: 'https://chorbie.app/og-image.png',
         width: 1200,
         height: 630,
         alt: 'Chorbie - Family Management App',
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Chorbie - Smart Family Management',
     description: 'AI-powered family chore management with Chorbie AI assistant for kids',
-    images: ['/og-image.png'],
+    images: ['https://chorbie.app/og-image.png'],
   },
   icons: {
     icon: [
