@@ -58,7 +58,7 @@ export function ImportantEventDialog({ isOpen, onClose, onSuccess, editingEvent 
       const eventData = {
         title: title.trim(),
         description: description.trim() || null,
-        eventDate: new Date(eventDate).toISOString(),
+        eventDate: new Date(eventDate + 'T12:00:00').toISOString(), // Set to noon local time
         eventType,
         priority,
         isAllDay,

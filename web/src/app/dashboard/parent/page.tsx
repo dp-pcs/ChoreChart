@@ -1751,7 +1751,7 @@ export default function ParentDashboard() {
                               <p className="text-sm text-gray-600 mt-1">{event.description}</p>
                             )}
                             <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                              <span>{new Date(event.eventDate).toLocaleDateString('en-US', { 
+                              <span>{new Date(event.eventDate + (event.eventDate.includes('T') ? '' : 'T12:00:00')).toLocaleDateString('en-US', { 
                                 weekday: 'short', 
                                 month: 'short', 
                                 day: 'numeric',
