@@ -45,7 +45,8 @@ export async function POST(request: NextRequest) {
       console.error('❌ Validation failed:', {
         hasUserId: !!checkInData.userId,
         hasDate: !!checkInData.date,
-        receivedData: checkInData
+        receivedData: checkInData,
+        originalBody: body
       })
       return NextResponse.json(
         { 
@@ -53,7 +54,9 @@ export async function POST(request: NextRequest) {
           received: {
             userId: checkInData.userId,
             date: checkInData.date,
-            allKeys: Object.keys(checkInData)
+            allKeys: Object.keys(checkInData),
+            originalBodyKeys: Object.keys(body),
+            fullOriginalBody: body
           }
         },
         { status: 400 }
