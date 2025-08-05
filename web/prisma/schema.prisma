@@ -100,6 +100,9 @@ model Family {
   crossFamilyApproval  Boolean            @default(false)
   pointsToMoneyRate    Float              @default(1.00)
   enablePointsSystem   Boolean            @default(true)
+  baseAllowance        Decimal            @default(0) @db.Decimal(10,2)
+  stretchAllowance     Decimal            @default(0) @db.Decimal(10,2)
+  allowBudgetOverrun   Boolean            @default(true)
   achievements         Achievement[]
   choreAssignments     ChoreAssignment[]
   chores               Chore[]
@@ -128,6 +131,7 @@ model Chore {
   scheduledTime    String?
   estimatedMinutes Int?
   points           Decimal           @default(0) @db.Decimal(10,2)
+  priority         ChorePriority     @default(MEDIUM)
   assignments      ChoreAssignment[]
   family           Family            @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
@@ -589,6 +593,12 @@ enum ChoreCompletionStatus {
   EXCUSED
   DEFERRED
   OVERDUE
+}
+
+enum ChorePriority {
+  LOW
+  MEDIUM
+  HIGH
 }
 
 enum ParentAction {

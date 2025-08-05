@@ -371,7 +371,7 @@ export default function ParentDashboard() {
       const moneyValue = pointsAwarded * (dashboardData?.family?.settings?.pointsToMoneyRate || 1)
       setMessage({
         type: 'success',
-        text: `✅ Scored ${scoringDialog.submission.choreName} for ${scoringDialog.submission.childName} - ${score}% quality = ${pointsAwarded} points (${moneyValue.toFixed(2)}) earned (${originalPoints - pointsAwarded > 0 ? `${originalPoints - pointsAwarded} points deducted` : 'full points'})`
+        text: `✅ Scored ${scoringDialog.submission.choreName} for ${scoringDialog.submission.childName} - ${score}% quality = ${pointsAwarded} points earned (worth $${moneyValue.toFixed(2)}) ${originalPoints - pointsAwarded > 0 ? `(${originalPoints - pointsAwarded} points deducted)` : '(full points awarded)'}`
       })
       
       // Refresh dashboard data

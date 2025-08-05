@@ -27,15 +27,27 @@ export async function POST(request: NextRequest) {
 
     console.log('🔍 Finding assignment for:', { choreId, userId: session.user.id, currentDate: new Date() })
     
-    // Find the chore assignment for this child
-    const assignment = await prisma.choreAssignment.findFirst({
+    // Calculate current week start (Monday)
+    const now = new Date()
+    const currentWeekStart = new Date(now)
+    const dayOfWeek = now.getDay()
+    const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1 // Sunday = 0, so it becomes 6 days from Monday
+    currentWeekStart.setDate(now.getDate() - daysFromMonday)
+    currentWeekStart.setHours(0, 0, 0, 0)
+
+    console.log('📅 Current week calculation:', { 
+      now: now.toISOString(), 
+      dayOfWeek, 
+      daysFromMonday, 
+      currentWeekStart: currentWeekStart.toISOString() 
+    })
+
+    // Find or create the assignment for this week
+    let assignment = await prisma.choreAssignment.findFirst({
       where: {
         choreId: choreId,
         userId: session.user.id,
-        // Get current week's assignment
-        weekStart: {
-          lte: new Date()
-        }
+        weekStart: currentWeekStart
       },
       include: {
         chore: {
@@ -55,9 +67,54 @@ export async function POST(request: NextRequest) {
             family: true
           }
         }
-      },
-      orderBy: { weekStart: 'desc' }
+      }
     })
+
+    // If no assignment exists for this week, create one
+    if (!assignment) {
+      console.log('🆕 Creating new assignment for current week:', { choreId, userId: session.user.id, currentWeekStart })
+      
+      // Get the chore to access familyId
+      const chore = await prisma.chore.findUnique({
+        where: { id: choreId },
+        select: { familyId: true }
+      })
+
+      if (!chore) {
+        return NextResponse.json(
+          { error: 'Chore not found' },
+          { status: 404 }
+        )
+      }
+
+      assignment = await prisma.choreAssignment.create({
+        data: {
+          choreId: choreId,
+          userId: session.user.id,
+          familyId: chore.familyId,
+          weekStart: currentWeekStart
+        },
+        include: {
+          chore: {
+            include: {
+              family: {
+                select: {
+                  id: true,
+                  autoApproveChores: true,
+                  pointsToMoneyRate: true
+                }
+              }
+            },
+            select: {
+              title: true,
+              reward: true,
+              points: true,
+              family: true
+            }
+          }
+        }
+      })
+    }
     
     console.log('📋 Found assignment:', assignment ? { id: assignment.id, weekStart: assignment.weekStart, choreTitle: assignment.chore.title } : 'None')
 
