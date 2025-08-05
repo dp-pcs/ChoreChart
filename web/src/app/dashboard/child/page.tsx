@@ -675,10 +675,10 @@ export default function ChildDashboard() {
         <Card className="bg-gradient-to-r from-green-400 to-blue-500 text-white shadow-lg">
           <CardContent className="p-4 sm:p-6">
             <div className="text-center">
-              <div className="text-sm sm:text-base opacity-90 mb-2">Your Point Balance</div>
-              <div className="text-3xl sm:text-4xl font-bold mb-3">{weeklyProgress.pointsEarned || 0} Points</div>
+              <div className="text-sm sm:text-base opacity-90 mb-2">Your Available Point Balance</div>
+              <div className="text-3xl sm:text-4xl font-bold mb-3">{Number(user?.availablePoints || 0).toFixed(0)} Points</div>
               <div className="text-lg sm:text-xl opacity-90">
-                = ${((weeklyProgress.pointsEarned || 0) * (user?.pointRate || 1)).toFixed(2)} Value
+                = ${(Number(user?.availablePoints || 0) * Number(user?.pointRate || 1)).toFixed(2)} Value
               </div>
               <div className="text-xs sm:text-sm opacity-75 mt-2">
                 1 point = ${(user?.pointRate || 1).toFixed(2)}
