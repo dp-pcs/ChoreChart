@@ -46,6 +46,12 @@ export async function POST(request: NextRequest) {
                 pointsToMoneyRate: true
               }
             }
+          },
+          select: {
+            title: true,
+            reward: true,
+            points: true,
+            family: true
           }
         }
       },
@@ -118,7 +124,7 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // If auto-approved, create approval record and reward
+    // If auto-approved, create approval record and award points
     if (shouldAutoApprove) {
       // Find a parent in the family to attribute the auto-approval to
       const parentInFamily = await prisma.familyMembership.findFirst({
@@ -131,22 +137,49 @@ export async function POST(request: NextRequest) {
       })
 
       if (parentInFamily) {
+        // Get chore points (this is the primary currency now)
+        const chorePoints = assignment.chore.points || new Decimal(0)
+        const pointsToMoneyRate = assignment.chore.family.pointsToMoneyRate || 1.00
+        const moneyEquivalent = chorePoints.toNumber() * pointsToMoneyRate
+        
+        console.log('💰 Auto-approving chore:', {
+          choreTitle: assignment.chore.title,
+          userId: session.user.id,
+          chorePoints: chorePoints.toNumber(),
+          pointsToMoneyRate,
+          moneyEquivalent
+        })
+
+        // Award points to user (CRITICAL: This was missing!)
+        await prisma.user.update({
+          where: { id: session.user.id },
+          data: {
+            availablePoints: { increment: chorePoints },
+            lifetimePoints: { increment: chorePoints }
+          }
+        })
+
         // Create auto-approval record
         await prisma.choreApproval.create({
           data: {
             submissionId: submission.id,
             approvedBy: parentInFamily.userId,
             approved: true,
-            feedback: 'Auto-approved by system'
+            feedback: 'Auto-approved by system',
+            score: 100,
+            pointsAwarded: chorePoints,
+            originalPoints: chorePoints,
+            partialReward: new Decimal(moneyEquivalent),
+            originalReward: assignment.chore.reward
           }
         })
 
-        // Create reward record
+        // Create reward record (for tracking/history)
         await prisma.reward.create({
           data: {
             userId: session.user.id,
             title: `Completed: ${assignment.chore.title}`,
-            amount: assignment.chore.reward.toNumber(),
+            amount: moneyEquivalent, // Dollar equivalent 
             type: 'MONEY',
             awardedBy: parentInFamily.userId
           }
