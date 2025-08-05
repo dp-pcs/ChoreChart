@@ -24,6 +24,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    console.log('🔍 Finding assignment for:', { choreId, userId: session.user.id, currentDate: new Date() })
+    
     // Find the chore assignment for this child
     const assignment = await prisma.choreAssignment.findFirst({
       where: {
@@ -49,6 +51,8 @@ export async function POST(request: NextRequest) {
       },
       orderBy: { weekStart: 'desc' }
     })
+    
+    console.log('📋 Found assignment:', assignment ? { id: assignment.id, weekStart: assignment.weekStart, choreTitle: assignment.chore.title } : 'None')
 
     if (!assignment) {
       return NextResponse.json(
@@ -57,17 +61,32 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if already submitted
+    // Check if already submitted for today specifically  
+    const today = new Date()
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+    const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000)
+    
     const existingSubmission = await prisma.choreSubmission.findFirst({
       where: {
         assignmentId: assignment.id,
-        userId: session.user.id
+        userId: session.user.id,
+        completedAt: {
+          gte: startOfDay,
+          lt: endOfDay
+        }
       }
+    })
+    
+    console.log('🔄 Checking for existing submission today:', { 
+      found: !!existingSubmission, 
+      startOfDay, 
+      endOfDay,
+      existingId: existingSubmission?.id 
     })
 
     if (existingSubmission) {
       return NextResponse.json(
-        { error: 'Chore already submitted' },
+        { error: 'Chore already submitted for today' },
         { status: 400 }
       )
     }
