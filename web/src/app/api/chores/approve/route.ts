@@ -24,10 +24,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate score if provided (0-100)
-    if (score !== undefined && (score < 0 || score > 100)) {
+    // Validate score if provided (-100 to 150 to allow deductions and bonuses)
+    if (score !== undefined && (score < -100 || score > 150)) {
       return NextResponse.json(
-        { error: 'Score must be between 0 and 100' },
+        { error: 'Score must be between -100 and 150' },
         { status: 400 }
       )
     }
@@ -84,7 +84,8 @@ export async function POST(request: NextRequest) {
     let finalScore = score
 
     if (score !== undefined && approved) {
-      // Calculate partial points: score percentage of full points
+      // Calculate partial/bonus/penalty points: score percentage of full points
+      // This allows for bonuses (>100%) and penalties (negative scores)
       pointsAwarded = new Decimal(Math.round((score / 100) * chorePoints.toNumber()))
       finalScore = score
     } else if (approved) {
@@ -92,9 +93,9 @@ export async function POST(request: NextRequest) {
       pointsAwarded = chorePoints
       finalScore = 100
     } else {
-      // If denied, no points
-      pointsAwarded = new Decimal(0)
-      finalScore = 0
+      // If denied, no points (but could still have negative score as penalty)
+      pointsAwarded = score !== undefined ? new Decimal(Math.round((score / 100) * chorePoints.toNumber())) : new Decimal(0)
+      finalScore = score !== undefined ? score : 0
     }
 
     // Calculate dollar equivalent for legacy compatibility

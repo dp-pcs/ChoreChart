@@ -75,8 +75,9 @@ export interface ChoreSubmission {
   notes?: string
   imageUrl?: string
   status: 'PENDING' | 'APPROVED' | 'DENIED' | 'AUTO_APPROVED'
-  score?: number // New: Quality score (0-100)
-  partialReward?: number // New: Partial reward amount based on score
+  score?: number // Quality score (-100 to 150, allows penalties and bonuses)
+  partialReward?: number // Reward amount based on score (can be negative for penalties)
+  pointsAwarded?: number // Points awarded based on score (can be negative for penalties)
 }
 
 export interface ChoreApproval {
@@ -86,9 +87,11 @@ export interface ChoreApproval {
   approvedAt: string
   approved: boolean
   feedback?: string
-  score?: number // New: Quality score (0-100)
-  partialReward?: number // New: Partial reward amount based on score
-  originalReward?: number // New: Original full reward amount
+  score?: number // Quality score (-100 to 150, allows penalties and bonuses)
+  partialReward?: number // Reward amount based on score (can be negative for penalties)
+  originalReward?: number // Original full reward amount
+  pointsAwarded?: number // Points awarded based on score (can be negative for penalties)
+  originalPoints?: number // Original full points amount
 }
 
 export interface Message {
