@@ -304,7 +304,7 @@ export async function GET(request: NextRequest) {
       family: {
         name: family?.name || 'Unknown Family',
         totalChildren: children.length,
-        weeklyAllowance: family?.weeklyAllowance || 0,
+        weeklyAllowance: (Number(family?.baseAllowance || 0) + Number(family?.stretchAllowance || 0)),
         settings: familySettings
       },
       weeklyStats: {

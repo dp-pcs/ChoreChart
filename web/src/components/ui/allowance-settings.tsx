@@ -44,6 +44,7 @@ export function AllowanceSettings({ familyId }: AllowanceSettingsProps) {
   const [baseAllowance, setBaseAllowance] = useState(0)
   const [stretchAllowance, setStretchAllowance] = useState(0)
   const [allowBudgetOverrun, setAllowBudgetOverrun] = useState(true)
+  const [showAllowanceExplanation, setShowAllowanceExplanation] = useState(false)
   const [choreEdits, setChoreEdits] = useState<Record<string, { points: number, priority: string }>>({})
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
@@ -160,7 +161,7 @@ export function AllowanceSettings({ familyId }: AllowanceSettingsProps) {
 
   const totalBudget = baseAllowance + stretchAllowance
   const currentTotal = calculateCurrentTotal()
-  const isOverBudget = currentTotal > totalBudget
+  const isOverStretchBudget = currentTotal > stretchAllowance
 
   useEffect(() => {
     fetchAllowanceData()
@@ -179,9 +180,19 @@ export function AllowanceSettings({ familyId }: AllowanceSettingsProps) {
       {/* Budget Overview */}
       <Card>
         <CardHeader>
-          <CardTitle>Weekly Allowance Budget</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            Weekly Allowance Budget
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAllowanceExplanation(true)}
+              className="h-6 w-6 p-0 rounded-full"
+            >
+              ?
+            </Button>
+          </CardTitle>
           <CardDescription>
-            Set your child's base allowance and stretch goals. The system will help you price chores to fit your budget.
+            Set your child's guaranteed base allowance and stretch earnings from chores.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -194,28 +205,28 @@ export function AllowanceSettings({ familyId }: AllowanceSettingsProps) {
                 min="0"
                 value={baseAllowance}
                 onChange={(e) => setBaseAllowance(Number(e.target.value))}
-                placeholder="$7.00"
+                placeholder="$5.00"
               />
-              <p className="text-xs text-gray-500 mt-1">Guaranteed weekly amount</p>
+              <p className="text-xs text-gray-500 mt-1">Guaranteed money for being family member</p>
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-2">Stretch Allowance</label>
+              <label className="block text-sm font-medium mb-2">Chore Earnings Budget</label>
               <Input
                 type="number"
                 step="0.50"
                 min="0"
                 value={stretchAllowance}
                 onChange={(e) => setStretchAllowance(Number(e.target.value))}
-                placeholder="$7.00"
+                placeholder="$5.00"
               />
-              <p className="text-xs text-gray-500 mt-1">Extra if all chores completed</p>
+              <p className="text-xs text-gray-500 mt-1">Available to earn through chores</p>
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-2">Total Weekly Budget</label>
+              <label className="block text-sm font-medium mb-2">Maximum Weekly Total</label>
               <div className="text-2xl font-bold text-green-600">${totalBudget.toFixed(2)}</div>
-              <p className="text-xs text-gray-500">Base + Stretch</p>
+              <p className="text-xs text-gray-500">Base + max chore earnings</p>
             </div>
           </div>
 
@@ -235,23 +246,46 @@ export function AllowanceSettings({ familyId }: AllowanceSettingsProps) {
           </div>
 
           {/* Budget Status */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div>
-              <div className="text-sm text-gray-600">Current Weekly Potential</div>
-              <div className={`text-xl font-bold ${isOverBudget ? 'text-red-600' : 'text-green-600'}`}>
-                ${currentTotal.toFixed(2)}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+              <div>
+                <div className="text-sm text-blue-600 font-medium">Base Allowance (Guaranteed)</div>
+                <div className="text-xl font-bold text-blue-700">
+                  ${baseAllowance.toFixed(2)}
+                </div>
+                <div className="text-xs text-blue-600">Given regardless of chores</div>
               </div>
             </div>
-            {isOverBudget && (
-              <Badge variant="destructive">
-                ${(currentTotal - totalBudget).toFixed(2)} over budget
-              </Badge>
-            )}
-            {!isOverBudget && totalBudget > 0 && (
-              <Badge variant="default">
-                ${(totalBudget - currentTotal).toFixed(2)} under budget
-              </Badge>
-            )}
+            
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div>
+                <div className="text-sm text-gray-600">Chore Earnings Potential</div>
+                <div className={`text-xl font-bold ${isOverStretchBudget ? 'text-red-600' : 'text-green-600'}`}>
+                  ${currentTotal.toFixed(2)}
+                </div>
+                <div className="text-xs text-gray-500">From completing all chores</div>
+              </div>
+              {isOverStretchBudget && (
+                <Badge variant="destructive">
+                  ${(currentTotal - stretchAllowance).toFixed(2)} over stretch budget
+                </Badge>
+              )}
+              {!isOverStretchBudget && stretchAllowance > 0 && (
+                <Badge variant="default">
+                  ${(stretchAllowance - currentTotal).toFixed(2)} under stretch budget
+                </Badge>
+              )}
+            </div>
+            
+            <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+              <div>
+                <div className="text-sm text-green-600 font-medium">Maximum Weekly Total</div>
+                <div className="text-2xl font-bold text-green-700">
+                  ${(baseAllowance + currentTotal).toFixed(2)}
+                </div>
+                <div className="text-xs text-green-600">Base + earned through chores</div>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -357,6 +391,45 @@ export function AllowanceSettings({ familyId }: AllowanceSettingsProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Allowance Explanation Dialog */}
+      {showAllowanceExplanation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md mx-4">
+            <h3 className="text-lg font-bold mb-4">💰 Two Allowance Approaches</h3>
+            <div className="space-y-4 text-sm">
+              <div className="border-l-4 border-blue-500 pl-4">
+                <h4 className="font-semibold text-blue-700">Base Allowance</h4>
+                <p className="text-gray-600">
+                  This is guaranteed money your child receives each week just for being part of the family. 
+                  It's not tied to chores and helps teach basic money management.
+                </p>
+              </div>
+              
+              <div className="border-l-4 border-green-500 pl-4">
+                <h4 className="font-semibold text-green-700">Chore Earnings Budget</h4>
+                <p className="text-gray-600">
+                  This is additional money your child can earn by completing chores. The chore values 
+                  you set are compared against this amount, not the base allowance.
+                </p>
+              </div>
+              
+              <div className="bg-amber-50 p-3 rounded-lg">
+                <p className="text-amber-800 text-xs">
+                  <strong>Tip:</strong> Some families prefer to put everything in "Chore Earnings" and set 
+                  Base Allowance to $0. Others like to provide a small base and use chores for extra earnings.
+                </p>
+              </div>
+            </div>
+            
+            <div className="mt-6 flex justify-end">
+              <Button onClick={() => setShowAllowanceExplanation(false)}>
+                Got it!
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

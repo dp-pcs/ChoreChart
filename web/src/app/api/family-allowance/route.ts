@@ -65,21 +65,26 @@ export async function GET(request: NextRequest) {
       return total + (chorePoints * weeklyOccurrences * chore.assignments.length)
     }, 0)
 
-    const totalAllowanceBudget = Number(family.baseAllowance) + Number(family.stretchAllowance)
+    const baseAllowanceAmount = Number(family.baseAllowance)
+    const stretchAllowanceAmount = Number(family.stretchAllowance)
+    const totalAllowanceBudget = baseAllowanceAmount + stretchAllowanceAmount
 
     return NextResponse.json({
       success: true,
       settings: {
-        baseAllowance: Number(family.baseAllowance),
-        stretchAllowance: Number(family.stretchAllowance),
+        baseAllowance: baseAllowanceAmount,
+        stretchAllowance: stretchAllowanceAmount,
         totalBudget: totalAllowanceBudget,
         allowBudgetOverrun: family.allowBudgetOverrun,
         pointsToMoneyRate: family.pointsToMoneyRate
       },
       analysis: {
         totalWeeklyPotential,
-        budgetDifference: totalWeeklyPotential - totalAllowanceBudget,
-        isOverBudget: totalWeeklyPotential > totalAllowanceBudget
+        stretchBudgetDifference: totalWeeklyPotential - stretchAllowanceAmount,
+        isOverStretchBudget: totalWeeklyPotential > stretchAllowanceAmount,
+        // Legacy fields for backward compatibility
+        budgetDifference: totalWeeklyPotential - stretchAllowanceAmount,
+        isOverBudget: totalWeeklyPotential > stretchAllowanceAmount
       },
       chores: family.chores
     })
