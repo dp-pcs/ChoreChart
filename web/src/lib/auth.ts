@@ -1,6 +1,7 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { PrismaAdapter } from "@next-auth/prisma-adapter"
+// NOTE: Temporarily disabling PrismaAdapter to avoid 500s if NextAuth tables are not present
+// import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import { prisma } from "./prisma"
 import { UserRole } from "./types"
 import bcrypt from "bcryptjs"
@@ -8,7 +9,7 @@ import bcrypt from "bcryptjs"
 export const authOptions: NextAuthOptions = {
   // Explicitly set secret; must be configured in production
   secret: process.env.NEXTAUTH_SECRET,
-  adapter: PrismaAdapter(prisma),
+  // adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -114,6 +115,12 @@ export const authOptions: NextAuthOptions = {
         session.user.family = token.family as any
       }
       return session
+    }
+  },
+  events: {
+    async error(message) {
+      // Surface NextAuth errors in logs (non-sensitive)
+      console.error('NextAuth error event:', message)
     }
   },
   pages: {
