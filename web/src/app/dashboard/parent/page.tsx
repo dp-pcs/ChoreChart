@@ -186,7 +186,16 @@ export default function ParentDashboard() {
 
   const fetchParentalFeedback = async () => {
     try {
-      const response = await fetch('/api/parental-feedback?limit=10')
+      // Add timestamp to prevent PWA caching
+      const timestamp = new Date().getTime()
+      const response = await fetch(`/api/parental-feedback?limit=10&_t=${timestamp}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      })
       if (response.ok) {
         const result = await response.json()
         setParentalFeedback(result.feedback || [])
@@ -199,7 +208,14 @@ export default function ParentDashboard() {
 
   const fetchImportantEvents = async () => {
     try {
-      const response = await fetch('/api/important-events?upcoming=true&limit=5')
+      const response = await fetch('/api/important-events?upcoming=true&limit=5', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      })
       if (response.ok) {
         const result = await response.json()
         setImportantEvents(result.events || [])
