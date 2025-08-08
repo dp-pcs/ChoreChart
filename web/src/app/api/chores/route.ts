@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getWeekStart, convertDecimalsDeep } from '@/lib/utils'
+import { getActiveFamilyId } from '@/lib/family'
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,21 +13,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get user's family
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { familyId: true }
-    })
-
-    if (!user?.familyId) {
+    // Resolve active family context
+    const familyId = await getActiveFamilyId(session.user.id)
+    if (!familyId) {
       return NextResponse.json({ error: 'User has no family' }, { status: 400 })
     }
     
     // Get all chores for the family
     const chores = await prisma.chore.findMany({
-      where: {
-        familyId: user.familyId
-      },
+      where: { familyId },
       include: {
         assignments: {
           include: {
@@ -39,8 +35,7 @@ export async function GET(request: NextRequest) {
         createdAt: 'desc'
       }
     })
-
-    return NextResponse.json({ chores })
+    return NextResponse.json(convertDecimalsDeep({ chores }))
     
   } catch (error) {
     console.error('Error fetching chores:', error)
@@ -82,13 +77,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get user's family
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { familyId: true }
-    })
-
-    if (!user?.familyId) {
+    const familyId = await getActiveFamilyId(session.user.id)
+    if (!familyId) {
       return NextResponse.json({ error: 'User has no family' }, { status: 400 })
     }
 
@@ -108,7 +98,7 @@ export async function POST(request: NextRequest) {
       // Auto-assign to all children in the family
       const familyChildren = await prisma.user.findMany({
         where: {
-          familyId: user.familyId,
+          familyId,
           role: 'CHILD'
         },
         select: { id: true }
@@ -124,15 +114,15 @@ export async function POST(request: NextRequest) {
         reward: reward || 0,
         estimatedMinutes: estimatedMinutes || 15,
         isRequired: Boolean(isRequired),
-        familyId: user.familyId,
+        familyId,
         type: choreType,
         frequency: choreFrequency,
         scheduledDays: selectedDays || [],
         assignments: {
           create: targetChildIds.map((childId: string) => ({
             userId: childId,
-            familyId: user.familyId,
-            weekStart: new Date()
+            familyId,
+            weekStart: getWeekStart(new Date())
           }))
         }
       },
@@ -147,11 +137,11 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({ 
+    return NextResponse.json(convertDecimalsDeep({ 
       success: true, 
       chore,
       message: `Chore "${title}" created successfully!`
-    })
+    }))
     
   } catch (error) {
     console.error('Error creating chore:', error)
@@ -193,23 +183,13 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // Get user's family
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { familyId: true }
-    })
-
-    if (!user?.familyId) {
+    const familyId = await getActiveFamilyId(session.user.id)
+    if (!familyId) {
       return NextResponse.json({ error: 'User has no family' }, { status: 400 })
     }
 
     // Verify chore belongs to user's family
-    const existingChore = await prisma.chore.findFirst({
-      where: {
-        id: choreId,
-        familyId: user.familyId
-      }
-    })
+    const existingChore = await prisma.chore.findFirst({ where: { id: choreId, familyId } })
 
     if (!existingChore) {
       return NextResponse.json({ error: 'Chore not found or access denied' }, { status: 404 })
@@ -276,8 +256,8 @@ export async function PUT(request: NextRequest) {
           data: targetChildIds.map((childId: string) => ({
             choreId,
             userId: childId,
-            familyId: user.familyId,
-            weekStart: new Date()
+            familyId,
+            weekStart: getWeekStart(new Date())
           }))
         })
       }

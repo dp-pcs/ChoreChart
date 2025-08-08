@@ -10,7 +10,10 @@ export function getWeekStart(date: Date = new Date()): Date {
   const d = new Date(date)
   const day = d.getDay()
   const diff = d.getDate() - day // First day is Sunday (0)
-  return new Date(d.setDate(diff))
+  const start = new Date(d.setDate(diff))
+  // Normalize to midnight for stable Date equality comparisons
+  start.setHours(0, 0, 0, 0)
+  return start
 }
 
 export function getWeekEnd(date: Date = new Date()): Date {
@@ -47,6 +50,36 @@ export function formatCurrency(amount: number): string {
     style: 'currency',
     currency: 'USD'
   }).format(amount)
+}
+
+// Prisma Decimal helpers (safe JSON conversion)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function decimalToNumber(value: any): number | null {
+  if (value == null) return null
+  if (typeof value === 'number') return value
+  if (typeof value === 'string') return Number(value)
+  // Prisma Decimal has toNumber
+  if (typeof value.toNumber === 'function') return value.toNumber()
+  const num = Number(value)
+  return Number.isNaN(num) ? null : num
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function convertDecimalsDeep(obj: any): any {
+  if (obj == null) return obj
+  if (Array.isArray(obj)) return obj.map(convertDecimalsDeep)
+  if (typeof obj === 'object') {
+    // Prisma Decimal check
+    if (typeof (obj as any).toNumber === 'function') {
+      return (obj as any).toNumber()
+    }
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(obj)) {
+      out[k] = convertDecimalsDeep(v)
+    }
+    return out
+  }
+  return obj
 }
 
 export function isToday(date: Date): boolean {

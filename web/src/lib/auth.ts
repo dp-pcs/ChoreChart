@@ -66,9 +66,9 @@ export const authOptions: NextAuthOptions = {
             return null
           }
 
-          // For development, we'll compare plain text passwords
-          // In production, you should hash passwords
-          const isPasswordValid = credentials.password === "password" || 
+          // In production, strictly require hashed password check
+          const allowDevPassword = process.env.NODE_ENV !== 'production'
+          const isPasswordValid = (allowDevPassword && credentials.password === 'password') ||
             await bcrypt.compare(credentials.password, user.password || "")
 
           if (!isPasswordValid) {

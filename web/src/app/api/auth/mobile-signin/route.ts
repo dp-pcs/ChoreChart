@@ -27,8 +27,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // For development, allow "password" or check hashed password
-    const isPasswordValid = password === "password" || 
+    // In production, strictly require hashed password check
+    const allowDevPassword = process.env.NODE_ENV !== 'production'
+    const isPasswordValid = (allowDevPassword && password === 'password') ||
       (user.password && await bcrypt.compare(password, user.password))
 
     if (!isPasswordValid) {
@@ -38,7 +39,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create JWT token
+    // Create JWT token (require configured secret)
+    const secret = process.env.NEXTAUTH_SECRET
+    if (!secret) {
+      console.error('Missing NEXTAUTH_SECRET for mobile-signin')
+      return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 })
+    }
+
     const token = jwt.sign(
       { 
         userId: user.id,
@@ -46,7 +53,7 @@ export async function POST(request: NextRequest) {
         role: user.role,
         familyId: user.familyId
       },
-      process.env.NEXTAUTH_SECRET || 'your-secret-key',
+      secret,
       { expiresIn: '7d' }
     )
 

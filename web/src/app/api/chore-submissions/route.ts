@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getWeekStart, convertDecimalsDeep } from '@/lib/utils'
+import { getActiveFamilyId } from '@/lib/family'
 import { Decimal } from '@prisma/client/runtime/library'
 
 export async function POST(request: NextRequest) {
@@ -27,18 +29,14 @@ export async function POST(request: NextRequest) {
 
     console.log('🔍 Finding assignment for:', { choreId, userId: session.user.id, currentDate: new Date() })
     
-    // Calculate current week start (Monday)
+    // Calculate current week start (Sunday midnight for consistency)
     const now = new Date()
-    const currentWeekStart = new Date(now)
+    const currentWeekStart = getWeekStart(now)
     const dayOfWeek = now.getDay()
-    const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1 // Sunday = 0, so it becomes 6 days from Monday
-    currentWeekStart.setDate(now.getDate() - daysFromMonday)
-    currentWeekStart.setHours(0, 0, 0, 0)
 
     console.log('📅 Current week calculation:', { 
       now: now.toISOString(), 
       dayOfWeek, 
-      daysFromMonday, 
       currentWeekStart: currentWeekStart.toISOString() 
     })
 
@@ -74,7 +72,7 @@ export async function POST(request: NextRequest) {
     if (!assignment) {
       console.log('🆕 Creating new assignment for current week:', { choreId, userId: session.user.id, currentWeekStart })
       
-      // Get the chore to access familyId
+      // Get the chore to access familyId and ensure it matches user's active family
       const chore = await prisma.chore.findUnique({
         where: { id: choreId },
         select: { familyId: true }
@@ -245,7 +243,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
+    return NextResponse.json(convertDecimalsDeep({
       success: true,
       submission: {
         id: submission.id,
@@ -256,7 +254,7 @@ export async function POST(request: NextRequest) {
       message: shouldAutoApprove 
         ? `✅ ${assignment.chore.title} auto-approved! You earned $${assignment.chore.reward}!`
         : `📝 ${assignment.chore.title} submitted for parent review`
-    })
+    }))
 
   } catch (error) {
     console.error('Chore submission error:', error)

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma, Decimal } from '@/lib/prisma'
+import { convertDecimalsDeep } from '@/lib/utils'
 
 export async function POST(request: NextRequest) {
   try {
@@ -150,7 +151,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    return NextResponse.json({
+    return NextResponse.json(convertDecimalsDeep({
       success: true,
       message: approved 
         ? `Approved ${submission.assignment.chore.title} for ${submission.user.name} with ${finalScore}% quality score - ${pointsAwarded.toNumber()} points earned ($${partialReward})`
@@ -162,7 +163,7 @@ export async function POST(request: NextRequest) {
         originalPoints: chorePoints.toNumber(),
         originalReward: submission.assignment.chore.reward
       }
-    })
+    }))
 
   } catch (error) {
     console.error('Chore approval error:', error)

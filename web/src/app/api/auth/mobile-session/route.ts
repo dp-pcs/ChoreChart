@@ -15,11 +15,17 @@ export async function GET(request: NextRequest) {
 
     const token = authHeader.substring(7) // Remove 'Bearer ' prefix
 
-    // Verify JWT token
-    const decoded = jwt.verify(
-      token, 
-      process.env.NEXTAUTH_SECRET || 'your-secret-key'
-    ) as any
+    // Verify JWT token (require configured secret)
+    const secret = process.env.NEXTAUTH_SECRET
+    if (!secret) {
+      console.error('Missing NEXTAUTH_SECRET for mobile-session')
+      return NextResponse.json(
+        { error: 'Server misconfiguration' },
+        { status: 500 }
+      )
+    }
+
+    const decoded = jwt.verify(token, secret) as any
 
     if (!decoded.userId) {
       return NextResponse.json(

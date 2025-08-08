@@ -9,14 +9,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
-  // Explicitly configure environment variables for API routes (Lambda functions)
-  env: {
-    DATABASE_URL: process.env.DATABASE_URL,
-    DIRECT_URL: process.env.DIRECT_URL,
-    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
-    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-  },
+  // Avoid exposing server-only secrets to the client bundle
 };
 
 export default nextConfig;
