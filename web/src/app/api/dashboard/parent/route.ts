@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { convertDecimalsDeep } from '@/lib/utils'
+import { getActiveFamilyId } from '@/lib/family'
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,134 +40,42 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, data: dashboardData })
     }
 
-    // First, try to get user's primary family membership
-    let familyMembership = null
-    let family = null
-    let familyId = null
-
-    try {
-      // Check if FamilyMembership table exists and has data
-      const primaryFamilyMembership = await prisma.familyMembership.findFirst({
-        where: {
-          userId: session.user.id,
-          isActive: true,
-          isPrimary: true
-        },
-        include: {
-          family: {
-            include: {
-              familyMemberships: {
-                where: { isActive: true },
-                include: {
-                  user: {
-                    select: {
-                      id: true,
-                      name: true,
-                      email: true,
-                      role: true,
-                      createdAt: true
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      })
-
-      familyMembership = primaryFamilyMembership
-
-      // If no primary family membership, try to get any active family membership
-      if (!familyMembership) {
-        familyMembership = await prisma.familyMembership.findFirst({
-          where: {
-            userId: session.user.id,
-            isActive: true
-          },
-          include: {
-            family: {
-              include: {
-                familyMemberships: {
-                  where: { isActive: true },
-                  include: {
-                    user: {
-                      select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                        role: true,
-                        createdAt: true
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        })
-      }
-
-      if (familyMembership) {
-        family = familyMembership.family
-        familyId = family.id
-      }
-    } catch (error) {
-      console.log('FamilyMembership query failed, likely table does not exist:', error instanceof Error ? error.message : String(error))
+    // Resolve active familyId robustly and fetch basic family info and children list
+    const familyId = await getActiveFamilyId(session.user.id)
+    if (!familyId) {
+      return NextResponse.json({ 
+        error: 'No family found for user. Please contact support or set up your family.',
+        code: 'NO_FAMILY'
+      }, { status: 404 })
     }
 
-    // Fallback: use direct family relationship if no family membership exists
-    if (!familyMembership) {
-      console.log('No family membership found, falling back to direct family relationship')
-      
-      const user = await prisma.user.findUnique({
-        where: { id: session.user.id },
-        include: {
-          family: {
-            include: {
-              users: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                  role: true,
-                  createdAt: true
-                }
-              }
-            }
-          }
+    const [family, familyUsers] = await Promise.all([
+      prisma.family.findUnique({
+        where: { id: familyId },
+        select: {
+          id: true,
+          name: true,
+          autoApproveChores: true,
+          allowMultipleParents: true,
+          emailNotifications: true,
+          shareReports: true,
+          crossFamilyApproval: true,
+          baseAllowance: true,
+          stretchAllowance: true,
+          pointsToMoneyRate: true
         }
+      }),
+      prisma.user.findMany({
+        where: { familyId, role: 'CHILD' },
+        select: { id: true, name: true, email: true, createdAt: true }
       })
-
-      if (!user?.family) {
-        return NextResponse.json({ 
-          error: 'No family found for user. Please contact support or set up your family.',
-          code: 'NO_FAMILY'
-        }, { status: 404 })
-      }
-
-      family = user.family
-      familyId = family.id
-
-      // Create a mock familyMembership structure for compatibility
-      familyMembership = {
-        family: {
-          ...family,
-          familyMemberships: family.users.map(u => ({
-            user: u,
-            role: u.role,
-            isActive: true,
-            isPrimary: true,
-            canInvite: u.role === 'PARENT',
-            canManage: u.role === 'PARENT'
-          }))
-        },
-        canInvite: user.role === 'PARENT',
-        canManage: user.role === 'PARENT'
-      }
+    ])
+    if (!family) {
+      return NextResponse.json({ error: 'Family not found' }, { status: 404 })
     }
 
     // Get pending chore submissions for approval
-    const pendingSubmissions = familyId ? await prisma.choreSubmission.findMany({
+    const pendingSubmissions = await prisma.choreSubmission.findMany({
       where: {
         assignment: {
           familyId: familyId
@@ -194,13 +103,13 @@ export async function GET(request: NextRequest) {
         }
       },
       orderBy: { submittedAt: 'desc' }
-    }) : []
+    })
 
     // Get completed chore submissions (auto-approved and manually approved) from last 7 days
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
     
-    const completedSubmissions = familyId ? await prisma.choreSubmission.findMany({
+    const completedSubmissions = await prisma.choreSubmission.findMany({
       where: {
         assignment: {
           familyId: familyId
@@ -243,7 +152,7 @@ export async function GET(request: NextRequest) {
       },
       orderBy: { submittedAt: 'desc' },
       take: 20 // Limit to recent 20 completed chores
-    }) : []
+    })
 
     // Get weekly stats
     const weekStart = new Date()
@@ -254,7 +163,7 @@ export async function GET(request: NextRequest) {
     weekEnd.setDate(weekEnd.getDate() + 6)
     weekEnd.setHours(23, 59, 59, 999)
 
-    const weeklySubmissions = familyId ? await prisma.choreSubmission.findMany({
+    const weeklySubmissions = await prisma.choreSubmission.findMany({
       where: {
         assignment: {
           familyId: familyId
@@ -275,12 +184,10 @@ export async function GET(request: NextRequest) {
           }
         }
       }
-    }) : []
+    })
 
     // Calculate stats
-    const children = (family as any)?.familyMemberships ? 
-      (family as any).familyMemberships.filter((m: any) => m.role === 'CHILD' || (m.user && m.user.role === 'CHILD')) :
-      (family as any)?.users ? (family as any).users.filter((u: any) => u.role === 'CHILD') : []
+    const children = familyUsers
     
     const completedChores = weeklySubmissions.filter((s: any) => s.status === 'APPROVED')
     const totalEarnings = completedChores.reduce((sum: number, s: any) => sum + (s.assignment.chore.reward || 0), 0)
@@ -289,7 +196,7 @@ export async function GET(request: NextRequest) {
       : 0
 
     // Get recent activity
-    const recentActivity = familyId ? await prisma.choreSubmission.findMany({
+    const recentActivity = await prisma.choreSubmission.findMany({
       where: {
         assignment: {
           familyId: familyId
@@ -314,15 +221,15 @@ export async function GET(request: NextRequest) {
       },
       orderBy: { submittedAt: 'desc' },
       take: 5
-    }) : []
+    })
 
     // Handle family settings with fallback for missing fields
     const familySettings = {
-      autoApproveChores: family?.autoApproveChores || false,
-      allowMultipleParents: family?.allowMultipleParents !== undefined ? family.allowMultipleParents : true,
-      emailNotifications: family?.emailNotifications !== undefined ? family.emailNotifications : true,
-      shareReports: family?.shareReports || false,
-      crossFamilyApproval: family?.crossFamilyApproval || false
+      autoApproveChores: !!family.autoApproveChores,
+      allowMultipleParents: family.allowMultipleParents !== undefined ? family.allowMultipleParents : true,
+      emailNotifications: family.emailNotifications !== undefined ? family.emailNotifications : true,
+      shareReports: !!family.shareReports,
+      crossFamilyApproval: !!family.crossFamilyApproval
     }
 
     const dashboardData = {
@@ -366,15 +273,12 @@ export async function GET(request: NextRequest) {
           isAutoApproved: submission.status === 'AUTO_APPROVED'
         } : null
       })),
-      children: children.map((child: any) => {
-        const childUser = child.user || child
-        return {
-          id: childUser.id,
-          name: childUser.name,
-          email: childUser.email,
-          joinedAt: childUser.createdAt
-        }
-      }),
+      children: children.map((child: any) => ({
+        id: child.id,
+        name: child.name,
+        email: child.email,
+        joinedAt: child.createdAt
+      })),
       recentActivity: recentActivity.map((activity: any) => ({
         id: activity.id,
         childName: activity.user.name,
@@ -386,8 +290,8 @@ export async function GET(request: NextRequest) {
         partialReward: activity.partialReward
       })),
       permissions: {
-        canInvite: familyMembership.canInvite !== undefined ? familyMembership.canInvite : true,
-        canManage: familyMembership.canManage !== undefined ? familyMembership.canManage : true
+        canInvite: true,
+        canManage: true
       }
     }
 
