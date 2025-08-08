@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getActiveFamilyId } from '@/lib/family'
+import { convertDecimalsDeep } from '@/lib/utils'
 
 // GET: Fetch parental feedback
 export async function GET(request: NextRequest) {
@@ -32,9 +34,10 @@ export async function GET(request: NextRequest) {
         whereClause.childId = childId
       } else {
         // Get all children in the family
+        const familyId = await getActiveFamilyId(session.user.id)
         const familyChildren = await prisma.user.findMany({
           where: {
-            familyId: session.user.familyId,
+            familyId: familyId || undefined,
             role: 'CHILD'
           },
           select: { id: true }
@@ -103,11 +106,11 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({
+    return NextResponse.json(convertDecimalsDeep({
       success: true,
       feedback,
       todaysSummary: todaysFeedback
-    })
+    }))
 
   } catch (error) {
     console.error('Parental feedback fetch error:', error)
@@ -147,11 +150,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify child belongs to parent's family
+    // Verify child belongs to parent's active family
+    const familyId = await getActiveFamilyId(session.user.id)
     const child = await prisma.user.findFirst({
       where: {
         id: childId,
-        familyId: session.user.familyId,
+        familyId: familyId || undefined,
         role: 'CHILD'
       }
     })
@@ -235,12 +239,12 @@ export async function POST(request: NextRequest) {
       patternWarning = `🌟 ${child.name} is having a great day with ${todayCount} positive feedback entries!`
     }
 
-    return NextResponse.json({
+    return NextResponse.json(convertDecimalsDeep({
       success: true,
       feedback: feedbackRecord,
       patternWarning,
       message: 'Feedback logged successfully!'
-    })
+    }))
 
   } catch (error) {
     console.error('Parental feedback creation error:', error)

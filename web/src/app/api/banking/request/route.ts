@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getActiveFamilyId } from '@/lib/family'
+import { convertDecimalsDeep } from '@/lib/utils'
 
 export async function POST(request: NextRequest) {
   try {
@@ -78,11 +80,11 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({ 
+    return NextResponse.json(convertDecimalsDeep({ 
       success: true, 
       transaction,
       message: `Banking request submitted for ${requestedAmount} points ($${moneyValue.toFixed(2)})`
-    })
+    }))
 
   } catch (error) {
     console.error('Banking request error:', error)
@@ -131,10 +133,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({ 
-      success: true, 
-      transactions 
-    })
+    return NextResponse.json(convertDecimalsDeep({ success: true, transactions }))
 
   } catch (error) {
     console.error('Banking history error:', error)

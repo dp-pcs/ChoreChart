@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getActiveFamilyId } from '@/lib/family'
+import { convertDecimalsDeep } from '@/lib/utils'
 
 // GET: Fetch real-world activities
 export async function GET(request: NextRequest) {
@@ -30,9 +32,10 @@ export async function GET(request: NextRequest) {
         whereClause.childId = childId
       } else {
         // Get all children in the family
+        const familyId = await getActiveFamilyId(session.user.id)
         const familyChildren = await prisma.user.findMany({
           where: {
-            familyId: session.user.familyId,
+            familyId: familyId || undefined,
             role: 'CHILD'
           },
           select: { id: true }
@@ -75,10 +78,10 @@ export async function GET(request: NextRequest) {
       orderBy: { occurredAt: 'desc' }
     })
 
-    return NextResponse.json({
+    return NextResponse.json(convertDecimalsDeep({
       success: true,
       activities
-    })
+    }))
 
   } catch (error) {
     console.error('Real-world activities fetch error:', error)
@@ -111,11 +114,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify child belongs to parent's family
+    // Verify child belongs to parent's active family
+    const familyId = await getActiveFamilyId(session.user.id)
     const child = await prisma.user.findFirst({
       where: {
         id: childId,
-        familyId: session.user.familyId,
+        familyId: familyId || undefined,
         role: 'CHILD'
       }
     })
@@ -175,11 +179,11 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    return NextResponse.json({
+    return NextResponse.json(convertDecimalsDeep({
       success: true,
       activity,
       message: 'Real-world activity logged successfully!'
-    })
+    }))
 
   } catch (error) {
     console.error('Real-world activity creation error:', error)
@@ -270,11 +274,11 @@ export async function PUT(request: NextRequest) {
       })
     }
 
-    return NextResponse.json({
+    return NextResponse.json(convertDecimalsDeep({
       success: true,
       activity: updatedActivity,
       message: 'Activity updated successfully!'
-    })
+    }))
 
   } catch (error) {
     console.error('Real-world activity update error:', error)

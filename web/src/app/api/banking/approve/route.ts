@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getActiveFamilyId } from '@/lib/family'
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Only parents can approve banking requests' }, { status: 403 })
     }
 
-    const { transactionId, approved, note } = await request.json()
+    const { transactionId, approved } = await request.json()
 
     if (!transactionId) {
       return NextResponse.json(
@@ -53,7 +54,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify parent is in same family
-    if (transaction.user.familyId !== session.user.familyId) {
+    const familyId = await getActiveFamilyId(session.user.id)
+    if (transaction.user.familyId !== familyId) {
       return NextResponse.json(
         { error: 'Cannot approve requests from other families' },
         { status: 403 }

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getActiveFamilyId } from '@/lib/family'
+import { convertDecimalsDeep } from '@/lib/utils'
 
 // GET: Fetch impromptu submissions
 export async function GET(request: NextRequest) {
@@ -28,9 +30,10 @@ export async function GET(request: NextRequest) {
         whereClause.childId = childId
       } else {
         // Get all children in the family
+        const familyId = await getActiveFamilyId(session.user.id)
         const familyChildren = await prisma.user.findMany({
           where: {
-            familyId: session.user.familyId,
+            familyId: familyId || undefined,
             role: 'CHILD'
           },
           select: { id: true }
@@ -56,10 +59,10 @@ export async function GET(request: NextRequest) {
       orderBy: { submittedAt: 'desc' }
     })
 
-    return NextResponse.json({
+    return NextResponse.json(convertDecimalsDeep({
       success: true,
       submissions
-    })
+    }))
 
   } catch (error) {
     console.error('Impromptu submissions fetch error:', error)
@@ -145,12 +148,13 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    // Verify submission exists and belongs to family
+    // Verify submission exists and belongs to active family
+    const familyId = await getActiveFamilyId(session.user.id)
     const submission = await prisma.impromptuSubmission.findFirst({
       where: {
         id: submissionId,
         child: {
-          familyId: session.user.familyId
+          familyId: familyId || undefined
         }
       },
       include: {
@@ -207,11 +211,11 @@ export async function PATCH(request: NextRequest) {
       })
     }
 
-    return NextResponse.json({
+    return NextResponse.json(convertDecimalsDeep({
       success: true,
       submission: updatedSubmission,
       message: `Submission ${status.toLowerCase()} successfully!`
-    })
+    }))
 
   } catch (error) {
     console.error('Impromptu submission response error:', error)

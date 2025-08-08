@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getActiveFamilyId } from '@/lib/family'
+import { convertDecimalsDeep } from '@/lib/utils'
 
 // GET: Fetch important events
 export async function GET(request: NextRequest) {
@@ -16,20 +18,13 @@ export async function GET(request: NextRequest) {
     const upcoming = url.searchParams.get('upcoming') === 'true'
     const limit = url.searchParams.get('limit')
 
-    // Get user's family
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { familyId: true }
-    })
-
-    if (!user?.familyId) {
+    const familyId = await getActiveFamilyId(session.user.id)
+    if (!familyId) {
       return NextResponse.json({ error: 'User has no family' }, { status: 400 })
     }
 
     // Build where clause
-    const whereClause: any = {
-      familyId: user.familyId
-    }
+    const whereClause: any = { familyId }
 
     // If upcoming=true, only get future events
     if (upcoming) {
@@ -69,10 +64,10 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({
+    return NextResponse.json(convertDecimalsDeep({
       success: true,
       events: eventsWithCountdown
-    })
+    }))
 
   } catch (error) {
     console.error('Important events fetch error:', error)
@@ -113,19 +108,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get user's family
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { familyId: true }
-    })
-
-    if (!user?.familyId) {
+    const familyId = await getActiveFamilyId(session.user.id)
+    if (!familyId) {
       return NextResponse.json({ error: 'User has no family' }, { status: 400 })
     }
 
     const event = await prisma.importantEvent.create({
       data: {
-        familyId: user.familyId,
+        familyId,
         title: title.trim(),
         description: description?.trim() || null,
         eventDate: new Date(eventDate),
@@ -145,11 +135,11 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({
+    return NextResponse.json(convertDecimalsDeep({
       success: true,
       event,
       message: `Event "${title}" created successfully!`
-    })
+    }))
 
   } catch (error) {
     console.error('Important event creation error:', error)

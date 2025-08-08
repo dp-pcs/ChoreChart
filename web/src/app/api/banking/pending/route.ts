@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getActiveFamilyId } from '@/lib/family'
+import { convertDecimalsDeep } from '@/lib/utils'
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,10 +17,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Only parents can view banking requests' }, { status: 403 })
     }
 
-    // Get all pending banking requests from children in the same family
+    // Get all pending banking requests from children in the active family
+    const familyId = await getActiveFamilyId(session.user.id)
+    if (!familyId) {
+      return NextResponse.json({ error: 'User has no family' }, { status: 400 })
+    }
     const requests = await prisma.pointTransaction.findMany({
       where: {
-        familyId: session.user.familyId,
+        familyId,
         type: 'BANKING_REQUEST',
         status: 'PENDING'
       },
@@ -33,10 +39,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({ 
-      success: true, 
-      requests 
-    })
+    return NextResponse.json(convertDecimalsDeep({ success: true, requests }))
 
   } catch (error) {
     console.error('Banking pending requests error:', error)
