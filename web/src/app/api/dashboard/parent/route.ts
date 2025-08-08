@@ -40,13 +40,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, data: dashboardData })
     }
 
-    // Resolve active familyId robustly and fetch basic family info and children list
-    const familyId = await getActiveFamilyId(session.user.id)
+    // Resolve active familyId; auto-provision if missing to avoid 500s for first-time users
+    let familyId = await getActiveFamilyId(session.user.id)
     if (!familyId) {
-      return NextResponse.json({ 
-        error: 'No family found for user. Please contact support or set up your family.',
-        code: 'NO_FAMILY'
-      }, { status: 404 })
+      const self = await prisma.user.findUnique({ where: { id: session.user.id }, select: { id: true, name: true, email: true } })
+      const familyName = self?.name ? `${self.name.split(' ')[0]} Family` : 'My Family'
+      const family = await prisma.family.create({ data: { name: familyName } })
+      await prisma.user.update({ where: { id: session.user.id }, data: { familyId: family.id } })
+      await prisma.familyMembership.create({
+        data: {
+          userId: session.user.id,
+          familyId: family.id,
+          role: 'PARENT',
+          isActive: true,
+          isPrimary: true,
+          canInvite: true,
+          canManage: true
+        }
+      })
+      familyId = family.id
     }
 
     const [family, familyUsers] = await Promise.all([
