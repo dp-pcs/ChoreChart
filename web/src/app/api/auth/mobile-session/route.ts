@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const decoded = jwt.verify(token, secret) as any
+    const decoded = jwt.verify(token, secret) as { userId?: string }
 
     if (!decoded.userId) {
       return NextResponse.json(

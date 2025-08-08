@@ -54,25 +54,26 @@ export function formatCurrency(amount: number): string {
 
 // Prisma Decimal helpers (safe JSON conversion)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function decimalToNumber(value: any): number | null {
+type DecimalLike = { toNumber: () => number }
+
+function isDecimalLike(value: unknown): value is DecimalLike {
+  return !!value && typeof value === 'object' && typeof (value as { toNumber?: unknown }).toNumber === 'function'
+}
+
+export function decimalToNumber(value: unknown): number | null {
   if (value == null) return null
   if (typeof value === 'number') return value
   if (typeof value === 'string') return Number(value)
-  // Prisma Decimal has toNumber
-  if (typeof value.toNumber === 'function') return value.toNumber()
+  if (isDecimalLike(value)) return value.toNumber()
   const num = Number(value)
   return Number.isNaN(num) ? null : num
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function convertDecimalsDeep(obj: any): any {
+export function convertDecimalsDeep(obj: unknown): unknown {
   if (obj == null) return obj
   if (Array.isArray(obj)) return obj.map(convertDecimalsDeep)
+  if (isDecimalLike(obj)) return obj.toNumber()
   if (typeof obj === 'object') {
-    // Prisma Decimal check
-    if (typeof (obj as any).toNumber === 'function') {
-      return (obj as any).toNumber()
-    }
     const out: Record<string, unknown> = {}
     for (const [k, v] of Object.entries(obj)) {
       out[k] = convertDecimalsDeep(v)
@@ -218,24 +219,20 @@ export function generateId(): string {
 }
 
 // Deep equality check
-export function deepEqual(obj1: any, obj2: any): boolean {
+export function deepEqual(obj1: unknown, obj2: unknown): boolean {
   if (obj1 === obj2) return true
-  
   if (obj1 == null || obj2 == null) return false
-  
   if (typeof obj1 !== typeof obj2) return false
-  
-  if (typeof obj1 !== 'object') return false
-  
-  const keys1 = Object.keys(obj1)
-  const keys2 = Object.keys(obj2)
-  
+  if (typeof obj1 !== 'object' || typeof obj2 !== 'object') return false
+
+  const a = obj1 as Record<string, unknown>
+  const b = obj2 as Record<string, unknown>
+  const keys1 = Object.keys(a)
+  const keys2 = Object.keys(b)
   if (keys1.length !== keys2.length) return false
-  
   for (const key of keys1) {
     if (!keys2.includes(key)) return false
-    if (!deepEqual(obj1[key], obj2[key])) return false
+    if (!deepEqual(a[key], b[key])) return false
   }
-  
   return true
-} 
+}
