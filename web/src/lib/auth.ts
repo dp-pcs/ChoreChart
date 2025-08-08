@@ -69,7 +69,7 @@ export const authOptions: NextAuthOptions = {
           // In production, strictly require hashed password check
           const allowDevPassword = process.env.NODE_ENV !== 'production'
           const isPasswordValid = (allowDevPassword && credentials.password === 'password') ||
-            await bcrypt.compare(credentials.password, user.password || "")
+            (user.password ? await bcrypt.compare(credentials.password, user.password) : false)
 
           if (!isPasswordValid) {
             return null
