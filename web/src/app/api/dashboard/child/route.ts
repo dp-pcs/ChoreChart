@@ -16,6 +16,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
+    // DEMO fallback: return mock data without DB if using demo user
+    if (session.user.id?.startsWith('child-demo') || session.user.email === 'child@demo.com') {
+      const now = new Date()
+      const mockAssigned = [
+        { id: 'chore-1', title: 'Make Bed', description: 'Tidy your bed', reward: 2.0, estimatedMinutes: 5, isRequired: true, frequency: 'DAILY', type: 'DAILY', assignmentId: 'assign-1', weekStart: now },
+        { id: 'chore-2', title: 'Dishes', description: 'Load dishwasher', reward: 3.0, estimatedMinutes: 10, isRequired: false, frequency: 'DAILY', type: 'DAILY', assignmentId: 'assign-2', weekStart: now }
+      ]
+      const dashboardData = {
+        user: { id: session.user.id, name: session.user.name, role: session.user.role },
+        family: { id: 'demo-family-1', pointsToMoneyRate: 1.0 },
+        submissions: [],
+        assignedChores: mockAssigned,
+        weeklyStats: { totalEarnings: 0, completedCount: 0, totalAssigned: mockAssigned.length, completionRate: 0, pendingCount: 0 }
+      }
+      return NextResponse.json({ success: true, data: dashboardData })
+    }
+
     // Get user's family
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },

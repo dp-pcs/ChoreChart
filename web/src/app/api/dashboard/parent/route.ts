@@ -16,6 +16,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
+    // DEMO fallback: return mock parent dashboard for demo user
+    if (session.user.id?.startsWith('parent-demo') || session.user.email === 'parent@demo.com') {
+      const now = new Date()
+      const children = [
+        { id: 'child-demo-1', name: 'Noah (Demo Child)', email: 'child@demo.com', joinedAt: now }
+      ]
+      const dashboardData = {
+        family: {
+          name: 'Demo Family',
+          totalChildren: children.length,
+          weeklyAllowance: 0,
+          settings: { autoApproveChores: false, allowMultipleParents: true, emailNotifications: true, shareReports: false, crossFamilyApproval: false }
+        },
+        weeklyStats: { totalChoresCompleted: 0, totalEarningsApproved: 0, childrenParticipation: '0%' },
+        pendingApprovals: [],
+        completedChores: [],
+        children,
+        recentActivity: [],
+        permissions: { canInvite: true, canManage: true }
+      }
+      return NextResponse.json({ success: true, data: dashboardData })
+    }
+
     // First, try to get user's primary family membership
     let familyMembership = null
     let family = null
