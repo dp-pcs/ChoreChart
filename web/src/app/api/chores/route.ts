@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { getWeekStart, convertDecimalsDeep } from '@/lib/utils'
 import { getActiveFamilyId } from '@/lib/family'
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
     let targetChildIds = assignedChildIds
     if (!assignedChildIds || assignedChildIds.length === 0) {
       // Auto-assign to all children in the family
-      const familyChildren = await prisma.user.findMany({
+        const familyChildren = await prisma.user.findMany({
         where: {
           familyId,
           role: 'CHILD'
@@ -242,7 +242,7 @@ export async function PUT(request: NextRequest) {
         // Auto-assign to all children in the family
         const familyChildren = await prisma.user.findMany({
           where: {
-            familyId: user.familyId,
+            familyId,
             role: 'CHILD'
           },
           select: { id: true }
