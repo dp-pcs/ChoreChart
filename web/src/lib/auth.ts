@@ -7,8 +7,8 @@ import { UserRole } from "./types"
 import bcrypt from "bcryptjs"
 
 export const authOptions: NextAuthOptions = {
-  // Explicitly set secret; must be configured in production
-  secret: process.env.NEXTAUTH_SECRET,
+  // Explicitly set secret; must be configured in production. Use fallback in dev to avoid 500s
+  secret: process.env.NEXTAUTH_SECRET || (process.env.NODE_ENV !== 'production' ? 'dev-only-secret' : undefined),
   // adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
