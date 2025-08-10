@@ -1,7 +1,6 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-// NOTE: Temporarily disabling PrismaAdapter to avoid 500s if NextAuth tables are not present
-// import { PrismaAdapter } from "@next-auth/prisma-adapter"
+import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import { prisma } from "./prisma"
 import { UserRole } from "./types"
 import bcrypt from "bcryptjs"
@@ -9,7 +8,7 @@ import bcrypt from "bcryptjs"
 export const authOptions: NextAuthOptions = {
   // Explicitly set secret; must be configured in production. Use fallback in dev to avoid 500s
   secret: process.env.NEXTAUTH_SECRET || (process.env.NODE_ENV !== 'production' ? 'dev-only-secret' : undefined),
-  // adapter: PrismaAdapter(prisma),
+  adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
       name: "credentials",
