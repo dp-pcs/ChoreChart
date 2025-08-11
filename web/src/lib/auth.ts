@@ -133,12 +133,6 @@ export const authOptions: NextAuthOptions = {
       return session
     }
   },
-  events: {
-    async error(message) {
-      // Surface NextAuth errors in logs (non-sensitive)
-      console.error('NextAuth error event:', message)
-    }
-  },
   pages: {
     signIn: "/auth/signin"
   }
