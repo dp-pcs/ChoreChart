@@ -129,17 +129,26 @@ async function createDemoMultiFamilyData() {
   console.log('\n🎭 Creating demo data for multiple families...')
 
   try {
-    // Create a second family for co-parenting demo
-    const coParentFamily = await prisma.family.create({
-      data: {
-        name: 'The Johnson Co-Parents',
-        allowMultipleParents: true,
-        shareReports: true,
-        crossFamilyApproval: true
+    // Create a second family for co-parenting demo (or use existing one)
+    let coParentFamily = await prisma.family.findFirst({
+      where: {
+        name: 'The Johnson Co-Parents'
       }
     })
 
-    console.log(`✅ Created demo family: ${coParentFamily.name}`)
+    if (!coParentFamily) {
+      coParentFamily = await prisma.family.create({
+        data: {
+          name: 'The Johnson Co-Parents',
+          allowMultipleParents: true,
+          shareReports: true,
+          crossFamilyApproval: true
+        }
+      })
+      console.log(`✅ Created demo family: ${coParentFamily.name}`)
+    } else {
+      console.log(`ℹ️ Demo family already exists: ${coParentFamily.name}`)
+    }
 
     // Find existing demo child to add to the co-parent family
     const demoChild = await prisma.user.findFirst({
@@ -149,56 +158,91 @@ async function createDemoMultiFamilyData() {
     })
 
     if (demoChild) {
-      // Add child to the co-parent family
-      await prisma.familyMembership.create({
-        data: {
-          userId: demoChild.id,
-          familyId: coParentFamily.id,
-          role: 'CHILD',
-          isActive: true,
-          isPrimary: false, // Not primary family
-          canInvite: false,
-          canManage: false,
-          permissions: {
-            canSubmitChores: true,
-            canViewOwnProgress: true
+      // Check if child membership already exists
+      const existingChildMembership = await prisma.familyMembership.findUnique({
+        where: {
+          userId_familyId: {
+            userId: demoChild.id,
+            familyId: coParentFamily.id
           }
         }
       })
 
-      console.log(`✅ Added ${demoChild.email} to co-parent family`)
+      if (!existingChildMembership) {
+        // Add child to the co-parent family
+        await prisma.familyMembership.create({
+          data: {
+            userId: demoChild.id,
+            familyId: coParentFamily.id,
+            role: 'CHILD',
+            isActive: true,
+            isPrimary: false, // Not primary family
+            canInvite: false,
+            canManage: false,
+            permissions: {
+              canSubmitChores: true,
+              canViewOwnProgress: true
+            }
+          }
+        })
+        console.log(`✅ Added ${demoChild.email} to co-parent family`)
+      } else {
+        console.log(`ℹ️ Child already has membership in co-parent family`)
+      }
     }
 
-    // Create a second parent for the co-parent family
-    const coParent = await prisma.user.create({
-      data: {
-        email: 'coparent@demo.com',
-        name: 'Co-Parent Demo',
-        password: 'password',
-        role: 'PARENT',
-        familyId: coParentFamily.id
-      }
+    // Create a second parent for the co-parent family (or use existing one)
+    let coParent = await prisma.user.findUnique({
+      where: { email: 'coparent@demo.com' }
     })
 
-    await prisma.familyMembership.create({
-      data: {
-        userId: coParent.id,
-        familyId: coParentFamily.id,
-        role: 'PARENT',
-        isActive: true,
-        isPrimary: true,
-        canInvite: true,
-        canManage: true,
-        permissions: {
-          canApprove: true,
-          canCreateChores: true,
-          canEditFamily: true,
-          canViewReports: true
+    if (!coParent) {
+      coParent = await prisma.user.create({
+        data: {
+          email: 'coparent@demo.com',
+          name: 'Co-Parent Demo',
+          password: 'password',
+          role: 'PARENT',
+          familyId: coParentFamily.id
+        }
+      })
+      console.log(`✅ Created co-parent: ${coParent.email}`)
+    } else {
+      console.log(`ℹ️ Co-parent already exists: ${coParent.email}`)
+    }
+
+    // Check if membership already exists
+    const existingCoParentMembership = await prisma.familyMembership.findUnique({
+      where: {
+        userId_familyId: {
+          userId: coParent.id,
+          familyId: coParentFamily.id
         }
       }
     })
 
-    console.log(`✅ Created co-parent: ${coParent.email}`)
+    if (!existingCoParentMembership) {
+      await prisma.familyMembership.create({
+        data: {
+          userId: coParent.id,
+          familyId: coParentFamily.id,
+          role: 'PARENT',
+          isActive: true,
+          isPrimary: true,
+          canInvite: true,
+          canManage: true,
+          permissions: {
+            canApprove: true,
+            canCreateChores: true,
+            canEditFamily: true,
+            canViewReports: true
+          }
+        }
+      })
+      console.log(`✅ Added family membership for co-parent`)
+    } else {
+      console.log(`ℹ️ Co-parent already has membership in family`)
+    }
 
     console.log('\n🎭 Demo accounts created:')
     console.log('- coparent@demo.com / password (Co-Parent)')
