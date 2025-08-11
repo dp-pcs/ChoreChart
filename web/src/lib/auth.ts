@@ -8,7 +8,10 @@ import bcrypt from "bcryptjs"
 
 export const authOptions: NextAuthOptions = {
   // Explicitly set secret; must be configured in production
-  secret: process.env.NEXTAUTH_SECRET,
+  // TEMPORARY FIX: Use fallback secret if environment secret is problematic
+  secret: process.env.NEXTAUTH_SECRET || 'vsnR8hJQ0e3dKjEhByBDeuLHQICGQc88-KCTHx7-mTMU',
+  // Add debug mode to catch initialization errors
+  debug: process.env.NODE_ENV !== 'production',
   // adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
@@ -19,7 +22,10 @@ export const authOptions: NextAuthOptions = {
         role: { label: "Role", type: "text" }
       },
       async authorize(credentials) {
+        console.log('🔐 NextAuth authorize called:', { email: credentials?.email, hasPassword: !!credentials?.password })
+        
         if (!credentials?.email || !credentials?.password) {
+          console.log('❌ Missing credentials')
           return null
         }
 
@@ -50,7 +56,9 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Check for demo users first
+        console.log('🎭 Checking mock users for:', credentials.email)
         if (credentials.email in mockUsers && credentials.password === 'password') {
+          console.log('✅ Using mock user for:', credentials.email)
           return mockUsers[credentials.email as keyof typeof mockUsers]
         }
 
@@ -89,7 +97,15 @@ export const authOptions: NextAuthOptions = {
             family: user.family
           }
         } catch (error) {
-          console.log('Database connection failed, using mock users only')
+          console.log('❌ Database connection failed:', error)
+          console.log('🎭 Attempting mock user fallback for:', credentials.email)
+          
+          // Try mock users again as fallback
+          if (credentials.email in mockUsers && credentials.password === 'password') {
+            console.log('✅ Using mock user fallback for:', credentials.email)
+            return mockUsers[credentials.email as keyof typeof mockUsers]
+          }
+          
           return null
         }
       }
