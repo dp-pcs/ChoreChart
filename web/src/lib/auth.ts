@@ -8,7 +8,8 @@ import bcrypt from "bcryptjs"
 export const authOptions: NextAuthOptions = {
   // Explicitly set secret; must be configured in production. Use fallback in dev to avoid 500s
   secret: process.env.NEXTAUTH_SECRET || (process.env.NODE_ENV !== 'production' ? 'dev-only-secret' : undefined),
-  adapter: PrismaAdapter(prisma),
+  // Remove PrismaAdapter when using JWT sessions to prevent 500 errors
+  // adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
       name: "credentials",
