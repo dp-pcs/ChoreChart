@@ -1,14 +1,14 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { PrismaAdapter } from "@next-auth/prisma-adapter"
+// NOTE: Temporarily disabling PrismaAdapter to avoid 500s if NextAuth tables are not present
+// import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import { prisma } from "./prisma"
 import { UserRole } from "./types"
 import bcrypt from "bcryptjs"
 
 export const authOptions: NextAuthOptions = {
-  // Explicitly set secret; must be configured in production. Use fallback in dev to avoid 500s
-  secret: process.env.NEXTAUTH_SECRET || (process.env.NODE_ENV !== 'production' ? 'dev-only-secret' : undefined),
-  // Remove PrismaAdapter when using JWT sessions to prevent 500 errors
+  // Explicitly set secret; must be configured in production
+  secret: process.env.NEXTAUTH_SECRET,
   // adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
@@ -115,6 +115,12 @@ export const authOptions: NextAuthOptions = {
         session.user.family = token.family as any
       }
       return session
+    }
+  },
+  events: {
+    async error(message) {
+      // Surface NextAuth errors in logs (non-sensitive)
+      console.error('NextAuth error event:', message)
     }
   },
   pages: {
