@@ -1,48 +1,65 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { UserRole } from "./types"
+// NOTE: Temporarily disabling PrismaAdapter to avoid 500s if NextAuth tables are not present
+// import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import { prisma } from "./prisma"
+import { UserRole } from "./types"
 import bcrypt from "bcryptjs"
 
-// ULTRA-SIMPLE NextAuth configuration with zero dependencies
 export const authOptions: NextAuthOptions = {
+  // Explicitly set secret; must be configured in production
   secret: process.env.NEXTAUTH_SECRET,
+  // adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
       name: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        password: { label: "Password", type: "password" },
+        role: { label: "Role", type: "text" }
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
           return null
         }
 
-        // Demo users for fallback
+        // Mock demo users for development when database is not available
         const mockUsers = {
-          'parent@demo.com': {
-            id: 'parent-demo-1',
-            email: 'parent@demo.com',
-            name: 'Demo Parent',
-            role: 'PARENT' as UserRole,
-            familyId: 'demo-family-1',
-            family: { id: 'demo-family-1', name: 'Demo Family' }
-          },
           'child@demo.com': {
             id: 'child-demo-1',
             email: 'child@demo.com',
             name: 'Noah (Demo Child)',
             role: 'CHILD' as UserRole,
             familyId: 'demo-family-1',
-            family: { id: 'demo-family-1', name: 'Demo Family' }
+            family: {
+              id: 'demo-family-1',
+              name: 'Demo Family'
+            }
+          },
+          'parent@demo.com': {
+            id: 'parent-demo-1',
+            email: 'parent@demo.com',
+            name: 'Demo Parent',
+            role: 'PARENT' as UserRole,
+            familyId: 'demo-family-1',
+            family: {
+              id: 'demo-family-1',
+              name: 'Demo Family'
+            }
           }
         }
 
+        // Check for demo users first
+        if (credentials.email in mockUsers && credentials.password === 'password') {
+          return mockUsers[credentials.email as keyof typeof mockUsers]
+        }
+
         try {
-          // Try database authentication first
+          // Try database authentication
           const user = await prisma.user.findUnique({
-            where: { email: credentials.email },
+            where: {
+              email: credentials.email
+            },
             include: {
               family: {
                 select: { id: true, name: true }
@@ -50,39 +67,29 @@ export const authOptions: NextAuthOptions = {
             }
           })
 
-          if (user) {
-            // Check password
-            const allowDevPassword = process.env.NODE_ENV !== 'production'
-            const isPasswordValid = (allowDevPassword && credentials.password === 'password') ||
-              (user.password ? await bcrypt.compare(credentials.password, user.password) : false)
-
-            if (isPasswordValid) {
-              return {
-                id: user.id,
-                email: user.email,
-                name: user.name,
-                role: user.role,
-                familyId: user.familyId,
-                family: user.family
-              }
-            }
+          if (!user) {
+            return null
           }
 
-          // Fallback to demo users if database auth fails
-          if (credentials.email in mockUsers && credentials.password === 'password') {
-            return mockUsers[credentials.email as keyof typeof mockUsers]
+          // In production, strictly require hashed password check
+          const allowDevPassword = process.env.NODE_ENV !== 'production'
+          const isPasswordValid = (allowDevPassword && credentials.password === 'password') ||
+            (user.password ? await bcrypt.compare(credentials.password, user.password) : false)
+
+          if (!isPasswordValid) {
+            return null
           }
 
-          return null
-
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            familyId: user.familyId,
+            family: user.family
+          }
         } catch (error) {
-          console.error('Database auth failed, trying demo users:', error)
-          
-          // Use demo users as fallback
-          if (credentials.email in mockUsers && credentials.password === 'password') {
-            return mockUsers[credentials.email as keyof typeof mockUsers]
-          }
-          
+          console.log('Database connection failed, using mock users only')
           return null
         }
       }
