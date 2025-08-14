@@ -8,7 +8,7 @@ import bcrypt from "bcryptjs"
 
 export const authOptions: NextAuthOptions = {
   // Explicitly set secret; must be configured in production
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || 'vsnR8hJQ0e3dKjEhByBDeuLHQICGQc88-KCTHx7-mTMU',
   // adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
@@ -19,7 +19,9 @@ export const authOptions: NextAuthOptions = {
         role: { label: "Role", type: "text" }
       },
       async authorize(credentials) {
+        console.log('🔐 NextAuth authorize called with:', credentials?.email)
         if (!credentials?.email || !credentials?.password) {
+          console.log('❌ Missing credentials in NextAuth')
           return null
         }
 
@@ -51,6 +53,7 @@ export const authOptions: NextAuthOptions = {
 
         // Check for demo users first
         if (credentials.email in mockUsers && credentials.password === 'password') {
+          console.log('✅ NextAuth demo user authenticated:', credentials.email)
           return mockUsers[credentials.email as keyof typeof mockUsers]
         }
 

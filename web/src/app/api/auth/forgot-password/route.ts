@@ -40,8 +40,22 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Send reset email
-    await sendPasswordResetEmail(email, resetToken)
+    // Send reset email (skip in development if AWS not configured)
+    try {
+      await sendPasswordResetEmail(email, resetToken)
+    } catch (emailError) {
+      console.error('Email sending failed (likely AWS not configured):', emailError)
+      if (process.env.NODE_ENV === 'development') {
+        // In development, provide the reset URL directly
+        const resetUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/auth/reset-password?token=${resetToken}`
+        return NextResponse.json({
+          message: 'Password reset token generated. In development mode, use this URL:',
+          resetUrl: resetUrl,
+          token: resetToken
+        })
+      }
+      throw emailError // Re-throw in production
+    }
 
     return NextResponse.json({
       message: 'If a user with this email exists, a password reset link has been sent.'

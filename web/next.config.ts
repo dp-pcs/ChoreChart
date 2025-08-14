@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  trailingSlash: true,
+  trailingSlash: false,
   eslint: {
     ignoreDuringBuilds: true,
   },
