@@ -8,8 +8,12 @@ export async function GET() {
     const nextAuthUrlSet = !!process.env.NEXTAUTH_URL
     const nextAuthSecretSet = !!process.env.NEXTAUTH_SECRET
 
-    // Quick DB connectivity check
-    await prisma.$queryRaw`SELECT 1` as unknown
+    // Quick DB connectivity check (optional)
+    let dbStatus: 'connected' | 'unavailable' = 'unavailable'
+    try {
+      await prisma.$queryRaw`SELECT 1` as unknown
+      dbStatus = 'connected'
+    } catch {}
 
     return NextResponse.json({
       ok: true,
@@ -19,7 +23,7 @@ export async function GET() {
         NEXTAUTH_URL: nextAuthUrlSet,
         NEXTAUTH_SECRET: nextAuthSecretSet,
       },
-      db: 'connected'
+      db: dbStatus
     })
   } catch (error) {
     console.error('test-env error:', error)

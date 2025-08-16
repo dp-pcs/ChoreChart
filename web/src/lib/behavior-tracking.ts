@@ -1,9 +1,17 @@
 // Behavior Tracking & AI Insights System
 import OpenAI from 'openai'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-})
+let openai: OpenAI | null = null
+function getOpenAI(): OpenAI | null {
+	const apiKey = process.env.OPENAI_API_KEY
+	if (!apiKey) {
+		return null
+	}
+	if (!openai) {
+		openai = new OpenAI({ apiKey })
+	}
+	return openai
+}
 
 // Types for behavior tracking
 export interface DailyCheckIn {
@@ -315,7 +323,11 @@ Please provide:
 5. 1 schedule adjustment suggestion`
 
     try {
-      const response = await openai.chat.completions.create({
+      const client = getOpenAI()
+      if (!client) {
+        throw new Error('OPENAI_API_KEY not set; using fallback insights')
+      }
+      const response = await client.chat.completions.create({
         model: process.env.OPENAI_MODEL || 'gpt-4o',
         messages: [
           { role: 'system', content: BEHAVIOR_COACHING_PROMPT },
