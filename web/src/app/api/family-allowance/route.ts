@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate total potential earnings per week
-    const totalWeeklyPotential = family.chores.reduce((total, chore) => {
+    const totalWeeklyPotential = family.chores.reduce((total: number, chore: any) => {
       const chorePoints = Number(chore.points)
       let weeklyOccurrences = 1 // default
       
@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
 
     // Calculate total weekly chore instances
     let totalWeeklyChoreInstances = 0
-    chores.forEach(chore => {
+    chores.forEach((chore: any) => {
       let weeklyOccurrences = 1
       
       if (chore.frequency === 'DAILY') {
@@ -224,14 +224,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate recommended values
-    const recommendations = chores.map(chore => {
+    const recommendations = chores.map((chore: any) => {
       let weeklyOccurrences = 1
       
       if (chore.frequency === 'DAILY') {
         weeklyOccurrences = chore.scheduledDays?.length || 1
       }
       
-      const priority = chore.priority || 'MEDIUM'
+      const priority = (chore.priority as 'LOW' | 'MEDIUM' | 'HIGH') || 'MEDIUM'
       const multiplier = priorityMultipliers[priority] || 1.0
       const recommendedValue = Math.round((baseValuePerChore * multiplier) * 100) / 100
 
@@ -247,7 +247,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Calculate totals for verification
-    const totalRecommendedWeekly = recommendations.reduce((total, rec) => 
+    const totalRecommendedWeekly = recommendations.reduce((total: number, rec: any) => 
       total + (rec.recommendedPoints * rec.weeklyOccurrences * rec.assigneeCount), 0
     )
 

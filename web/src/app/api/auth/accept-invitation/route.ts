@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create family membership for the user
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: typeof prisma) => {
       // Create family membership
       await tx.familyMembership.create({
         data: {

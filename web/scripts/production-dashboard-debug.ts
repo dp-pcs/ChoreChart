@@ -5,7 +5,7 @@
  * This script helps identify specific issues with the dashboard API in production
  */
 
-import { PrismaClient } from '../src/generated/prisma'
+import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 

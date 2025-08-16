@@ -1,4 +1,4 @@
-import { PrismaClient } from '../src/generated/prisma'
+import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
@@ -27,8 +27,8 @@ async function checkUsers() {
     }
 
     // Check if demo users exist
-    const parentDemo = users.find(u => u.email === 'parent@demo.com')
-    const childDemo = users.find(u => u.email === 'child@demo.com')
+    const parentDemo = users.find((u: { email: string; id: string; familyId: string | null }) => u.email === 'parent@demo.com')
+    const childDemo = users.find((u: { email: string; id: string; familyId: string | null }) => u.email === 'child@demo.com')
 
     console.log('🎯 Demo User Status:')
     console.log(`   Parent Demo (parent@demo.com): ${parentDemo ? '✅ EXISTS' : '❌ MISSING'}`)

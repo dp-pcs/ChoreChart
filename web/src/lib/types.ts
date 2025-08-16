@@ -1,263 +1,243 @@
-import { 
-  User, 
-  Family, 
-  Chore, 
-  ChoreAssignment, 
-  ChoreSubmission, 
-  ChoreApproval, 
-  Message, 
-  Reward, 
-  WeeklyReport,
-  UserRole,
-  ChoreType,
-  ChoreFrequency,
-  SubmissionStatus,
-  MessageType,
-  RewardType
-} from '../generated/prisma'
-
-// Re-export Prisma types
-export type {
-  User,
-  Family,
-  Chore,
-  ChoreAssignment,
-  ChoreSubmission,
-  ChoreApproval,
-  Message,
-  Reward,
-  WeeklyReport,
-  UserRole,
-  ChoreType,
-  ChoreFrequency,
-  SubmissionStatus,
-  MessageType,
-  RewardType
-}
+// Replace Prisma types with minimal placeholders to avoid build-time dependency on @prisma/client types
+export interface User { id: string; email: string; name: string; role: any; familyId: string | null }
+export interface Family { id: string; name: string }
+export interface Chore { id: string; title: string; description: string; reward: any; estimatedMinutes: number; isRequired: boolean; type: any; frequency: any; scheduledDays: number[] }
+export interface ChoreAssignment { id: string; choreId: string; userId: string; familyId: string; weekStart: Date }
+export interface ChoreSubmission { id: string; assignmentId: string; userId: string; status: any; submittedAt: Date; completedAt: Date | null; notes?: string | null; approval?: any; assignment: any }
+export interface ChoreApproval { id: string; submissionId: string; approverId?: string | null }
+export interface Message { id: string; fromId: string; toId: string; content: string }
+export interface Reward { id: string; userId: string; title: string; description?: string | null; amount: number; type: any; awardedAt?: Date }
+export interface WeeklyReport { id: string }
+export type UserRole = 'PARENT' | 'CHILD'
+export type ChoreType = 'ONE_TIME' | 'DAILY' | 'WEEKLY' | 'CUSTOM'
+export type ChoreFrequency = 'AS_NEEDED' | 'DAILY' | 'WEEKLY' | 'MONTHLY'
+export type SubmissionStatus = 'PENDING' | 'APPROVED' | 'AUTO_APPROVED' | 'REJECTED'
+export type MessageType = 'INFO' | 'WARNING' | 'SUCCESS'
+export type RewardType = 'MONEY' | 'EXPERIENCE'
 
 // Extended types with relations
 export type UserWithFamily = User & {
-  family: Family
+	family: Family
 }
 
 export type ChoreWithAssignments = Chore & {
-  assignments: (ChoreAssignment & {
-    user: User
-    submissions: ChoreSubmission[]
-  })[]
+	assignments: (ChoreAssignment & {
+		user: User
+		submissions: ChoreSubmission[]
+	})[]
 }
 
 export type ChoreSubmissionWithDetails = ChoreSubmission & {
-  assignment: ChoreAssignment & {
-    chore: Chore
-    user: User
-  }
-  approval?: ChoreApproval & {
-    approver: User
-  }
+	assignment: ChoreAssignment & {
+		chore: Chore
+		user: User
+	}
+	approval?: ChoreApproval & {
+		approver: User
+	}
 }
 
 export type WeeklyReportWithDetails = WeeklyReport & {
-  user: User
-  family: Family
+	user: User
+	family: Family
 }
 
 // API Response types
 export interface ApiResponse<T = any> {
-  success: boolean
-  data?: T
-  error?: string
-  message?: string
+	success: boolean
+	data?: T
+	error?: string
+	message?: string
 }
 
 // Dashboard data types
 export interface DashboardStats {
-  totalChores: number
-  completedChores: number
-  pendingApprovals: number
-  weeklyEarnings: number
-  potentialEarnings: number
-  completionRate: number
+	totalChores: number
+	completedChores: number
+	pendingApprovals: number
+	weeklyEarnings: number
+	potentialEarnings: number
+	completionRate: number
 }
 
 export interface ChildDashboardData {
-  stats: DashboardStats
-  todaysChores: ChoreWithAssignments[]
-  upcomingChores: ChoreWithAssignments[]
-  recentSubmissions: ChoreSubmissionWithDetails[]
-  messages: Message[]
-  weeklyProgress: {
-    week: string
-    completed: number
-    total: number
-    earnings: number
-  }[]
+	stats: DashboardStats
+	todaysChores: ChoreWithAssignments[]
+	upcomingChores: ChoreWithAssignments[]
+	recentSubmissions: ChoreSubmissionWithDetails[]
+	messages: Message[]
+	weeklyProgress: {
+		week: string
+		completed: number
+		total: number
+		earnings: number
+	}[]
 }
 
 export interface ParentDashboardData {
-  familyStats: {
-    totalChildren: number
-    totalChores: number
-    pendingApprovals: number
-    weeklySpending: number
-  }
-  childrenProgress: Array<{
-    child: User
-    stats: DashboardStats
-    recentActivity: ChoreSubmissionWithDetails[]
-  }>
-  pendingApprovals: ChoreSubmissionWithDetails[]
-  weeklyReports: WeeklyReportWithDetails[]
+	familyStats: {
+		totalChildren: number
+		totalChores: number
+		pendingApprovals: number
+		weeklySpending: number
+	}
+	childrenProgress: Array<{
+		child: User
+		stats: DashboardStats
+		recentActivity: ChoreSubmissionWithDetails[]
+	}>
+	pendingApprovals: ChoreSubmissionWithDetails[]
+	weeklyReports: WeeklyReportWithDetails[]
 }
 
 // AI Insights types
 export interface AIInsights {
-  summary: string
-  trends: {
-    completionRate: number
-    consistencyScore: number
-    preferredChoreTypes: string[]
-    peakPerformanceTimes: string[]
-  }
-  recommendations: string[]
-  flags: {
-    type: 'warning' | 'info' | 'success'
-    message: string
-  }[]
+	summary: string
+	trends: {
+		completionRate: number
+		consistencyScore: number
+		preferredChoreTypes: string[]
+		peakPerformanceTimes: string[]
+	}
+	recommendations: string[]
+	flags: {
+		type: 'warning' | 'info' | 'success'
+		message: string
+	}[]
 }
 
 // Form types
 export interface CreateChoreForm {
-  title: string
-  description?: string
-  type: ChoreType
-  frequency: ChoreFrequency
-  isRequired: boolean
-  reward: number
-  scheduledDays: number[]
-  scheduledTime?: string
-  estimatedMinutes?: number
-  assignedTo: string[]
+	title: string
+	description?: string
+	type: ChoreType
+	frequency: ChoreFrequency
+	isRequired: boolean
+	reward: number
+	scheduledDays: number[]
+	scheduledTime?: string
+	estimatedMinutes?: number
+	assignedTo: string[]
 }
 
 export interface SubmitChoreForm {
-  assignmentId: string
-  completedAt: Date
-  notes?: string
-  imageUrl?: string
+	assignmentId: string
+	completedAt: Date
+	notes?: string
+	imageUrl?: string
 }
 
 export interface CreateRewardForm {
-  userId: string
-  title: string
-  description?: string
-  amount: number
-  type: RewardType
+	userId: string
+	title: string
+	description?: string
+	amount: number
+	type: RewardType
 }
 
 // Notification types
 export interface NotificationSettings {
-  emailNotifications: boolean
-  pushNotifications: boolean
-  choreReminders: boolean
-  approvalNotifications: boolean
-  weeklyReports: boolean
-  reminderTimes: string[] // HH:MM format
+	emailNotifications: boolean
+	pushNotifications: boolean
+	choreReminders: boolean
+	approvalNotifications: boolean
+	weeklyReports: boolean
+	reminderTimes: string[] // HH:MM format
 }
 
 // Week management types
 export interface WeekData {
-  weekStart: Date
-  weekEnd: Date
-  isClosed: boolean
-  canEdit: boolean
-  assignments: ChoreAssignment[]
-  submissions: ChoreSubmissionWithDetails[]
+	weekStart: Date
+	weekEnd: Date
+	isClosed: boolean
+	canEdit: boolean
+	assignments: ChoreAssignment[]
+	submissions: ChoreSubmissionWithDetails[]
 }
 
 // Message thread types
 export interface MessageThread {
-  participants: User[]
-  messages: Message[]
-  unreadCount: number
+	participants: User[]
+	messages: Message[]
+	unreadCount: number
 }
 
 // Search and filter types
 export interface ChoreFilters {
-  type?: ChoreType[]
-  frequency?: ChoreFrequency[]
-  isRequired?: boolean
-  assignedTo?: string[]
-  status?: SubmissionStatus[]
-  dateRange?: {
-    start: Date
-    end: Date
-  }
+	type?: ChoreType[]
+	frequency?: ChoreFrequency[]
+	isRequired?: boolean
+	assignedTo?: string[]
+	status?: SubmissionStatus[]
+	dateRange?: {
+		start: Date
+		end: Date
+	}
 }
 
 export interface ReportFilters {
-  userId?: string
-  dateRange: {
-    start: Date
-    end: Date
-  }
-  includeAI?: boolean
+	userId?: string
+	dateRange: {
+		start: Date
+		end: Date
+	}
+	includeAI?: boolean
 }
 
 // Enhanced learning system for Chorbit
 export interface LearnedFact {
-  value: any
-  confidence: number // 0.0 to 1.0
-  learnedAt: string // ISO timestamp
-  lastValidated?: string // ISO timestamp
-  source: 'conversation' | 'explicit' | 'observation' | 'parent_setup'
-  context?: string // What conversation/situation led to this
-  timesReferenced: number // How often Chorbit has used this fact
-  validationsDue?: boolean // Flag for periodic validation
+	value: any
+	confidence: number // 0.0 to 1.0
+	learnedAt: string // ISO timestamp
+	lastValidated?: string // ISO timestamp
+	source: 'conversation' | 'explicit' | 'observation' | 'parent_setup'
+	context?: string // What conversation/situation led to this
+	timesReferenced: number // How often Chorbit has used this fact
+	validationsDue?: boolean // Flag for periodic validation
 }
 
 export interface Interest {
-  name: string
-  confidence: number // 0.0 to 1.0
-  learnedAt: string
-  lastValidated?: string
-  category: 'sports' | 'hobby' | 'food' | 'entertainment' | 'school' | 'other'
-  details?: { [key: string]: LearnedFact } // e.g., favorite team, favorite player
-  needsValidation?: boolean
+	name: string
+	confidence: number // 0.0 to 1.0
+	learnedAt: string
+	lastValidated?: string
+	category: 'sports' | 'hobby' | 'food' | 'entertainment' | 'school' | 'other'
+	details?: { [key: string]: LearnedFact } // e.g., favorite team, favorite player
+	needsValidation?: boolean
 }
 
 export interface EnhancedUserPreferences {
-  // Core interests with validation tracking
-  interests: Interest[]
-  
-  // Behavioral preferences
-  motivationalStyle: 'encouraging' | 'competitive' | 'gentle' | 'funny'
-  preferredGreeting: 'energetic' | 'calm' | 'sports' | 'fun'
-  conversationStyle: 'brief' | 'detailed' | 'interactive'
-  
-  // Learning topics and goals
-  learningTopics: string[]
-  personalityTraits: string[]
-  
-  // Dynamic learned facts
-  learnedFacts: { [key: string]: LearnedFact }
-  
-  // Sports teams with detailed tracking
-  sportsTeams: {
-    sport: string
-    team: string
-    league: string
-    confidence: number
-    learnedAt: string
-    lastValidated?: string
-  }[]
-  
-  // Validation tracking
-  lastValidationDate?: string
-  nextValidationDue?: string
-  validationFrequency: number // days between validations (default: 60)
-  
-  // News/updates preferences
-  wantsNewsUpdates: boolean
-  newsCategories: string[]
+	// Core interests with validation tracking
+	interests: Interest[]
+	
+	// Behavioral preferences
+	motivationalStyle: 'encouraging' | 'competitive' | 'gentle' | 'funny'
+	preferredGreeting: 'energetic' | 'calm' | 'sports' | 'fun'
+	conversationStyle: 'brief' | 'detailed' | 'interactive'
+	
+	// Learning topics and goals
+	learningTopics: string[]
+	personalityTraits: string[]
+	
+	// Dynamic learned facts
+	learnedFacts: { [key: string]: LearnedFact }
+	
+	// Sports teams with detailed tracking
+	sportsTeams: {
+		sport: string
+		team: string
+		league: string
+		confidence: number
+		learnedAt: string
+		lastValidated?: string
+	}[]
+	
+	// Validation tracking
+	lastValidationDate?: string
+	nextValidationDue?: string
+	validationFrequency: number // days between validations (default: 60)
+	
+	// News/updates preferences
+	wantsNewsUpdates: boolean
+	newsCategories: string[]
 } 

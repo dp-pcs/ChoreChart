@@ -332,7 +332,7 @@ export class GamificationSystem {
       streakFreezes: user.streakFreezes
     }
 
-    const achievements: Achievement[] = user.achievements.map(ua => ({
+    const achievements: Achievement[] = user.achievements.map((ua: any) => ({
       id: ua.achievement.id,
       title: ua.achievement.title,
       description: ua.achievement.description,
