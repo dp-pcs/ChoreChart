@@ -2,8 +2,8 @@ import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 // NOTE: Temporarily disabling PrismaAdapter to avoid 500s if NextAuth tables are not present
 // import { PrismaAdapter } from "@next-auth/prisma-adapter"
-import { prisma } from "./prisma"
-import { UserRole } from "./types"
+// Avoid importing Prisma at module load to prevent runtime errors if the client is not generated
+import type { UserRole } from "./types"
 import bcrypt from "bcryptjs"
 
 export const authOptions: NextAuthOptions = {
@@ -59,6 +59,7 @@ export const authOptions: NextAuthOptions = {
 
         try {
           // Try database authentication
+          const { prisma } = await import("./prisma")
           const user = await prisma.user.findUnique({
             where: {
               email: credentials.email
@@ -87,7 +88,7 @@ export const authOptions: NextAuthOptions = {
             id: user.id,
             email: user.email,
             name: user.name,
-            role: user.role,
+            role: user.role as UserRole,
             familyId: user.familyId,
             family: user.family
           }
@@ -104,9 +105,9 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role = user.role
-        token.familyId = user.familyId
-        token.family = user.family
+        token.role = (user as any).role
+        token.familyId = (user as any).familyId
+        token.family = (user as any).family
       }
       return token
     },

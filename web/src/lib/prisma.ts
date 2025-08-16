@@ -1,19 +1,39 @@
 import { PrismaClient } from '../generated/prisma'
 import { Decimal } from '@prisma/client/runtime/library'
 
+// Keep a single Prisma instance across hot reloads in dev
 const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
+  __PRISMA__?: PrismaClient
 }
 
-// Create Prisma client with explicit datasource URL override for Lambda
-export const prisma = globalForPrisma.prisma ?? new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL
+let prismaSingleton: PrismaClient | undefined = globalForPrisma.__PRISMA__
+
+function getPrisma(): PrismaClient {
+  if (!prismaSingleton) {
+    const databaseUrl = process.env.DATABASE_URL
+    if (!databaseUrl) {
+      throw new Error('DATABASE_URL is not set for PrismaClient')
+    }
+    prismaSingleton = new PrismaClient({
+      datasources: {
+        db: {
+          url: databaseUrl,
+        },
+      },
+    })
+    if (process.env.NODE_ENV !== 'production') {
+      globalForPrisma.__PRISMA__ = prismaSingleton
     }
   }
-})
+  return prismaSingleton
+}
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+// Lazy proxy so importing this module does not instantiate Prisma
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, prop, receiver) {
+    const client = getPrisma()
+    return Reflect.get(client, prop, receiver)
+  },
+}) as PrismaClient
 
 export { Decimal } 

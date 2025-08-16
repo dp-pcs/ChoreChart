@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create JWT token (require configured secret)
-    const secret = process.env.NEXTAUTH_SECRET
+    const secret = process.env.NEXTAUTH_SECRET || (process.env.NODE_ENV !== 'production' ? 'dev-insecure-secret' : undefined)
     if (!secret) {
       console.error('Missing NEXTAUTH_SECRET for mobile-signin')
       return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 })
