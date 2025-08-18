@@ -5,9 +5,10 @@
  * This script helps identify and fix common problems with the dashboard
  */
 
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, Prisma } from '@prisma/client'
 
 const prisma = new PrismaClient()
+const Decimal = Prisma.Decimal
 
 async function diagnoseDashboardIssue() {
   console.log('🔍 Diagnosing dashboard data issues...\n')
@@ -138,8 +139,8 @@ async function diagnoseDashboardIssue() {
       })
 
       console.log('   Chores found:')
-      chores.forEach((chore: { title: string; reward: number; family: { name: string } }) => {
-        console.log(`   - "${chore.title}" in ${chore.family.name} ($${chore.reward})`)
+      chores.forEach((chore: { title: string; reward: Prisma.Decimal; family: { name: string } }) => {
+        console.log(`   - "${chore.title}" in ${chore.family.name} ($${chore.reward.toNumber()})`)
       })
     }
     console.log()

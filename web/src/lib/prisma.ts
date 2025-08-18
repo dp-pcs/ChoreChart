@@ -1,33 +1,16 @@
-// Safe Prisma loader that avoids crashing builds when prisma is not generated
-let PrismaClientConstructor: any
-try {
-	// eslint-disable-next-line @typescript-eslint/no-var-requires
-	PrismaClientConstructor = require('@prisma/client').PrismaClient
-} catch {
-	PrismaClientConstructor = null
-}
-
-let Decimal: any
-try {
-	// eslint-disable-next-line @typescript-eslint/no-var-requires
-	Decimal = require('@prisma/client/runtime/library').Decimal
-} catch {
-	Decimal = class {}
-}
+import { PrismaClient, Prisma } from '@prisma/client'
 
 const globalForPrisma = globalThis as unknown as {
-	prisma: any
+  prisma: PrismaClient | undefined
 }
 
-let prismaInstance: any = undefined
-if (PrismaClientConstructor && process.env.DATABASE_URL) {
-	prismaInstance = globalForPrisma.prisma ?? new PrismaClientConstructor({
-		datasources: {
-			db: { url: process.env.DATABASE_URL }
-		}
-	})
-	if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prismaInstance
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient()
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma
 }
 
-export const prisma = prismaInstance
+const Decimal = Prisma.Decimal
 export { Decimal } 
