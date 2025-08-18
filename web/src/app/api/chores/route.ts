@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
         },
         select: { id: true }
       })
-      targetChildIds = familyChildren.map(child => child.id)
+      targetChildIds = familyChildren.map((child: { id: string }) => child.id)
     }
 
     // Create the chore
@@ -247,7 +247,7 @@ export async function PUT(request: NextRequest) {
           },
           select: { id: true }
         })
-        targetChildIds = familyChildren.map(child => child.id)
+        targetChildIds = familyChildren.map((child: { id: string }) => child.id)
       }
 
       // Create new assignments
@@ -337,7 +337,7 @@ export async function DELETE(request: NextRequest) {
     })
 
     if (submissions.length > 0) {
-      const submissionIds = submissions.map(s => s.id)
+      const submissionIds = submissions.map((s: { id: string }) => s.id)
       
       await prisma.choreApproval.deleteMany({
         where: { submissionId: { in: submissionIds } }

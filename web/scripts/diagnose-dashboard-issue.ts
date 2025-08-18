@@ -5,7 +5,7 @@
  * This script helps identify and fix common problems with the dashboard
  */
 
-import { PrismaClient } from '../src/generated/prisma'
+import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
@@ -40,7 +40,7 @@ async function diagnoseDashboardIssue() {
     })
 
     console.log('   Users found:')
-    users.forEach(user => {
+    users.forEach((user: { email: string; role: string; familyId: string | null }) => {
       console.log(`   - ${user.email} (${user.role}) - Family: ${user.familyId}`)
     })
     console.log()
@@ -68,10 +68,10 @@ async function diagnoseDashboardIssue() {
     })
 
     console.log('   Families found:')
-    families.forEach(family => {
+    families.forEach((family: { id: string; name: string; users: Array<{ email: string; role: string }> }) => {
       console.log(`   - ${family.name} (ID: ${family.id})`)
       console.log(`     Members: ${family.users.length}`)
-      family.users.forEach(user => {
+      family.users.forEach((user: { email: string; role: string }) => {
         console.log(`       • ${user.email} (${user.role})`)
       })
     })
@@ -108,7 +108,7 @@ async function diagnoseDashboardIssue() {
         })
 
         console.log('   Memberships found:')
-        memberships.forEach(membership => {
+        memberships.forEach((membership: { user: { email: string; role: string }; family: { name: string }; role: string; isActive: boolean; isPrimary: boolean }) => {
           console.log(`   - ${membership.user.email} in ${membership.family.name} (${membership.role}, Active: ${membership.isActive}, Primary: ${membership.isPrimary})`)
         })
       }
@@ -138,7 +138,7 @@ async function diagnoseDashboardIssue() {
       })
 
       console.log('   Chores found:')
-      chores.forEach(chore => {
+      chores.forEach((chore: { title: string; reward: number; family: { name: string } }) => {
         console.log(`   - "${chore.title}" in ${chore.family.name} ($${chore.reward})`)
       })
     }
@@ -146,7 +146,7 @@ async function diagnoseDashboardIssue() {
 
     // Test the dashboard API logic for each parent
     console.log('6. Testing dashboard API logic...')
-    const parents = users.filter(u => u.role === 'PARENT')
+    const parents = users.filter((u: { role: string; email: string; id: string }) => u.role === 'PARENT')
     
     for (const parent of parents) {
       console.log(`   Testing for parent: ${parent.email}`)

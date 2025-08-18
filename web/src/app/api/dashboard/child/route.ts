@@ -121,7 +121,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Format submissions with necessary data
-    const formattedSubmissions = submissions.map(submission => ({
+    const formattedSubmissions = submissions.map((submission: any) => ({
       id: submission.id,
       choreId: submission.assignment.chore.id,
       choreName: submission.assignment.chore.title,
@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
     }))
 
     // Format assigned chores
-    const formattedChores = assignments.map(assignment => ({
+    const formattedChores = assignments.map((assignment: any) => ({
       id: assignment.chore.id,
       title: assignment.chore.title,
       description: assignment.chore.description,
@@ -154,10 +154,10 @@ export async function GET(request: NextRequest) {
     }))
 
     // Calculate weekly stats
-    const approvedSubmissions = submissions.filter(s => 
+    const approvedSubmissions = submissions.filter((s: any) => 
       s.status === 'APPROVED' || s.status === 'AUTO_APPROVED'
     )
-    const totalEarnings = approvedSubmissions.reduce((sum, s) => 
+    const totalEarnings = approvedSubmissions.reduce((sum: number, s: any) => 
       sum + (s.approval?.partialReward?.toNumber() || s.assignment.chore.reward?.toNumber() || 0), 0
     )
     const completedCount = approvedSubmissions.length
@@ -181,7 +181,7 @@ export async function GET(request: NextRequest) {
         completedCount,
         totalAssigned,
         completionRate,
-        pendingCount: submissions.filter(s => s.status === 'PENDING').length
+        pendingCount: submissions.filter((s: any) => s.status === 'PENDING').length
       }
     }
 

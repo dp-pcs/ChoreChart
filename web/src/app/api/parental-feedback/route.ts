@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
           },
           select: { id: true }
         })
-        whereClause.childId = { in: familyChildren.map(child => child.id) }
+        whereClause.childId = { in: familyChildren.map((child: { id: string }) => child.id) }
       }
       
       if (parentId) {

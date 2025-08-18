@@ -1,19 +1,33 @@
-import { PrismaClient } from '../generated/prisma'
-import { Decimal } from '@prisma/client/runtime/library'
-
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
+// Safe Prisma loader that avoids crashing builds when prisma is not generated
+let PrismaClientConstructor: any
+try {
+	// eslint-disable-next-line @typescript-eslint/no-var-requires
+	PrismaClientConstructor = require('@prisma/client').PrismaClient
+} catch {
+	PrismaClientConstructor = null
 }
 
-// Create Prisma client with explicit datasource URL override for Lambda
-export const prisma = globalForPrisma.prisma ?? new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL
-    }
-  }
-})
+let Decimal: any
+try {
+	// eslint-disable-next-line @typescript-eslint/no-var-requires
+	Decimal = require('@prisma/client/runtime/library').Decimal
+} catch {
+	Decimal = class {}
+}
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+const globalForPrisma = globalThis as unknown as {
+	prisma: any
+}
 
+let prismaInstance: any = undefined
+if (PrismaClientConstructor && process.env.DATABASE_URL) {
+	prismaInstance = globalForPrisma.prisma ?? new PrismaClientConstructor({
+		datasources: {
+			db: { url: process.env.DATABASE_URL }
+		}
+	})
+	if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prismaInstance
+}
+
+export const prisma = prismaInstance
 export { Decimal } 

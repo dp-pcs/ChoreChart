@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
 
     if (approved) {
       // Approve banking request
-      await prisma.$transaction(async (tx) => {
+      await prisma.$transaction(async (tx: typeof prisma) => {
         // Update the transaction status
         await tx.pointTransaction.update({
           where: { id: transactionId },
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
 
     } else {
       // Deny banking request - return points to user
-      await prisma.$transaction(async (tx) => {
+      await prisma.$transaction(async (tx: typeof prisma) => {
         // Update the transaction status
         await tx.pointTransaction.update({
           where: { id: transactionId },

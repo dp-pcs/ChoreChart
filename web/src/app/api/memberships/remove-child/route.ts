@@ -47,14 +47,14 @@ export async function DELETE(request: NextRequest) {
 
     // Check if child is in the same family as parent
     const isInSameFamily = childUser.familyId === parentUser.familyId || 
-      childUser.familyMemberships.some(membership => membership.familyId === parentUser.familyId)
+      childUser.familyMemberships.some((membership: { familyId: string }) => membership.familyId === parentUser.familyId)
 
     if (!isInSameFamily) {
       return NextResponse.json({ error: 'Child is not in your family' }, { status: 403 })
     }
 
     // Start transaction to clean up all child data
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: typeof prisma) => {
       // 1. Delete chore submissions and approvals
       const submissions = await tx.choreSubmission.findMany({
         where: { userId: childId },
@@ -62,7 +62,7 @@ export async function DELETE(request: NextRequest) {
       })
 
       if (submissions.length > 0) {
-        const submissionIds = submissions.map(s => s.id)
+        const submissionIds = submissions.map((s: { id: string }) => s.id)
         
         // Delete approvals for these submissions
         await tx.choreApproval.deleteMany({

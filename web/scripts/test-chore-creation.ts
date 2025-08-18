@@ -5,7 +5,7 @@
  * This script tests the add chore workflow to ensure it works properly
  */
 
-import { PrismaClient } from '../src/generated/prisma'
+import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 

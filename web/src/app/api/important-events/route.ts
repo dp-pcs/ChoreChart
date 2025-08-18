@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Calculate days until each event
-    const eventsWithCountdown = events.map(event => {
+    const eventsWithCountdown = events.map((event: any) => {
       const now = new Date()
       const eventDate = new Date(event.eventDate)
       const timeDiff = eventDate.getTime() - now.getTime()

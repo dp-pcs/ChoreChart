@@ -5,7 +5,7 @@
  * This ensures backward compatibility when transitioning to multiple family support
  */
 
-import { PrismaClient } from '../src/generated/prisma'
+import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
