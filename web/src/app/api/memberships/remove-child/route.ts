@@ -54,7 +54,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Start transaction to clean up all child data
-    await prisma.$transaction(async (tx: typeof prisma) => {
+    await prisma.$transaction(async (tx) => {
       // 1. Delete chore submissions and approvals
       const submissions = await tx.choreSubmission.findMany({
         where: { userId: childId },
