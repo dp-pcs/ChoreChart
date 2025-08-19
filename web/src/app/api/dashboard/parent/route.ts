@@ -162,7 +162,8 @@ export async function GET(request: NextRequest) {
               select: {
                 id: true,
                 title: true,
-                reward: true
+                reward: true,
+                points: true
               }
             }
           }
@@ -317,7 +318,8 @@ export async function GET(request: NextRequest) {
         childName: submission.user.name,
         choreName: submission.assignment.chore.title,
         submittedAt: submission.submittedAt,
-        reward: submission.assignment.chore.reward,
+        reward: Number(submission.assignment.chore.reward || 0),
+        points: Number(submission.assignment.chore.points || 0),
         status: submission.status,
         notes: submission.notes
       })),

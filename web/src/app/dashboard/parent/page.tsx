@@ -54,6 +54,8 @@ export default function ParentDashboard() {
   const [importantEvents, setImportantEvents] = useState<any[]>([])
   const [editingEvent, setEditingEvent] = useState<any>(null)
   const [bankingRequests, setBankingRequests] = useState<any[]>([])
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0])
+  const [selectedChildId, setSelectedChildId] = useState<string>('')
 
   useEffect(() => {
     if (status === 'loading') return // Still loading
@@ -87,6 +89,34 @@ export default function ParentDashboard() {
       setCurrentChores(result.chores || [])
     } catch (error) {
       console.error('Error fetching chores:', error)
+    }
+  }
+
+  const handleParentMark = async (choreId: string, approved: boolean) => {
+    try {
+      const childId = selectedChildId || dashboardData.children[0]?.id
+      if (!childId) {
+        setMessage({ type: 'error', text: 'Select a child first.' })
+        return
+      }
+      const response = await fetch('/api/chores/parent-mark', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          childId,
+          choreId,
+          date: selectedDate,
+          approved
+        })
+      })
+      const result = await response.json()
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to update chore')
+      }
+      setMessage({ type: 'success', text: result.message })
+      await fetchDashboardData()
+    } catch (error) {
+      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Update failed' })
     }
   }
 
@@ -960,31 +990,50 @@ export default function ParentDashboard() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Today</CardTitle>
+              <CardTitle className="text-lg">Daily Chores (Parent Control)</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
+                {/* Date and child selectors */}
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 mb-2">
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="border rounded px-2 py-1 text-sm"
+                  />
+                  <select
+                    value={selectedChildId}
+                    onChange={(e) => setSelectedChildId(e.target.value)}
+                    className="border rounded px-2 py-1 text-sm"
+                  >
+                    <option value="">All Children (pick one to mark)</option>
+                    {dashboardData.children.map((c: any) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
                 {(() => {
-                  const today = new Date()
-                  const todayIndex = today.getDay()
+                  const targetDate = new Date(selectedDate)
+                  const dayIndex = targetDate.getDay()
                   
                   // Filter chores scheduled for today
                   const todaysChores = currentChores.filter(chore => {
                     if (chore.frequency === 'DAILY' || chore.frequency === 'WEEKLY') {
-                      return chore.scheduledDays?.includes(todayIndex) || false
+                      return chore.scheduledDays?.includes(dayIndex) || false
                     }
                     if (chore.frequency === 'AS_NEEDED' || chore.type === 'ONE_TIME') {
                       return true
                     }
                     if (chore.frequency === 'MONTHLY') {
-                      return chore.scheduledDays?.includes(todayIndex) || false
+                      return chore.scheduledDays?.includes(dayIndex) || false
                     }
                     return false
                   })
 
                   // Helper function to check if a chore has been completed today
-                  const isChoreCompletedToday = (choreId: string) => {
-                    const todayStart = new Date(today)
+                  const isChoreCompletedOnDate = (choreId: string) => {
+                    const todayStart = new Date(targetDate)
                     todayStart.setHours(0, 0, 0, 0)
                     
                     return dashboardData.completedChores?.some((completion: any) => {
@@ -997,7 +1046,7 @@ export default function ParentDashboard() {
                     }) || false
                   }
 
-                  const completedCount = todaysChores.filter(chore => isChoreCompletedToday(chore.id)).length
+                  const completedCount = todaysChores.filter(chore => isChoreCompletedOnDate(chore.id)).length
                   const totalCount = todaysChores.length
 
                   if (totalCount === 0) {
@@ -1015,8 +1064,8 @@ export default function ParentDashboard() {
                       <p className="text-sm">✅ {completedCount} completed</p>
                       <p className="text-sm">⏳ {totalCount - completedCount} remaining</p>
                       <div className="mt-2 space-y-1">
-                        {todaysChores.slice(0, 3).map((chore: any) => {
-                          const isCompleted = isChoreCompletedToday(chore.id)
+                        {todaysChores.slice(0, 5).map((chore: any) => {
+                          const isCompleted = isChoreCompletedOnDate(chore.id)
                           return (
                             <div key={chore.id} className="flex items-center gap-2">
                               <span className="text-xs">
@@ -1025,12 +1074,16 @@ export default function ParentDashboard() {
                               <span className={`text-xs ${isCompleted ? 'line-through text-gray-500' : 'text-gray-700'}`}>
                                 {chore.title}
                               </span>
+                              <div className="ml-auto flex gap-2">
+                                <Button size="sm" variant="outline" onClick={() => handleParentMark(chore.id, false)}>Deny</Button>
+                                <Button size="sm" onClick={() => handleParentMark(chore.id, true)}>Approve</Button>
+                              </div>
                             </div>
                           )
                         })}
-                        {todaysChores.length > 3 && (
+                        {todaysChores.length > 5 && (
                           <p className="text-xs text-gray-400">
-                            +{todaysChores.length - 3} more...
+                            +{todaysChores.length - 5} more...
                           </p>
                         )}
                       </div>
