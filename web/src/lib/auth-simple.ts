@@ -9,6 +9,9 @@ import bcrypt from "bcryptjs"
 export const authOptions: NextAuthOptions = {
   // Use environment variables for production
   secret: process.env.NEXTAUTH_SECRET,
+  // Behind AWS Amplify/ALB, trust the forwarded host to avoid redirect loops
+  // @ts-expect-error: Property is available at runtime but not in our installed types
+  trustHost: true,
   // adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
