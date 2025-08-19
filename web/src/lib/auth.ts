@@ -1,10 +1,15 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
+// NOTE: Temporarily disabling PrismaAdapter to avoid 500s if NextAuth tables are not present
+// import { PrismaAdapter } from "@next-auth/prisma-adapter"
+import { prisma } from "./prisma"
 import { UserRole } from "./types"
+import bcrypt from "bcryptjs"
 
-// EMERGENCY MODE: Minimal configuration to bypass all potential issues
 export const authOptions: NextAuthOptions = {
-  secret: 'vsnR8hJQ0e3dKjEhByBDeuLHQICGQc88-KCTHx7-mTMU',
+  // Use environment variables for production
+  secret: process.env.NEXTAUTH_SECRET,
+  // adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -14,39 +19,81 @@ export const authOptions: NextAuthOptions = {
         role: { label: "Role", type: "text" }
       },
       async authorize(credentials) {
-        console.log('🔐 EMERGENCY AUTH: Starting authorization for:', credentials?.email)
-        
+        console.log('🔐 NextAuth authorize called with:', credentials?.email)
         if (!credentials?.email || !credentials?.password) {
-          console.log('❌ Missing credentials')
+          console.log('❌ Missing credentials in NextAuth')
           return null
         }
 
-        // EMERGENCY MODE: Only mock users, no database calls
+        // Mock demo users for development when database is not available
         const mockUsers = {
           'child@demo.com': {
             id: 'child-demo-1',
             email: 'child@demo.com',
             name: 'Noah (Demo Child)',
             role: 'CHILD' as UserRole,
-            familyId: 'demo-family-1'
+            familyId: 'demo-family-1',
+            family: {
+              id: 'demo-family-1',
+              name: 'Demo Family'
+            }
           },
           'parent@demo.com': {
             id: 'parent-demo-1',
             email: 'parent@demo.com',
             name: 'Demo Parent',
             role: 'PARENT' as UserRole,
-            familyId: 'demo-family-1'
+            familyId: 'demo-family-1',
+            family: {
+              id: 'demo-family-1',
+              name: 'Demo Family'
+            }
           }
         }
 
-        console.log('🎭 EMERGENCY: Checking mock users only')
+        // Check for demo users first
         if (credentials.email in mockUsers && credentials.password === 'password') {
-          console.log('✅ EMERGENCY: Mock user authenticated:', credentials.email)
+          console.log('✅ NextAuth demo user authenticated:', credentials.email)
           return mockUsers[credentials.email as keyof typeof mockUsers]
         }
 
-        console.log('❌ EMERGENCY: No matching mock user found')
-        return null
+        try {
+          // Try database authentication
+          const user = await prisma.user.findUnique({
+            where: {
+              email: credentials.email
+            },
+            include: {
+              family: {
+                select: { id: true, name: true }
+              }
+            }
+          })
+
+          if (!user) {
+            return null
+          }
+
+          // In production, strictly require hashed password check
+          const allowDevPassword = process.env.NODE_ENV !== 'production'
+          const isPasswordValid = (allowDevPassword && credentials.password === 'password') ||
+            (user.password ? await bcrypt.compare(credentials.password, user.password) : false)
+
+          if (!isPasswordValid) {
+            return null
+          }
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            familyId: user.familyId
+          }
+        } catch (error) {
+          console.log('Database connection failed, using mock users only')
+          return null
+        }
       }
     })
   ],
@@ -55,21 +102,17 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      console.log('📝 JWT callback called')
       if (user) {
         token.role = user.role
         token.familyId = user.familyId
-        console.log('✅ JWT token updated with user data')
       }
       return token
     },
     async session({ session, token }) {
-      console.log('📋 Session callback called')
       if (token) {
         session.user.id = token.sub!
         session.user.role = token.role as UserRole
         session.user.familyId = token.familyId as string
-        console.log('✅ Session updated with token data')
       }
       return session
     }
@@ -77,4 +120,4 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/auth/signin"
   }
-} 
+}

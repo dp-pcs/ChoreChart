@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       console.error('Email sending failed (likely AWS not configured):', emailError)
       if (process.env.NODE_ENV === 'development') {
         // In development, provide the reset URL directly
-        const resetUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/auth/reset-password?token=${resetToken}`
+        const resetUrl = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${resetToken}`
         return NextResponse.json({
           message: 'Password reset token generated. In development mode, use this URL:',
           resetUrl: resetUrl,

@@ -311,7 +311,7 @@ PERSONALIZATION INSTRUCTIONS:
   private async getValidationQuestion(userId: string, preferences?: any): Promise<string> {
     try {
       // Check if validation is due
-      const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/chorbit/learn?userId=${userId}`)
+      const response = await fetch(`${process.env.NEXTAUTH_URL}/api/chorbit/learn?userId=${userId}`)
       if (!response.ok) return ''
       
       const data = await response.json()

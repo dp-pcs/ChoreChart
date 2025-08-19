@@ -7,8 +7,8 @@ import { UserRole } from "./types"
 import bcrypt from "bcryptjs"
 
 export const authOptions: NextAuthOptions = {
-  // Explicitly set secret; must be configured in production
-  secret: process.env.NEXTAUTH_SECRET || 'vsnR8hJQ0e3dKjEhByBDeuLHQICGQc88-KCTHx7-mTMU',
+  // Use environment variables for production
+  secret: process.env.NEXTAUTH_SECRET,
   // adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
