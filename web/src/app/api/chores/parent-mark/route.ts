@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
         }
       })
     } else {
-      await prisma.choreSubmission.update({
+      submission = await prisma.choreSubmission.update({
         where: { id: submission.id },
         data: {
           status: approved ? 'APPROVED' : 'DENIED',
@@ -122,28 +122,48 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Create approval record
-    await prisma.choreApproval.create({
-      data: {
+    // Upsert approval record (unique on submissionId) and compute point delta
+    const existingApproval = await prisma.choreApproval.findUnique({
+      where: { submissionId: submission.id },
+      select: { pointsAwarded: true }
+    })
+
+    const newPointsAwarded = approved ? pointsAwarded : new Decimal(0)
+
+    await prisma.choreApproval.upsert({
+      where: { submissionId: submission.id },
+      update: {
+        approvedBy: session.user.id,
+        approved,
+        feedback: feedback || null,
+        score: finalScore,
+        partialReward: new Decimal(Math.round(newPointsAwarded.toNumber() * pointsToMoneyRate * 100) / 100),
+        originalReward: assignment.chore.reward,
+        pointsAwarded: newPointsAwarded,
+        originalPoints: chorePoints
+      },
+      create: {
         submissionId: submission.id,
         approvedBy: session.user.id,
         approved,
         feedback: feedback || null,
         score: finalScore,
-        partialReward: new Decimal(Math.round(pointsAwarded.toNumber() * pointsToMoneyRate * 100) / 100),
+        partialReward: new Decimal(Math.round(newPointsAwarded.toNumber() * pointsToMoneyRate * 100) / 100),
         originalReward: assignment.chore.reward,
-        pointsAwarded: approved ? pointsAwarded : new Decimal(0),
+        pointsAwarded: newPointsAwarded,
         originalPoints: chorePoints
       }
     })
 
-    // If approved with positive points, credit the child
-    if (approved && pointsAwarded.toNumber() > 0) {
+    // Adjust child's points based on change vs existing approval
+    const previousPoints = existingApproval?.pointsAwarded ? new Decimal(existingApproval.pointsAwarded) : new Decimal(0)
+    const delta = newPointsAwarded.minus(previousPoints)
+    if (!delta.isZero()) {
       await prisma.user.update({
         where: { id: childId },
         data: {
-          availablePoints: { increment: pointsAwarded },
-          lifetimePoints: { increment: pointsAwarded }
+          availablePoints: { increment: delta },
+          lifetimePoints: { increment: delta.isNegative() ? new Decimal(0) : delta }
         }
       })
     }

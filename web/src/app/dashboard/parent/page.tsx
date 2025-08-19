@@ -1017,8 +1017,11 @@ export default function ParentDashboard() {
                   const targetDate = new Date(selectedDate)
                   const dayIndex = targetDate.getDay()
                   
-                  // Filter chores scheduled for today
+                  // Filter chores scheduled for selected date and, if a child is chosen, by that child
                   const todaysChores = currentChores.filter(chore => {
+                    if (selectedChildId && !chore.assignments?.some((a: any) => a.userId === selectedChildId)) {
+                      return false
+                    }
                     if (chore.frequency === 'DAILY' || chore.frequency === 'WEEKLY') {
                       return chore.scheduledDays?.includes(dayIndex) || false
                     }
