@@ -21,7 +21,7 @@ function SignUpContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   
-  const inviteToken = searchParams.get('invite')
+  const inviteToken = searchParams?.get('invite')
 
   useEffect(() => {
     if (inviteToken) {

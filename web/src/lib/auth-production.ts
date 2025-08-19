@@ -84,8 +84,7 @@ export const authOptions: NextAuthOptions = {
                   email: user.email,
                   name: user.name,
                   role: user.role,
-                  familyId: user.familyId,
-                  family: user.family
+                  familyId: user.familyId
                 }
               }
             }
@@ -110,7 +109,6 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.role = user.role
         token.familyId = user.familyId
-        token.family = user.family
         console.log('✅ JWT token updated with user data')
       }
       return token
@@ -121,7 +119,6 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.sub!
         session.user.role = token.role as UserRole
         session.user.familyId = token.familyId as string
-        session.user.family = token.family as any
         console.log('✅ Session updated with token data')
       }
       return session
