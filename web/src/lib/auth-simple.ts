@@ -62,11 +62,6 @@ export const authOptions: NextAuthOptions = {
           const user = await prisma.user.findUnique({
             where: {
               email: credentials.email
-            },
-            include: {
-              family: {
-                select: { id: true, name: true }
-              }
             }
           })
 
@@ -88,8 +83,7 @@ export const authOptions: NextAuthOptions = {
             email: user.email,
             name: user.name,
             role: user.role,
-            familyId: user.familyId,
-            family: user.family
+            familyId: user.familyId
           }
         } catch (error) {
           console.log('Database connection failed, using mock users only')
@@ -106,7 +100,6 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.role = user.role
         token.familyId = user.familyId
-        token.family = user.family
       }
       return token
     },
@@ -115,7 +108,6 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.sub!
         session.user.role = token.role as UserRole
         session.user.familyId = token.familyId as string
-        session.user.family = token.family as any
       }
       return session
     }
