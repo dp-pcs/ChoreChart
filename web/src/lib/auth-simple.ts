@@ -8,7 +8,8 @@ import bcrypt from "bcryptjs"
 
 export const authOptions: NextAuthOptions = {
   // Use environment variables for production
-  secret: process.env.NEXTAUTH_SECRET,
+  // Fallback ensures stable cookies if env injection fails at runtime
+  secret: process.env.NEXTAUTH_SECRET || 'vsnRshJQ0e3dKjEhBydbeLHQlCGQc88/KCTHx7/mTMU=',
   // Behind AWS Amplify/ALB, trust the forwarded host to avoid redirect loops
   // @ts-expect-error: Property is available at runtime but not in our installed types
   trustHost: true,
