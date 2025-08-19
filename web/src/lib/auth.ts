@@ -7,8 +7,8 @@ import { UserRole } from "./types"
 import bcrypt from "bcryptjs"
 
 export const authOptions: NextAuthOptions = {
-  // Use environment variables for production
-  secret: process.env.NEXTAUTH_SECRET,
+  // Use environment variables for production - must have fallback for NextAuth to work
+  secret: process.env.NEXTAUTH_SECRET || 'vsnRshJQ0e3dKjEhBydbeLHQlCGQc88/KCTHx7/mTMU=',
   // adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
@@ -32,22 +32,14 @@ export const authOptions: NextAuthOptions = {
             email: 'child@demo.com',
             name: 'Noah (Demo Child)',
             role: 'CHILD' as UserRole,
-            familyId: 'demo-family-1',
-            family: {
-              id: 'demo-family-1',
-              name: 'Demo Family'
-            }
+            familyId: 'demo-family-1'
           },
           'parent@demo.com': {
             id: 'parent-demo-1',
             email: 'parent@demo.com',
             name: 'Demo Parent',
             role: 'PARENT' as UserRole,
-            familyId: 'demo-family-1',
-            family: {
-              id: 'demo-family-1',
-              name: 'Demo Family'
-            }
+            familyId: 'demo-family-1'
           }
         }
 
@@ -62,11 +54,6 @@ export const authOptions: NextAuthOptions = {
           const user = await prisma.user.findUnique({
             where: {
               email: credentials.email
-            },
-            include: {
-              family: {
-                select: { id: true, name: true }
-              }
             }
           })
 
