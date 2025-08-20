@@ -254,7 +254,7 @@ export default function ParentDashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/dashboard/parent')
+      const response = await fetch(`/api/dashboard/parent${selectedDate ? `?date=${selectedDate}` : ''}`)
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
@@ -999,7 +999,7 @@ export default function ParentDashboard() {
                   <input
                     type="date"
                     value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
+                    onChange={(e) => { setSelectedDate(e.target.value); fetchDashboardData(); }}
                     className="border rounded px-2 py-1 text-sm"
                   />
                   <select
