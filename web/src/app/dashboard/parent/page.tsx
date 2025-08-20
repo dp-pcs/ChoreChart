@@ -1045,7 +1045,7 @@ export default function ParentDashboard() {
                       const matchesChild = selectedChildId ? completion.childId === selectedChildId : true
                       return matchesChore && matchesChild &&
                              completionDate >= todayStart && completionDate < new Date(todayStart.getTime() + 24*60*60*1000) &&
-                             (completion.status === 'APPROVED' || completion.status === 'AUTO_APPROVED' || completion.status === 'PENDING')
+                             (completion.status === 'APPROVED' || completion.status === 'AUTO_APPROVED')
                     }) || false
                   }
 
