@@ -325,7 +325,9 @@ export async function GET(request: NextRequest) {
       })),
       completedChores: completedSubmissions.map((submission: any) => ({
         id: submission.id,
+        childId: submission.user.id,
         childName: submission.user.name,
+        choreId: submission.assignment.chore.id,
         choreName: submission.assignment.chore.title,
         submittedAt: submission.submittedAt,
         completedAt: submission.completedAt,

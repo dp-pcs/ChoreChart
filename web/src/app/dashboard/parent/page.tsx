@@ -1041,10 +1041,10 @@ export default function ParentDashboard() {
                     
                     return dashboardData.completedChores?.some((completion: any) => {
                       const completionDate = new Date(completion.completedAt || completion.submittedAt)
-                      const choreName = currentChores.find(c => c.id === choreId)?.title
-                      
-                      return completion.choreName === choreName &&
-                             completionDate >= todayStart &&
+                      const matchesChore = completion.choreId ? completion.choreId === choreId : (completion.choreName === (currentChores.find(c => c.id === choreId)?.title))
+                      const matchesChild = selectedChildId ? completion.childId === selectedChildId : true
+                      return matchesChore && matchesChild &&
+                             completionDate >= todayStart && completionDate < new Date(todayStart.getTime() + 24*60*60*1000) &&
                              (completion.status === 'APPROVED' || completion.status === 'AUTO_APPROVED' || completion.status === 'PENDING')
                     }) || false
                   }
