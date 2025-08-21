@@ -254,7 +254,11 @@ export default function ParentDashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/dashboard/parent')
+      const ts = Date.now()
+      const response = await fetch(
+        `/api/dashboard/parent${selectedDate ? `?date=${selectedDate}` : ''}&ts=${ts}`,
+        { cache: 'no-store' }
+      )
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
@@ -999,7 +1003,7 @@ export default function ParentDashboard() {
                   <input
                     type="date"
                     value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
+                    onChange={(e) => { setSelectedDate(e.target.value); setTimeout(fetchDashboardData, 0); }}
                     className="border rounded px-2 py-1 text-sm"
                   />
                   <select
@@ -1041,11 +1045,11 @@ export default function ParentDashboard() {
                     
                     return dashboardData.completedChores?.some((completion: any) => {
                       const completionDate = new Date(completion.completedAt || completion.submittedAt)
-                      const choreName = currentChores.find(c => c.id === choreId)?.title
-                      
-                      return completion.choreName === choreName &&
-                             completionDate >= todayStart &&
-                             (completion.status === 'APPROVED' || completion.status === 'AUTO_APPROVED' || completion.status === 'PENDING')
+                      const matchesChore = completion.choreId ? completion.choreId === choreId : (completion.choreName === (currentChores.find(c => c.id === choreId)?.title))
+                      const matchesChild = selectedChildId ? completion.childId === selectedChildId : true
+                      return matchesChore && matchesChild &&
+                             completionDate >= todayStart && completionDate < new Date(todayStart.getTime() + 24*60*60*1000) &&
+                             (completion.status === 'APPROVED' || completion.status === 'AUTO_APPROVED')
                     }) || false
                   }
 

@@ -172,7 +172,17 @@ export async function GET(request: NextRequest) {
       orderBy: { submittedAt: 'desc' }
     }) : []
 
-    // Get completed chore submissions (auto-approved and manually approved) from last 7 days
+    // Optional date filter (YYYY-MM-DD) to return completions for a specific day only
+    const dateParam = request.nextUrl.searchParams.get('date')
+    let dayStart: Date | null = null
+    let dayEnd: Date | null = null
+    if (dateParam) {
+      const d = new Date(dateParam)
+      dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+      dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000)
+    }
+
+    // Get completed chore submissions (auto-approved and manually approved)
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
     
@@ -184,9 +194,10 @@ export async function GET(request: NextRequest) {
         status: {
           in: ['AUTO_APPROVED', 'APPROVED']
         },
-        submittedAt: {
-          gte: sevenDaysAgo
-        }
+        ...(dayStart && dayEnd
+          ? { completedAt: { gte: dayStart, lt: dayEnd } }
+          : { submittedAt: { gte: sevenDaysAgo } }
+        )
       },
       include: {
         user: {
@@ -325,7 +336,9 @@ export async function GET(request: NextRequest) {
       })),
       completedChores: completedSubmissions.map((submission: any) => ({
         id: submission.id,
+        childId: submission.user.id,
         childName: submission.user.name,
+        choreId: submission.assignment.chore.id,
         choreName: submission.assignment.chore.title,
         submittedAt: submission.submittedAt,
         completedAt: submission.completedAt,

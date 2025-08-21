@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
     // Upsert approval record (unique on submissionId) and compute point delta
     const existingApproval = await prisma.choreApproval.findUnique({
       where: { submissionId: submission.id },
-      select: { pointsAwarded: true }
+      select: { pointsAwarded: true, approved: true }
     })
 
     const newPointsAwarded = approved ? pointsAwarded : new Decimal(0)
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
     // Adjust child's points based on change vs existing approval
     const previousPoints = existingApproval?.pointsAwarded ? new Decimal(existingApproval.pointsAwarded) : new Decimal(0)
     const delta = newPointsAwarded.minus(previousPoints)
-    if (!delta.isZero()) {
+    if (!delta.isZero() || (existingApproval && existingApproval.approved && !approved)) {
       await prisma.user.update({
         where: { id: childId },
         data: {
