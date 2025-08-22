@@ -43,7 +43,8 @@ export async function POST(request: NextRequest) {
                 title: true,
                 reward: true,
                 points: true,
-                familyId: true
+                familyId: true,
+                isRequired: true
               }
             },
             family: {
@@ -80,28 +81,44 @@ export async function POST(request: NextRequest) {
     // Calculate points awarded based on score (points are now primary)
     const chorePoints = submission.assignment.chore.points || new Decimal(0)
     const pointsToMoneyRate = submission.assignment.family.pointsToMoneyRate || 1.00
-    let pointsAwarded = chorePoints
+    const roundTo = (val: number, places: number) => {
+      const m = Math.pow(10, places)
+      return Math.round(val * m) / m
+    }
+    const computePointsFromScore = (pct: number) => new Decimal(roundTo((pct / 100) * chorePoints.toNumber(), 1))
+
+    let pointsAwarded = new Decimal(0)
     let finalScore = score
 
-    if (score !== undefined && approved) {
-      // Calculate partial/bonus/penalty points: score percentage of full points
-      // This allows for bonuses (>100%) and penalties (negative scores)
-      pointsAwarded = new Decimal(Math.round((score / 100) * chorePoints.toNumber()))
-      finalScore = score
-    } else if (approved) {
-      // If approved without score, give full points
-      pointsAwarded = chorePoints
-      finalScore = 100
+    if (approved) {
+      if (score !== undefined) {
+        // partial/bonus/penalty by score
+        pointsAwarded = computePointsFromScore(score)
+        finalScore = score
+      } else {
+        // full points
+        pointsAwarded = new Decimal(roundTo(chorePoints.toNumber(), 1))
+        finalScore = 100
+      }
     } else {
-      // If denied, no points (but could still have negative score as penalty)
-      pointsAwarded = score !== undefined ? new Decimal(Math.round((score / 100) * chorePoints.toNumber())) : new Decimal(0)
-      finalScore = score !== undefined ? score : 0
+      // Denied: if score specified use it, otherwise apply penalty only for required chores
+      if (score !== undefined) {
+        pointsAwarded = computePointsFromScore(score)
+        finalScore = score
+      } else if (submission.assignment.chore.isRequired) {
+        // Full deduction for required chores
+        pointsAwarded = new Decimal(-roundTo(chorePoints.toNumber(), 1))
+        finalScore = 0
+      } else {
+        pointsAwarded = new Decimal(0)
+        finalScore = 0
+      }
     }
 
     // Calculate dollar equivalent for legacy compatibility
     const partialReward = Math.round(pointsAwarded.toNumber() * pointsToMoneyRate * 100) / 100
 
-    // Update the submission status
+    // Update the submission status and awarded points on the submission
     const updatedSubmission = await prisma.choreSubmission.update({
       where: { id: submissionId },
       data: {
@@ -112,9 +129,25 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Create approval record
-    await prisma.choreApproval.create({
-      data: {
+    // Upsert approval record to allow re-approvals/denials and compute delta
+    const existingApproval = await prisma.choreApproval.findUnique({
+      where: { submissionId },
+      select: { pointsAwarded: true, approved: true }
+    })
+
+    await prisma.choreApproval.upsert({
+      where: { submissionId },
+      update: {
+        approvedBy: session.user.id,
+        approved: approved,
+        feedback: feedback || null,
+        score: finalScore,
+        partialReward: new Decimal(partialReward),
+        originalReward: submission.assignment.chore.reward,
+        pointsAwarded: pointsAwarded,
+        originalPoints: chorePoints
+      },
+      create: {
         submissionId: submissionId,
         approvedBy: session.user.id,
         approved: approved,
@@ -127,25 +160,15 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // If approved (even partially), award points to user and create reward record
-    if (approved && pointsAwarded.toNumber() > 0) {
-      // Update user's points balance
+    // Adjust child's points by delta vs any previous approval, and only add to lifetimePoints when positive
+    const previousPoints = existingApproval?.pointsAwarded ? new Decimal(existingApproval.pointsAwarded) : new Decimal(0)
+    const delta = pointsAwarded.minus(previousPoints)
+    if (!delta.isZero() || (existingApproval && existingApproval.approved !== approved)) {
       await prisma.user.update({
         where: { id: submission.user.id },
         data: {
-          availablePoints: { increment: pointsAwarded },
-          lifetimePoints: { increment: pointsAwarded }
-        }
-      })
-
-      // Create a reward record for tracking (dollar amount is now calculated from points)
-      await prisma.reward.create({
-        data: {
-          userId: submission.user.id,
-          title: `Completed: ${submission.assignment.chore.title}`,
-          amount: partialReward, // Dollar equivalent
-          type: 'MONEY',
-          awardedBy: session.user.id
+          availablePoints: { increment: delta },
+          lifetimePoints: { increment: delta.isNegative() ? new Decimal(0) : delta }
         }
       })
     }

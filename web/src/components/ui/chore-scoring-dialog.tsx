@@ -57,7 +57,9 @@ export function ChoreScoringDialog({ isOpen, onClose, submission, onScore }: Cho
   const quickScoreOptions = [
     { value: -50, label: 'Deduct Points', color: 'bg-red-600', icon: '⚡', feedback: 'Work was unsatisfactory and requires correction.' },
     { value: 0, label: 'Reject', color: 'bg-red-500', icon: '❌', feedback: 'Work not completed to standard.' },
-    { value: 50, label: 'Half Credit', color: 'bg-orange-500', icon: '⚠️', feedback: 'Partially completed but needs improvement.' },
+    { value: 25, label: '25% Credit', color: 'bg-yellow-500', icon: '🟡', feedback: 'Some effort shown; partial completion.' },
+    { value: 50, label: '50% Credit', color: 'bg-orange-500', icon: '🟠', feedback: 'Partially completed but needs improvement.' },
+    { value: 75, label: '75% Credit', color: 'bg-lime-500', icon: '🟢', feedback: 'Mostly complete with minor issues.' },
     { value: 100, label: 'Approve', color: 'bg-green-500', icon: '✅', feedback: 'Good work! Task completed satisfactorily.' },
     { value: 110, label: 'Bonus', color: 'bg-purple-500', icon: '💯', feedback: 'Exceptional work! Above and beyond expectations.' }
   ]
@@ -69,7 +71,7 @@ export function ChoreScoringDialog({ isOpen, onClose, submission, onScore }: Cho
 
   const calculatePoints = (score: number) => {
     const points = submission.points || 0
-    return Math.round((score / 100) * points)
+    return Math.round(((score / 100) * points) * 10) / 10
   }
 
   const handleQuickScore = (option: typeof quickScoreOptions[0]) => {
