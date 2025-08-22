@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       where: { choreId, userId: childId, weekStart },
       include: {
         chore: {
-          select: { title: true, reward: true, points: true, familyId: true }
+          select: { title: true, reward: true, points: true, familyId: true, isRequired: true }
         },
         family: {
           select: { pointsToMoneyRate: true }
@@ -92,10 +92,14 @@ export async function POST(request: NextRequest) {
     const chorePoints = assignment.chore.points || new Decimal(0)
     const pointsToMoneyRate = assignment.family.pointsToMoneyRate || 1.0
 
+    const roundTo = (val: number, places: number) => {
+      const m = Math.pow(10, places)
+      return Math.round(val * m) / m
+    }
     let finalScore = score !== undefined ? score : approved ? 100 : 0
     let pointsAwarded = new Decimal(0)
     if (finalScore !== undefined) {
-      pointsAwarded = new Decimal(Math.round((finalScore / 100) * chorePoints.toNumber()))
+      pointsAwarded = new Decimal(roundTo((finalScore / 100) * chorePoints.toNumber(), 1))
     }
 
     if (!submission) {
@@ -128,7 +132,18 @@ export async function POST(request: NextRequest) {
       select: { pointsAwarded: true, approved: true }
     })
 
-    const newPointsAwarded = approved ? pointsAwarded : new Decimal(0)
+    let newPointsAwarded = new Decimal(0)
+    if (approved) {
+      newPointsAwarded = pointsAwarded
+    } else {
+      if (score !== undefined) {
+        newPointsAwarded = pointsAwarded
+      } else if (assignment.chore.isRequired) {
+        newPointsAwarded = new Decimal(-roundTo(chorePoints.toNumber(), 1))
+      } else {
+        newPointsAwarded = new Decimal(0)
+      }
+    }
 
     await prisma.choreApproval.upsert({
       where: { submissionId: submission.id },
