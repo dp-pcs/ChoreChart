@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       assignment = await prisma.choreAssignment.create({
         data: { choreId, userId: childId, familyId: chore.familyId, weekStart },
         include: {
-          chore: { select: { title: true, reward: true, points: true, familyId: true } },
+          chore: { select: { title: true, reward: true, points: true, familyId: true, isRequired: true } },
           family: { select: { pointsToMoneyRate: true } }
         }
       })
