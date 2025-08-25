@@ -20,6 +20,17 @@ export default function ParentDashboard() {
   const { data: session, status } = useSession()
   const router = useRouter()
   
+  // Utility function to format points for display
+  const formatPoints = (points: number | string) => {
+    const num = Number(points || 0)
+    // If it's a whole number, show no decimals
+    if (num % 1 === 0) {
+      return num.toString()
+    }
+    // Otherwise show up to 2 decimal places, removing trailing zeros
+    return parseFloat(num.toFixed(2)).toString()
+  }
+  
   // State management
   const [dashboardData, setDashboardData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -349,7 +360,7 @@ export default function ParentDashboard() {
       const moneyValue = pointsAwarded * (dashboardData?.family?.settings?.pointsToMoneyRate || 1)
       setMessage({
         type: 'success',
-        text: `✅ Approved ${approval?.choreName} for ${approval?.childName} - ${pointsAwarded} points (${moneyValue.toFixed(2)}) earned!`
+        text: `✅ Approved ${approval?.choreName} for ${approval?.childName} - ${formatPoints(pointsAwarded)} points ($${moneyValue.toFixed(2)}) earned!`
       })
       
       // Refresh dashboard data
@@ -406,7 +417,7 @@ export default function ParentDashboard() {
       const moneyValue = pointsAwarded * (dashboardData?.family?.settings?.pointsToMoneyRate || 1)
       setMessage({
         type: 'success',
-        text: `✅ Scored ${scoringDialog.submission.choreName} for ${scoringDialog.submission.childName} - ${score}% quality = ${pointsAwarded} points earned (worth $${moneyValue.toFixed(2)}) ${originalPoints - pointsAwarded > 0 ? `(${originalPoints - pointsAwarded} points deducted)` : '(full points awarded)'}`
+        text: `✅ Scored ${scoringDialog.submission.choreName} for ${scoringDialog.submission.childName} - ${score}% quality = ${formatPoints(pointsAwarded)} points earned (worth $${moneyValue.toFixed(2)}) ${originalPoints - pointsAwarded > 0 ? `(${formatPoints(originalPoints - pointsAwarded)} points deducted)` : '(full points awarded)'}`
       })
       
       // Refresh dashboard data
@@ -1477,8 +1488,8 @@ export default function ParentDashboard() {
             </CardTitle>
             <CardDescription>
               {dashboardData.family.settings.autoApproveChores 
-                ? "Auto-approved and manually approved chores (last 7 days)" 
-                : "Recently completed chores (last 7 days)"
+                ? "Approved, denied, and auto-approved chores (last 7 days)" 
+                : "Recently completed and reviewed chores (last 7 days)"
               }
             </CardDescription>
           </CardHeader>
@@ -1522,7 +1533,7 @@ export default function ParentDashboard() {
                     <div className="flex items-center gap-3">
                       <div className="text-right">
                         <p className="text-sm font-medium text-green-600">
-                          {completion.approval?.pointsAwarded || completion.points || 0} pts
+                          {formatPoints(completion.approval?.pointsAwarded || completion.points || 0)} pts
                           {completion.approval?.score && completion.approval.score < 100 && (
                             <span className="text-xs text-gray-500 block">
                               {completion.approval.score}% quality
@@ -1555,7 +1566,8 @@ export default function ParentDashboard() {
                       )}
                     </div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </CardContent>

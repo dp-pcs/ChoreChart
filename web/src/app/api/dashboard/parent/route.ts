@@ -40,7 +40,10 @@ export async function GET(request: NextRequest) {
                       name: true,
                       email: true,
                       role: true,
-                      createdAt: true
+                      createdAt: true,
+                      availablePoints: true,
+                      lifetimePoints: true,
+                      bankedPoints: true
                     }
                   }
                 }
@@ -105,7 +108,10 @@ export async function GET(request: NextRequest) {
                   name: true,
                   email: true,
                   role: true,
-                  createdAt: true
+                  createdAt: true,
+                  availablePoints: true,
+                  lifetimePoints: true,
+                  bankedPoints: true
                 }
               }
             }
@@ -192,7 +198,7 @@ export async function GET(request: NextRequest) {
           familyId: familyId
         },
         status: {
-          in: ['AUTO_APPROVED', 'APPROVED']
+          in: ['AUTO_APPROVED', 'APPROVED', 'DENIED']
         },
         ...(dayStart && dayEnd
           ? { completedAt: { gte: dayStart, lt: dayEnd } }
@@ -309,7 +315,9 @@ export async function GET(request: NextRequest) {
       allowMultipleParents: family?.allowMultipleParents !== undefined ? family.allowMultipleParents : true,
       emailNotifications: family?.emailNotifications !== undefined ? family.emailNotifications : true,
       shareReports: family?.shareReports || false,
-      crossFamilyApproval: family?.crossFamilyApproval || false
+      crossFamilyApproval: family?.crossFamilyApproval || false,
+      pointsToMoneyRate: family?.pointsToMoneyRate || 1.0,
+      enablePointsSystem: family?.enablePointsSystem !== undefined ? family.enablePointsSystem : true
     }
 
     const dashboardData = {
@@ -361,7 +369,10 @@ export async function GET(request: NextRequest) {
           id: childUser.id,
           name: childUser.name,
           email: childUser.email,
-          joinedAt: childUser.createdAt
+          joinedAt: childUser.createdAt,
+          availablePoints: Number(childUser.availablePoints || 0),
+          lifetimePoints: Number(childUser.lifetimePoints || 0),
+          bankedPoints: Number(childUser.bankedPoints || 0)
         }
       }),
       recentActivity: recentActivity.map((activity: any) => ({
