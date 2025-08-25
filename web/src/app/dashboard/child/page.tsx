@@ -18,6 +18,17 @@ export default function ChildDashboard() {
   const { data: session, status } = useSession()
   const router = useRouter()
   
+  // Utility function to format points for display
+  const formatPoints = (points: number | string) => {
+    const num = Number(points || 0)
+    // If it's a whole number, show no decimals
+    if (num % 1 === 0) {
+      return num.toString()
+    }
+    // Otherwise show up to 2 decimal places, removing trailing zeros
+    return parseFloat(num.toFixed(2)).toString()
+  }
+  
   // State management
   const [showCheckIn, setShowCheckIn] = useState(false)
   const [showCheckInReminder, setShowCheckInReminder] = useState(false)
@@ -676,7 +687,7 @@ export default function ChildDashboard() {
           <CardContent className="p-4 sm:p-6">
             <div className="text-center">
               <div className="text-sm sm:text-base opacity-90 mb-2">Your Available Point Balance</div>
-              <div className="text-3xl sm:text-4xl font-bold mb-3">{Number(user?.availablePoints || 0).toFixed(0)} Points</div>
+              <div className="text-3xl sm:text-4xl font-bold mb-3">{formatPoints(user?.availablePoints || 0)} Points</div>
               <div className="text-lg sm:text-xl opacity-90">
                 = ${(Number(user?.availablePoints || 0) * Number(user?.pointRate || 1)).toFixed(2)} Value
               </div>
@@ -691,7 +702,7 @@ export default function ChildDashboard() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
           <Card className="bg-white shadow-sm">
             <CardContent className="p-3 sm:p-4 text-center">
-              <div className="text-lg sm:text-2xl font-bold text-green-600">{weeklyProgress.pointsEarned || 0}</div>
+              <div className="text-lg sm:text-2xl font-bold text-green-600">{formatPoints(weeklyProgress.pointsEarned || 0)}</div>
               <div className="text-xs sm:text-sm text-gray-600">Points This Week</div>
             </CardContent>
           </Card>

@@ -15,10 +15,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
-    // Get user's family
+    // Get user's family and point balance
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        familyId: true,
+        availablePoints: true,
+        lifetimePoints: true,
+        bankedMoney: true,
+        bankedPoints: true,
         family: {
           select: {
             id: true,
@@ -150,7 +157,11 @@ export async function GET(request: NextRequest) {
       user: {
         id: session.user.id,
         name: session.user.name,
-        role: session.user.role
+        role: session.user.role,
+        availablePoints: Number(user.availablePoints || 0),
+        lifetimePoints: Number(user.lifetimePoints || 0),
+        bankedMoney: Number(user.bankedMoney || 0),
+        bankedPoints: Number(user.bankedPoints || 0)
       },
       family: {
         id: user.familyId,
