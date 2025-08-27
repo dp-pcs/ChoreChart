@@ -40,6 +40,7 @@ export default function ChildDashboard() {
   const [submittedChores, setSubmittedChores] = useState<Set<string>>(new Set())
   const [approvedChores, setApprovedChores] = useState<Set<string>>(new Set())
   const [pendingChores, setPendingChores] = useState<Set<string>>(new Set())
+  const [deniedChores, setDeniedChores] = useState<Set<string>>(new Set())
   const [submittingChores, setSubmittingChores] = useState<Set<string>>(new Set())
   const [isCheckingToday, setIsCheckingToday] = useState(true)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
@@ -271,6 +272,7 @@ export default function ChildDashboard() {
           const newSubmitted = new Set<string>()
           const newApproved = new Set<string>()
           const newPending = new Set<string>()
+          const newDenied = new Set<string>()
           
           submissions.forEach((submission: any) => {
             const choreId = submission.choreId
@@ -280,12 +282,15 @@ export default function ChildDashboard() {
               newApproved.add(choreId)
             } else if (submission.status === 'PENDING') {
               newPending.add(choreId)
+            } else if (submission.status === 'DENIED') {
+              newDenied.add(choreId)
             }
           })
           
           setSubmittedChores(newSubmitted)
           setApprovedChores(newApproved)
           setPendingChores(newPending)
+          setDeniedChores(newDenied)
           
           // Update earnings from approved submissions
           const approvedEarnings = submissions
@@ -405,6 +410,13 @@ export default function ChildDashboard() {
         } else {
           setPendingChores(prev => new Set([...prev, choreId]))
         }
+        
+        // Clear from denied if it was previously denied
+        setDeniedChores(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(choreId)
+          return newSet
+        })
         
         // Show success message
         const dateText = customCompletedDate ? 
@@ -797,6 +809,7 @@ export default function ChildDashboard() {
                   const isSubmitted = submittedChores.has(chore.id)
                   const isApproved = approvedChores.has(chore.id)
                   const isPending = pendingChores.has(chore.id)
+                  const isDenied = deniedChores.has(chore.id)
                   const isSubmitting = submittingChores.has(chore.id)
                   
                   return (
@@ -805,6 +818,8 @@ export default function ChildDashboard() {
                       className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 touch-manipulation ${
                         isApproved 
                           ? 'bg-green-50 border-green-200' 
+                          : isDenied
+                          ? 'bg-red-50 border-red-200'
                           : isPending
                           ? 'bg-yellow-50 border-yellow-200'
                           : isSubmitting
@@ -813,13 +828,15 @@ export default function ChildDashboard() {
                           ? 'bg-red-50 border-red-200 hover:border-red-300 active:border-red-400'
                           : 'bg-white border-gray-200 hover:border-blue-300 active:border-blue-400'
                       }`}
-                      onClick={() => !isSubmitted && !isSubmitting && handleChoreSubmitWithDatePicker(chore.id, chore.title, chore.dueDate)}
+                      onClick={() => (!isSubmitted || isDenied) && !isSubmitting && handleChoreSubmitWithDatePicker(chore.id, chore.title, chore.dueDate)}
                     >
                       <div className="flex items-center space-x-4">
                         <div 
                           className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 flex items-center justify-center transition-all ${
                             isApproved 
                               ? 'bg-green-500 border-green-500' 
+                              : isDenied
+                              ? 'bg-red-500 border-red-500'
                               : isPending 
                               ? 'bg-yellow-400 border-yellow-400'
                               : isSubmitting
@@ -832,6 +849,11 @@ export default function ChildDashboard() {
                           {isApproved && (
                             <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                          {isDenied && (
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                             </svg>
                           )}
                           {isPending && (
@@ -847,7 +869,11 @@ export default function ChildDashboard() {
                           )}
                         </div>
                         <div className="flex-1">
-                          <p className={`font-medium text-sm sm:text-base ${isApproved ? 'line-through text-green-700' : 'text-gray-900'}`}>
+                          <p className={`font-medium text-sm sm:text-base ${
+                            isApproved ? 'line-through text-green-700' : 
+                            isDenied ? 'line-through text-red-700 opacity-75' : 
+                            'text-gray-900'
+                          }`}>
                             {chore.title}
                           </p>
                           <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-500 mt-1">
@@ -864,6 +890,12 @@ export default function ChildDashboard() {
                               <>
                                 <span>•</span>
                                 <span className="text-green-600 font-medium">✓ Approved!</span>
+                              </>
+                            )}
+                            {isDenied && (
+                              <>
+                                <span>•</span>
+                                <span className="text-red-600 font-medium">❌ Denied - Try again!</span>
                               </>
                             )}
                             {isPending && (
@@ -999,6 +1031,7 @@ export default function ChildDashboard() {
                               const isSubmitted = submittedChores.has(chore.id)
                               const isApproved = approvedChores.has(chore.id)
                               const isPending = pendingChores.has(chore.id)
+                              const isDenied = deniedChores.has(chore.id)
                               const isSubmitting = submittingChores.has(chore.id)
                               
                               return (
@@ -1007,6 +1040,8 @@ export default function ChildDashboard() {
                                   className={`flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer ${
                                     isApproved 
                                       ? 'bg-green-50 border-green-200' 
+                                      : isDenied
+                                      ? 'bg-red-50 border-red-200'
                                       : isPending
                                       ? 'bg-yellow-50 border-yellow-200'
                                       : isSubmitting
@@ -1015,13 +1050,15 @@ export default function ChildDashboard() {
                                       ? 'bg-red-50 border-red-200 hover:border-red-300'
                                       : 'bg-white border-gray-200 hover:border-blue-300'
                                   }`}
-                                  onClick={() => !isSubmitted && !isSubmitting && handleChoreSubmitWithDatePicker(chore.id, chore.title, chore.dueDate)}
+                                  onClick={() => (!isSubmitted || isDenied) && !isSubmitting && handleChoreSubmitWithDatePicker(chore.id, chore.title, chore.dueDate)}
                                 >
                                   <div className="flex items-center gap-3 flex-1">
                                     <div 
                                       className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
                                         isApproved 
                                           ? 'bg-green-500 border-green-500' 
+                                          : isDenied
+                                          ? 'bg-red-500 border-red-500'
                                           : isPending 
                                           ? 'bg-yellow-400 border-yellow-400'
                                           : isSubmitting
@@ -1036,6 +1073,11 @@ export default function ChildDashboard() {
                                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                         </svg>
                                       )}
+                                      {isDenied && (
+                                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                        </svg>
+                                      )}
                                       {isPending && (
                                         <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
@@ -1046,7 +1088,11 @@ export default function ChildDashboard() {
                                       )}
                                     </div>
                                     <div className="flex-1">
-                                      <p className={`text-sm font-medium ${isApproved ? 'line-through text-green-700' : 'text-gray-900'}`}>
+                                      <p className={`text-sm font-medium ${
+                                        isApproved ? 'line-through text-green-700' : 
+                                        isDenied ? 'line-through text-red-700 opacity-75' : 
+                                        'text-gray-900'
+                                      }`}>
                                         {chore.title}
                                       </p>
                                       <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
@@ -1054,6 +1100,7 @@ export default function ChildDashboard() {
                                         <span>•</span>
                                         <span>{chore.isRequired ? 'Required' : 'Optional'}</span>
                                         {isApproved && <span className="text-green-600">• ✓ Done</span>}
+                                        {isDenied && <span className="text-red-600">• ❌ Denied</span>}
                                         {isPending && <span className="text-yellow-600">• ⏳ Pending</span>}
                                         {chore.isOverdue && !isSubmitted && <span className="text-red-600">• ⚠️ Overdue</span>}
                                       </div>

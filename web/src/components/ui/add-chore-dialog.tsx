@@ -20,6 +20,7 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren, edi
     title: editingChore?.title || '',
     description: editingChore?.description || '',
     reward: editingChore?.reward ? editingChore.reward.toString() : '',
+    points: editingChore?.points ? editingChore.points.toString() : '',
     estimatedMinutes: editingChore?.estimatedMinutes ? editingChore.estimatedMinutes.toString() : '',
     frequency: (editingChore?.frequency?.toLowerCase() === 'daily' ? 'daily' : 
                editingChore?.frequency?.toLowerCase() === 'weekly' ? 'weekly' : 
@@ -62,6 +63,7 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren, edi
     const submitData = {
       ...formData,
       reward: formData.reward ? parseFloat(formData.reward) : 0,
+      points: formData.points ? parseFloat(formData.points) : 0,
       estimatedMinutes: formData.estimatedMinutes ? parseInt(formData.estimatedMinutes) : 15,
       ...(editingChore && { choreId: editingChore.id })
     }
@@ -99,6 +101,7 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren, edi
         title: '',
         description: '',
         reward: '',
+        points: '',
         estimatedMinutes: '',
         frequency: 'once',
         selectedDays: [],
@@ -120,7 +123,7 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren, edi
             {editingChore ? '✏️ Edit Chore' : '📋 Add New Chore'}
           </CardTitle>
           <CardDescription className="text-gray-600">
-            {editingChore ? 'Update chore details' : 'Create a new chore for your family'}
+            {editingChore ? 'Update chore details' : 'Create a new chore for your family (points required)'}
           </CardDescription>
         </CardHeader>
         
@@ -153,11 +156,26 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren, edi
               />
             </div>
 
-            {/* Reward and Time */}
+            {/* Points and Reward */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-900 mb-1">
-                  Reward ($) (optional)
+                  Points *
+                </label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  value={formData.points}
+                  onChange={(e) => handleInputChange('points', e.target.value)}
+                  placeholder="5"
+                  className="bg-white border-gray-300 text-gray-900"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-1">
+                  Legacy Reward ($) (optional)
                 </label>
                 <Input
                   type="number"
@@ -169,32 +187,34 @@ export function AddChoreDialog({ isOpen, onClose, onSuccess, familyChildren, edi
                   className="bg-white border-gray-300 text-gray-900"
                 />
               </div>
-              
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <input
-                    type="checkbox"
-                    id="showDuration"
-                    checked={showDuration}
-                    onChange={(e) => setShowDuration(e.target.checked)}
-                    className="rounded border-gray-300"
-                  />
-                  <label htmlFor="showDuration" className="text-sm font-medium text-gray-900">
-                    Set time duration (optional)
-                  </label>
-                </div>
-                {showDuration && (
-                  <Input
-                    type="number"
-                    min="1"
-                    value={formData.estimatedMinutes}
-                    onChange={(e) => handleInputChange('estimatedMinutes', e.target.value)}
-                    placeholder="15"
-                    className="bg-white border-gray-300 text-gray-900"
-                  />
-                )}
-              </div>
             </div>
+
+            {/* Time Duration */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <input
+                  type="checkbox"
+                  id="showDuration"
+                  checked={showDuration}
+                  onChange={(e) => setShowDuration(e.target.checked)}
+                  className="rounded border-gray-300"
+                />
+                <label htmlFor="showDuration" className="text-sm font-medium text-gray-900">
+                  Set time duration (optional)
+                </label>
+              </div>
+              {showDuration && (
+                <Input
+                  type="number"
+                  min="1"
+                  value={formData.estimatedMinutes}
+                  onChange={(e) => handleInputChange('estimatedMinutes', e.target.value)}
+                  placeholder="15"
+                  className="bg-white border-gray-300 text-gray-900"
+                />
+              )}
+            </div>
+
 
             {/* Frequency */}
             <div>
