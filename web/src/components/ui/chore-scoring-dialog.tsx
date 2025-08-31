@@ -55,13 +55,20 @@ export function ChoreScoringDialog({ isOpen, onClose, submission, onScore }: Cho
   }
 
   const quickScoreOptions = [
+    // Full deduction option: remove all points for this chore
+    { value: -100, label: 'Full Deduction', color: 'bg-red-700', icon: '⚠️', feedback: 'Points removed due to incomplete or incorrect work.' },
+    // Partial deduction option
     { value: -50, label: 'Deduct Points', color: 'bg-red-600', icon: '⚡', feedback: 'Work was unsatisfactory and requires correction.' },
+    // Reject with zero credit
     { value: 0, label: 'Reject', color: 'bg-red-500', icon: '❌', feedback: 'Work not completed to standard.' },
-    { value: 25, label: '25% Credit', color: 'bg-yellow-500', icon: '🟡', feedback: 'Some effort shown; partial completion.' },
-    { value: 50, label: '50% Credit', color: 'bg-orange-500', icon: '🟠', feedback: 'Partially completed but needs improvement.' },
-    { value: 75, label: '75% Credit', color: 'bg-lime-500', icon: '🟢', feedback: 'Mostly complete with minor issues.' },
+    // Partial credit options
+    { value: 25, label: '25% Credit', color: 'bg-yellow-500', icon: '', feedback: 'Some effort shown; partial completion.' },
+    { value: 50, label: '50% Credit', color: 'bg-orange-500', icon: '', feedback: 'Partially completed but needs improvement.' },
+    { value: 75, label: '75% Credit', color: 'bg-lime-500', icon: '', feedback: 'Mostly complete with minor issues.' },
+    // Full approval
     { value: 100, label: 'Approve', color: 'bg-green-500', icon: '✅', feedback: 'Good work! Task completed satisfactorily.' },
-    { value: 110, label: 'Bonus', color: 'bg-purple-500', icon: '💯', feedback: 'Exceptional work! Above and beyond expectations.' }
+    // Bonus beyond 100%
+    { value: 110, label: 'Bonus', color: 'bg-purple-500', icon: '', feedback: 'Exceptional work! Above and beyond expectations.' }
   ]
 
   const calculateReward = (score: number) => {

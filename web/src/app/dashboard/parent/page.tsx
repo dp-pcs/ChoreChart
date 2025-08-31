@@ -1316,52 +1316,23 @@ export default function ParentDashboard() {
                       </p>
                     </div>
                     <div className="flex gap-2">
+                      {/* Replace separate Deny/Approve actions with a unified Review action that opens the scoring dialog */}
                       <Button
                         size="sm"
-                        variant="outline"
-                        onClick={() => handleDeny(approval.id)}
-                        disabled={processingApprovals.has(approval.id)}
-                        className="text-red-600 border-red-200 hover:bg-red-50 disabled:opacity-50"
-                      >
-                        {processingApprovals.has(approval.id) ? (
-                          <>
-                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-600 mr-1"></div>
-                            Denying...
-                          </>
-                        ) : (
-                          'Deny'
-                        )}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
                         onClick={() => handleScore(approval.id)}
                         disabled={processingApprovals.has(approval.id)}
-                        className="text-blue-600 border-blue-200 hover:bg-blue-50 disabled:opacity-50"
+                        className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
                       >
-                        {processingApprovals.has(approval.id) ? (
-                          <>
-                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mr-1"></div>
-                            Scoring...
-                          </>
-                        ) : (
-                          'Score'
-                        )}
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => handleApprove(approval.id)}
-                        disabled={processingApprovals.has(approval.id)}
-                        className="bg-green-600 hover:bg-green-700 disabled:opacity-50"
-                      >
-                        {processingApprovals.has(approval.id) ? (
-                          <>
-                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
-                            Approving...
-                          </>
-                        ) : (
-                          `Approve $${approval.reward}`
-                        )}
+                        {processingApprovals.has(approval.id)
+                          ? (
+                              <>
+                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
+                                Reviewing...
+                              </>
+                            )
+                          : (
+                              `Review`
+                            )}
                       </Button>
                     </div>
                   </div>
