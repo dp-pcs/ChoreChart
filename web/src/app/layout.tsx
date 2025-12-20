@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/providers'
 
-const inter = Inter({ subsets: ['latin'] })
+// Use system font stack as fallback when Google Fonts are unavailable
+const fontClass = 'font-sans'
 
 export const metadata: Metadata = {
   title: 'Chorbie - Smart Family Management',
@@ -81,7 +81,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} antialiased`}>
+      <body className={`${fontClass} antialiased`}>
         <Providers>
           {children}
         </Providers>

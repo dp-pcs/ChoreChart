@@ -1,9 +1,17 @@
 // Behavior Tracking & AI Insights System
 import OpenAI from 'openai'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-})
+// Lazy initialization of OpenAI client to avoid build-time errors
+let openaiClient: OpenAI | null = null
+
+function getOpenAI(): OpenAI | null {
+  if (!openaiClient && process.env.OPENAI_API_KEY) {
+    openaiClient = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  }
+  return openaiClient
+}
 
 // Types for behavior tracking
 export interface DailyCheckIn {
@@ -315,6 +323,11 @@ Please provide:
 5. 1 schedule adjustment suggestion`
 
     try {
+      const openai = getOpenAI()
+      if (!openai) {
+        throw new Error('OpenAI client not available')
+      }
+
       const response = await openai.chat.completions.create({
         model: process.env.OPENAI_MODEL || 'gpt-4o',
         messages: [
@@ -324,7 +337,7 @@ Please provide:
         max_tokens: 500,
         temperature: 0.7,
       })
-      
+
       const content = response.choices[0]?.message?.content || ''
       
       // Parse the structured response (in production, you'd want better parsing)

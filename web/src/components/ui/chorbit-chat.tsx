@@ -16,6 +16,8 @@ interface ChorbieChatProps {
   completionRate?: number
   onScheduleGenerated?: (schedule: ChorbieSchedule) => void
   onExportRequest?: (schedule: ChorbieSchedule) => void
+  className?: string
+  compact?: boolean // When true, uses a more compact layout
 }
 
 export function ChorbieChat({
@@ -26,7 +28,9 @@ export function ChorbieChat({
   weeklyEarnings = 0,
   completionRate = 0,
   onScheduleGenerated,
-  onExportRequest
+  onExportRequest,
+  className = '',
+  compact = false
 }: ChorbieChatProps) {
   const [messages, setMessages] = useState<ChorbieMessage[]>([])
   const [input, setInput] = useState('')
@@ -255,36 +259,38 @@ export function ChorbieChat({
   const quickPrompts = getQuickPrompts()
 
   return (
-    <Card className="h-[600px] flex flex-col">
-      <CardHeader className="bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-t-lg flex-shrink-0">
+    <Card className={`flex flex-col ${compact ? 'h-full' : 'h-[600px]'} ${className}`}>
+      <CardHeader className={`bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-t-lg flex-shrink-0 ${compact ? 'py-2 px-3' : ''}`}>
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-            <span className="text-2xl">
-              {userPreferences?.interests?.includes('basketball') ? '🏀' : 
+          <div className={`${compact ? 'w-8 h-8' : 'w-10 h-10'} bg-white/20 rounded-full flex items-center justify-center`}>
+            <span className={compact ? 'text-xl' : 'text-2xl'}>
+              {userPreferences?.interests?.includes('basketball') ? '🏀' :
                userPreferences?.interests?.includes('gaming') ? '🎮' : '🤖'}
             </span>
           </div>
           <div>
-            <CardTitle className="text-xl">Chorbie AI</CardTitle>
-            <CardDescription className="text-purple-100">
-              {userPreferences?.interests?.includes('basketball') ? 'Your basketball-loving AI friend' :
-               userPreferences?.interests?.includes('gaming') ? 'Your gaming buddy AI assistant' :
-               'Your smart AI best friend'}
-            </CardDescription>
+            <CardTitle className={compact ? 'text-base' : 'text-xl'}>Chorbie AI</CardTitle>
+            {!compact && (
+              <CardDescription className="text-purple-100">
+                {userPreferences?.interests?.includes('basketball') ? 'Your basketball-loving AI friend' :
+                 userPreferences?.interests?.includes('gaming') ? 'Your gaming buddy AI assistant' :
+                 'Your smart AI best friend'}
+              </CardDescription>
+            )}
           </div>
-          <Badge variant="secondary" className="ml-auto">
-            {userRole === 'CHILD' ? '🌟 Friend Mode' : '👨‍👩‍👧‍👦 Parent Mode'}
+          <Badge variant="secondary" className="ml-auto text-xs">
+            {userRole === 'CHILD' ? '🌟 Friend' : '👨‍👩‍👧‍👦 Parent'}
           </Badge>
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 p-0 overflow-hidden">
-        <div 
-          className="h-full max-h-[350px] overflow-y-auto p-4" 
+      <CardContent className="flex-1 p-0 overflow-hidden min-h-0">
+        <div
+          className={`h-full overflow-y-auto ${compact ? 'p-2' : 'p-4'}`}
           ref={scrollAreaRef}
           style={{ scrollBehavior: 'smooth' }}
         >
-          <div className="space-y-4">
+          <div className={compact ? 'space-y-2' : 'space-y-4'}>
             {messages.map((message) => (
               <div
                 key={message.id}
@@ -342,18 +348,18 @@ export function ChorbieChat({
         </div>
       )}
 
-      <CardFooter className="p-4 border-t flex-shrink-0">
-        <div className="w-full space-y-3">
-          {/* Enhanced Quick Prompts */}
+      <CardFooter className={`border-t flex-shrink-0 ${compact ? 'p-2' : 'p-4'}`}>
+        <div className={`w-full ${compact ? 'space-y-2' : 'space-y-3'}`}>
+          {/* Enhanced Quick Prompts - Show fewer in compact mode */}
           <div className="flex flex-wrap gap-1.5">
-            {quickPrompts.map((prompt, index) => (
+            {(compact ? quickPrompts.slice(0, 4) : quickPrompts).map((prompt, index) => (
               <Button
                 key={prompt}
                 variant="outline"
                 size="sm"
                 onClick={() => setInput(prompt)}
                 className={`text-xs transition-all hover:scale-105 ${
-                  index < 3 ? 'bg-purple-50 border-purple-200 hover:bg-purple-100' : 
+                  index < 3 ? 'bg-purple-50 border-purple-200 hover:bg-purple-100' :
                   'bg-blue-50 border-blue-200 hover:bg-blue-100'
                 }`}
               >
@@ -368,18 +374,18 @@ export function ChorbieChat({
               value={input}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder={
+              placeholder={compact ? "Ask Chorbie anything..." :
                 userPreferences?.interests?.includes('basketball') ? "Ask me about chores, homework, basketball, or anything! 🏀" :
                 userPreferences?.interests?.includes('gaming') ? "Ask about chores, homework, games, or anything at all! 🎮" :
                 "Ask me about chores, homework, or anything you're curious about! 🤖"
               }
               disabled={isLoading}
-              className="flex-1"
+              className={`flex-1 ${compact ? 'h-8 text-sm' : ''}`}
             />
-            <Button 
-              onClick={sendMessage} 
+            <Button
+              onClick={sendMessage}
               disabled={!input.trim() || isLoading}
-              className="bg-purple-500 hover:bg-purple-600 px-6"
+              className={`bg-purple-500 hover:bg-purple-600 ${compact ? 'px-3 h-8' : 'px-6'}`}
             >
               {isLoading ? '🤔' : '💬'}
             </Button>

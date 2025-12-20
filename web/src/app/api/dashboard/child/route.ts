@@ -65,7 +65,8 @@ export async function GET(request: NextRequest) {
               select: {
                 id: true,
                 title: true,
-                reward: true
+                reward: true,
+                points: true
               }
             }
           }
@@ -76,6 +77,7 @@ export async function GET(request: NextRequest) {
             feedback: true,
             score: true,
             partialReward: true,
+            pointsAwarded: true,
             approvedAt: true
           }
         }
@@ -99,59 +101,115 @@ export async function GET(request: NextRequest) {
             title: true,
             description: true,
             reward: true,
+            points: true,
             estimatedMinutes: true,
             isRequired: true,
             frequency: true,
-            type: true
+            type: true,
+            scheduledDays: true
+          }
+        },
+        submissions: {
+          where: {
+            completedAt: {
+              gte: weekStart,
+              lte: weekEnd
+            }
+          },
+          select: {
+            id: true,
+            completedAt: true,
+            status: true
           }
         }
       },
       orderBy: { weekStart: 'desc' }
     })
 
-    // Format submissions with necessary data
+    // Format submissions with necessary data including points
     const formattedSubmissions = submissions.map(submission => ({
       id: submission.id,
       choreId: submission.assignment.chore.id,
       choreName: submission.assignment.chore.title,
-      reward: submission.assignment.chore.reward,
+      reward: Number(submission.assignment.chore.reward || 0),
+      points: Number(submission.assignment.chore.points || 0),
       status: submission.status,
       submittedAt: submission.submittedAt,
       completedAt: submission.completedAt,
       notes: submission.notes,
+      pointsAwarded: submission.pointsAwarded ? Number(submission.pointsAwarded) : null,
       approval: submission.approval ? {
         approved: submission.approval.approved,
         feedback: submission.approval.feedback,
         score: submission.approval.score,
-        partialReward: submission.approval.partialReward,
+        partialReward: submission.approval.partialReward ? Number(submission.approval.partialReward) : null,
+        pointsAwarded: submission.approval.pointsAwarded ? Number(submission.approval.pointsAwarded) : null,
         approvedAt: submission.approval.approvedAt
       } : null
     }))
 
-    // Format assigned chores
-    const formattedChores = assignments.map(assignment => ({
-      id: assignment.chore.id,
-      title: assignment.chore.title,
-      description: assignment.chore.description,
-      reward: assignment.chore.reward,
-      estimatedMinutes: assignment.chore.estimatedMinutes,
-      isRequired: assignment.chore.isRequired,
-      frequency: assignment.chore.frequency,
-      type: assignment.chore.type,
-      assignmentId: assignment.id,
-      weekStart: assignment.weekStart
-    }))
+    // Get today's date for checking if chore is due today
+    const today = now.getDay() // 0 = Sunday
 
-    // Calculate weekly stats
-    const approvedSubmissions = submissions.filter(s => 
+    // Format assigned chores with completion status
+    const formattedChores = assignments.map(assignment => {
+      // Check if submitted today
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000)
+      const submittedToday = assignment.submissions.some(s =>
+        new Date(s.completedAt) >= todayStart && new Date(s.completedAt) < todayEnd
+      )
+
+      // Check if this chore is due today based on scheduledDays
+      const scheduledDays = assignment.chore.scheduledDays || []
+      const isDueToday = scheduledDays.length === 0 || scheduledDays.includes(today)
+
+      return {
+        id: assignment.chore.id,
+        title: assignment.chore.title,
+        description: assignment.chore.description,
+        reward: Number(assignment.chore.reward || 0),
+        points: Number(assignment.chore.points || 0),
+        estimatedMinutes: assignment.chore.estimatedMinutes,
+        isRequired: assignment.chore.isRequired,
+        frequency: assignment.chore.frequency,
+        type: assignment.chore.type,
+        scheduledDays: scheduledDays,
+        assignmentId: assignment.id,
+        weekStart: assignment.weekStart,
+        isDueToday,
+        submittedToday,
+        submissionsThisWeek: assignment.submissions.length
+      }
+    })
+
+    // Calculate weekly stats - now focused on points
+    const approvedSubmissions = submissions.filter(s =>
       s.status === 'APPROVED' || s.status === 'AUTO_APPROVED'
     )
-    const totalEarnings = approvedSubmissions.reduce((sum, s) => 
-      sum + (s.approval?.partialReward?.toNumber() || s.assignment.chore.reward?.toNumber() || 0), 0
-    )
+
+    // Calculate total points earned this week
+    const totalPointsEarned = approvedSubmissions.reduce((sum, s) => {
+      const pointsAwarded = s.approval?.pointsAwarded?.toNumber() ||
+        s.pointsAwarded?.toNumber() ||
+        s.assignment.chore.points?.toNumber() || 0
+      return sum + pointsAwarded
+    }, 0)
+
+    // Calculate total earnings (money equivalent)
+    const pointsToMoneyRate = user.family?.pointsToMoneyRate || 1.00
+    const totalEarnings = Math.round(totalPointsEarned * pointsToMoneyRate * 100) / 100
+
     const completedCount = approvedSubmissions.length
-    const totalAssigned = assignments.length
-    const completionRate = totalAssigned > 0 ? Math.round((completedCount / totalAssigned) * 100) : 0
+    const pendingCount = submissions.filter(s => s.status === 'PENDING').length
+    const deniedCount = submissions.filter(s => s.status === 'DENIED').length
+
+    // For completion rate, count chores due today that are done
+    const choresDueToday = formattedChores.filter(c => c.isDueToday)
+    const choresDoneTodayCount = choresDueToday.filter(c => c.submittedToday).length
+    const completionRate = choresDueToday.length > 0
+      ? Math.round((choresDoneTodayCount / choresDueToday.length) * 100)
+      : 100 // If no chores due today, 100% complete
 
     const dashboardData = {
       user: {
@@ -165,16 +223,20 @@ export async function GET(request: NextRequest) {
       },
       family: {
         id: user.familyId,
-        pointsToMoneyRate: user.family?.pointsToMoneyRate || 1.00
+        pointsToMoneyRate: pointsToMoneyRate
       },
       submissions: formattedSubmissions,
       assignedChores: formattedChores,
       weeklyStats: {
+        totalPointsEarned,
         totalEarnings,
         completedCount,
-        totalAssigned,
-        completionRate,
-        pendingCount: submissions.filter(s => s.status === 'PENDING').length
+        pendingCount,
+        deniedCount,
+        totalAssigned: formattedChores.length,
+        choresDueToday: choresDueToday.length,
+        choresDoneToday: choresDoneTodayCount,
+        completionRate
       }
     }
 
