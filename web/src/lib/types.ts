@@ -80,6 +80,117 @@ export interface DashboardStats {
   completionRate: number
 }
 
+// Points system types
+export interface PointsData {
+  availablePoints: number
+  lifetimePoints: number
+  bankedPoints: number
+  bankedMoney: number
+  pointsToMoneyRate: number
+}
+
+// Weekly stats for child dashboard
+export interface ChildWeeklyStats {
+  totalPointsEarned: number
+  totalEarnings: number
+  completedCount: number
+  pendingCount: number
+  deniedCount: number
+  totalAssigned: number
+  choresDueToday: number
+  choresDoneToday: number
+  completionRate: number
+}
+
+// Weekly stats for parent dashboard
+export interface ParentWeeklyStats {
+  totalChoresCompleted: number
+  totalPointsAwarded: number
+  totalEarningsApproved: number
+  pointsToMoneyRate: number
+  childrenParticipation: string
+  pendingCount: number
+}
+
+// Formatted chore for child view
+export interface FormattedChore {
+  id: string
+  title: string
+  description: string | null
+  reward: number
+  points: number
+  estimatedMinutes: number | null
+  isRequired: boolean
+  frequency: ChoreFrequency
+  type: ChoreType
+  scheduledDays: number[]
+  assignmentId: string
+  weekStart: Date
+  isDueToday: boolean
+  submittedToday: boolean
+  submissionsThisWeek: number
+}
+
+// Formatted submission for display
+export interface FormattedSubmission {
+  id: string
+  choreId: string
+  choreName: string
+  reward: number
+  points: number
+  status: SubmissionStatus
+  submittedAt: Date
+  completedAt: Date
+  notes: string | null
+  pointsAwarded: number | null
+  approval: {
+    approved: boolean
+    feedback: string | null
+    score: number | null
+    partialReward: number | null
+    pointsAwarded: number | null
+    approvedAt: Date
+  } | null
+}
+
+// Pending approval for parent view
+export interface PendingApproval {
+  id: string
+  childName: string
+  choreName: string
+  submittedAt: Date
+  reward: number
+  points: number
+  status: SubmissionStatus
+  notes: string | null
+}
+
+// Completed chore for parent view
+export interface CompletedChore {
+  id: string
+  childId: string
+  childName: string
+  choreId: string
+  choreName: string
+  submittedAt: Date
+  completedAt: Date
+  reward: number
+  points: number
+  status: SubmissionStatus
+  notes: string | null
+  approval: {
+    approved: boolean
+    feedback: string | null
+    score: number | null
+    partialReward: number | null
+    pointsAwarded: number | null
+    originalReward: number | null
+    originalPoints: number | null
+    approvedAt: Date
+    isAutoApproved: boolean
+  } | null
+}
+
 export interface ChildDashboardData {
   stats: DashboardStats
   todaysChores: ChoreWithAssignments[]

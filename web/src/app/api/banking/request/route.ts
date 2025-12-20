@@ -38,21 +38,28 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    if (!user || !user.familyId) {
+      return NextResponse.json({ error: 'User not found or has no family' }, { status: 404 })
     }
 
-    const availablePoints = Number(user.availablePoints)
+    const availablePoints = Number(user.availablePoints || 0)
     const requestedAmount = Number(amount)
 
-    if (requestedAmount > availablePoints) {
+    if (requestedAmount <= 0) {
       return NextResponse.json(
-        { error: 'Insufficient points available' },
+        { error: 'Amount must be greater than 0' },
         { status: 400 }
       )
     }
 
-    const pointRate = Number(user.family.pointsToMoneyRate) || 1.00
+    if (requestedAmount > availablePoints) {
+      return NextResponse.json(
+        { error: `Insufficient points. You have ${availablePoints} points available.` },
+        { status: 400 }
+      )
+    }
+
+    const pointRate = Number(user.family?.pointsToMoneyRate) || 1.00
     const moneyValue = requestedAmount * pointRate
 
     // Create banking request transaction

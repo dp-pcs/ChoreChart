@@ -1324,31 +1324,19 @@ export default function ChildDashboard() {
         )}
 
         {/* Chorbit Chat - Mobile Optimized */}
-        <Card className="bg-white shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-              💬 Chat with Chorbie
-              <Badge variant="secondary" className="text-xs">AI Assistant</Badge>
-            </CardTitle>
-            <CardDescription className="text-sm">
-              Your personal AI helper for chores and life!
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="h-64 sm:h-80">
-              <ChorbieChat 
-                userId={user.id}
-                userRole={user.role}
-                userName={user.name}
-                currentChores={todaysChores}
-                weeklyEarnings={weeklyProgress.earnings}
-                completionRate={weeklyProgress.total > 0 ? Math.round((weeklyProgress.completed / weeklyProgress.total) * 100) : 0}
-                onScheduleGenerated={() => {}}
-                onExportRequest={() => {}}
-              />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="h-[400px] sm:h-[500px]">
+          <ChorbieChat
+            userId={user.id}
+            userRole={user.role}
+            userName={user.name}
+            currentChores={todaysChores}
+            weeklyEarnings={weeklyProgress.earnings}
+            completionRate={weeklyProgress.total > 0 ? Math.round((weeklyProgress.completed / weeklyProgress.total) * 100) : 0}
+            onScheduleGenerated={handleScheduleGenerated}
+            onExportRequest={handleExportRequest}
+            compact
+          />
+        </div>
 
         {/* Impromptu Submission Dialog */}
         <ImpromptuSubmissionDialog

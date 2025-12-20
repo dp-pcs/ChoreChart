@@ -191,7 +191,7 @@ export async function GET(request: NextRequest) {
     // Get completed chore submissions (auto-approved and manually approved)
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-    
+
     const completedSubmissions = familyId ? await prisma.choreSubmission.findMany({
       where: {
         assignment: {
@@ -218,7 +218,8 @@ export async function GET(request: NextRequest) {
               select: {
                 id: true,
                 title: true,
-                reward: true
+                reward: true,
+                points: true
               }
             }
           }
@@ -229,7 +230,9 @@ export async function GET(request: NextRequest) {
             feedback: true,
             score: true,
             partialReward: true,
+            pointsAwarded: true,
             originalReward: true,
+            originalPoints: true,
             approvedAt: true
           }
         }
@@ -262,23 +265,42 @@ export async function GET(request: NextRequest) {
           include: {
             chore: {
               select: {
-                reward: true
+                reward: true,
+                points: true
               }
             }
+          }
+        },
+        approval: {
+          select: {
+            pointsAwarded: true,
+            partialReward: true
           }
         }
       }
     }) : []
 
     // Calculate stats
-    const children = (family as any)?.familyMemberships ? 
+    const children = (family as any)?.familyMemberships ?
       (family as any).familyMemberships.filter((m: any) => m.role === 'CHILD' || (m.user && m.user.role === 'CHILD')) :
       (family as any)?.users ? (family as any).users.filter((u: any) => u.role === 'CHILD') : []
-    
-    const completedChores = weeklySubmissions.filter((s: any) => s.status === 'APPROVED')
-    const totalEarnings = completedChores.reduce((sum: number, s: any) => sum + (s.assignment.chore.reward || 0), 0)
-    const participationRate = children.length > 0 
-      ? Math.round((completedChores.length / Math.max(children.length * 7, 1)) * 100) 
+
+    const completedChores = weeklySubmissions.filter((s: any) =>
+      s.status === 'APPROVED' || s.status === 'AUTO_APPROVED'
+    )
+
+    // Calculate total points and earnings for the week
+    const pointsToMoneyRate = family?.pointsToMoneyRate || 1.0
+    const totalPointsAwarded = completedChores.reduce((sum: number, s: any) => {
+      const points = s.approval?.pointsAwarded?.toNumber?.() ||
+        Number(s.approval?.pointsAwarded) ||
+        Number(s.assignment.chore.points) || 0
+      return sum + points
+    }, 0)
+    const totalEarnings = Math.round(totalPointsAwarded * pointsToMoneyRate * 100) / 100
+
+    const participationRate = children.length > 0
+      ? Math.round((completedChores.length / Math.max(children.length * 7, 1)) * 100)
       : 0
 
     // Get recent activity
@@ -299,9 +321,17 @@ export async function GET(request: NextRequest) {
             chore: {
               select: {
                 title: true,
-                reward: true
+                reward: true,
+                points: true
               }
             }
+          }
+        },
+        approval: {
+          select: {
+            score: true,
+            pointsAwarded: true,
+            partialReward: true
           }
         }
       },
@@ -329,8 +359,11 @@ export async function GET(request: NextRequest) {
       },
       weeklyStats: {
         totalChoresCompleted: completedChores.length,
+        totalPointsAwarded,
         totalEarningsApproved: totalEarnings,
-        childrenParticipation: `${participationRate}%`
+        pointsToMoneyRate,
+        childrenParticipation: `${participationRate}%`,
+        pendingCount: pendingSubmissions.length
       },
       pendingApprovals: pendingSubmissions.map((submission: any) => ({
         id: submission.id,
@@ -350,15 +383,18 @@ export async function GET(request: NextRequest) {
         choreName: submission.assignment.chore.title,
         submittedAt: submission.submittedAt,
         completedAt: submission.completedAt,
-        reward: submission.assignment.chore.reward,
+        reward: Number(submission.assignment.chore.reward || 0),
+        points: Number(submission.assignment.chore.points || 0),
         status: submission.status,
         notes: submission.notes,
         approval: submission.approval ? {
           approved: submission.approval.approved,
           feedback: submission.approval.feedback,
           score: submission.approval.score,
-          partialReward: submission.approval.partialReward,
-          originalReward: submission.approval.originalReward,
+          partialReward: submission.approval.partialReward ? Number(submission.approval.partialReward) : null,
+          pointsAwarded: submission.approval.pointsAwarded ? Number(submission.approval.pointsAwarded) : null,
+          originalReward: submission.approval.originalReward ? Number(submission.approval.originalReward) : null,
+          originalPoints: submission.approval.originalPoints ? Number(submission.approval.originalPoints) : null,
           approvedAt: submission.approval.approvedAt,
           isAutoApproved: submission.status === 'AUTO_APPROVED'
         } : null
@@ -379,11 +415,15 @@ export async function GET(request: NextRequest) {
         id: activity.id,
         childName: activity.user.name,
         choreName: activity.assignment.chore.title,
-        action: activity.status === 'APPROVED' ? 'completed' : 'submitted',
-        reward: activity.assignment.chore.reward,
+        action: activity.status === 'APPROVED' || activity.status === 'AUTO_APPROVED' ? 'completed' :
+                activity.status === 'DENIED' ? 'denied' : 'submitted',
+        reward: Number(activity.assignment.chore.reward || 0),
+        points: Number(activity.assignment.chore.points || 0),
         timestamp: activity.submittedAt,
-        score: activity.score,
-        partialReward: activity.partialReward
+        status: activity.status,
+        score: activity.approval?.score,
+        pointsAwarded: activity.approval?.pointsAwarded ? Number(activity.approval.pointsAwarded) : null,
+        partialReward: activity.approval?.partialReward ? Number(activity.approval.partialReward) : null
       })),
       permissions: {
         canInvite: familyMembership.canInvite !== undefined ? familyMembership.canInvite : true,
