@@ -46,11 +46,10 @@ export async function POST(request: NextRequest) {
     const startOfDay = new Date(completedAt.getFullYear(), completedAt.getMonth(), completedAt.getDate())
     const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000)
 
-    // Calculate week start (Monday) for assignment
-    const dayOfWeek = completedAt.getDay()
-    const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+    // Calculate week start (Sunday) for assignment (must match chore-submissions and dashboard)
     const weekStart = new Date(completedAt)
-    weekStart.setDate(completedAt.getDate() - daysFromMonday)
+    const dayOfWeek = completedAt.getDay() // 0 = Sunday
+    weekStart.setDate(completedAt.getDate() - dayOfWeek)
     weekStart.setHours(0, 0, 0, 0)
 
     // Ensure an assignment exists for that week
@@ -96,7 +95,7 @@ export async function POST(request: NextRequest) {
       const m = Math.pow(10, places)
       return Math.round(val * m) / m
     }
-    let finalScore = score !== undefined ? score : approved ? 100 : 0
+    const finalScore = score !== undefined ? score : approved ? 100 : 0
     let pointsAwarded = new Decimal(0)
     if (finalScore !== undefined) {
       pointsAwarded = new Decimal(roundTo((finalScore / 100) * chorePoints.toNumber(), 1))

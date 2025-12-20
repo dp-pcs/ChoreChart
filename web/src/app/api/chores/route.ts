@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
@@ -117,6 +117,12 @@ export async function POST(request: NextRequest) {
       targetChildIds = familyChildren.map(child => child.id)
     }
 
+    // Normalize weekStart (Sunday) to avoid duplicate assignments
+    const now = new Date()
+    const weekStart = new Date(now)
+    weekStart.setDate(now.getDate() - now.getDay())
+    weekStart.setHours(0, 0, 0, 0)
+
     // Create the chore
     const chore = await prisma.chore.create({
       data: {
@@ -134,7 +140,7 @@ export async function POST(request: NextRequest) {
           create: targetChildIds.map((childId: string) => ({
             userId: childId,
             familyId: user.familyId,
-            weekStart: new Date()
+            weekStart
           }))
         }
       },
@@ -276,12 +282,18 @@ export async function PUT(request: NextRequest) {
 
       // Create new assignments
       if (targetChildIds.length > 0) {
+        // Normalize weekStart (Sunday) to avoid duplicate assignments
+        const now = new Date()
+        const weekStart = new Date(now)
+        weekStart.setDate(now.getDate() - now.getDay())
+        weekStart.setHours(0, 0, 0, 0)
+
         await prisma.choreAssignment.createMany({
           data: targetChildIds.map((childId: string) => ({
             choreId,
             userId: childId,
             familyId: user.familyId,
-            weekStart: new Date()
+            weekStart
           }))
         })
       }
